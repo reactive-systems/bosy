@@ -118,7 +118,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
         //print(qbf)
         
         let boundednessCheck = BoundednessVisitor()
-        qbf.accept(visitor: boundednessCheck)
+        assert(qbf.accept(visitor: boundednessCheck))
         
         let removeComparable = RemoveComparableVisitor(bound: bound)
         qbf = qbf.accept(visitor: removeComparable)

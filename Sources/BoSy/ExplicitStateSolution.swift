@@ -67,7 +67,7 @@ struct ExplicitStateSolution: BoSySolution {
         for (source, outgoing) in transitions {
             for (target, condition) in outgoing {
                 let enabled = stateToBits(source, withLatches: latches).reduce(Literal.True, combine: &) & condition
-                let targetEncoding = binaryFrom(target).characters
+                let targetEncoding = binaryFrom(target, bits: numBitsNeeded(states.count)).characters
                 for (bit, latch) in zip(targetEncoding, latches) {
                     assert(["0", "1"].contains(bit))
                     if bit == "0" {
@@ -87,7 +87,7 @@ struct ExplicitStateSolution: BoSySolution {
     
     func stateToBits(_ state: Int, withLatches latches: [Proposition]) -> [Boolean] {
         var bits: [Boolean] = []
-        for (value, proposition) in zip(binaryFrom(state).characters, latches) {
+        for (value, proposition) in zip(binaryFrom(state, bits: numBitsNeeded(states.count)).characters, latches) {
             assert(["0", "1"].contains(value))
             if value == "0" {
                 bits.append(!proposition)
@@ -96,17 +96,5 @@ struct ExplicitStateSolution: BoSySolution {
             }
         }
         return bits
-    }
-    
-    func binaryFrom(_ n: Int) -> String {
-        let binary = String(n, radix: 2)
-        // padding on left
-        assert(binary.characters.count <= numBitsNeeded(states.count))
-        if binary.characters.count == numBitsNeeded(states.count) {
-            return binary
-        }
-        let zero: Character = "0"
-        let padding = String(repeating: zero, count: numBitsNeeded(states.count) - binary.characters.count)
-        return padding + binary
     }
 }

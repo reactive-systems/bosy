@@ -1,5 +1,7 @@
 import Foundation
 
+import Utils
+
 public typealias BooleanAssignment = [Proposition: Literal]
 
 public protocol Boolean: CustomStringConvertible {
@@ -7,10 +9,6 @@ public protocol Boolean: CustomStringConvertible {
     
     func eval(assignment: BooleanAssignment) -> Boolean
 }
-
-/*func ==(lhs: Boolean, rhs: Boolean) -> Bool {
-    return false
-}*/
 
 public func & (lhs: Boolean, rhs: Boolean) -> Boolean {
     switch (lhs, rhs) {
@@ -230,11 +228,13 @@ public struct Quantifier: Boolean {
     let type: QuantifierType
     var variables: [Proposition]
     var scope: Boolean
+    let arity: Int
     
-    public init(_ type: QuantifierType, variables: [Proposition], scope: Boolean) {
+    public init(_ type: QuantifierType, variables: [Proposition], scope: Boolean, arity: Int = 0) {
         self.type = type
         self.variables = variables
         self.scope = scope
+        self.arity = arity
     }
     
     public func accept<T where T : BooleanVisitor>(visitor: T) -> T.T {
@@ -346,10 +346,10 @@ public struct BooleanComparator: Boolean {
     }
     
     let type: ComparatorType
-    var lhs: Proposition
-    var rhs: Proposition
+    var lhs: Boolean
+    var rhs: Boolean
     
-    public init(_ type: ComparatorType, lhs: Proposition, rhs: Proposition) {
+    public init(_ type: ComparatorType, lhs: Boolean, rhs: Boolean) {
         self.type = type
         self.lhs = lhs
         self.rhs = rhs
@@ -364,8 +364,32 @@ public struct BooleanComparator: Boolean {
     }
     
     public func eval(assignment: BooleanAssignment) -> Boolean {
-        assert(assignment[lhs] == nil)
-        assert(assignment[rhs] == nil)
+        //assert(assignment[lhs] == nil)
+        //assert(assignment[rhs] == nil)
+        return self
+    }
+}
+
+public struct FunctionApplication: Boolean {
+    var function: Proposition
+    var application: [Proposition]
+    
+    public init(function: Proposition, application: [Proposition]) {
+        self.function = function
+        self.application = application
+    }
+    
+    public func accept<T where T: BooleanVisitor>(visitor: T) -> T.T {
+        return visitor.visit(application: self)
+    }
+    
+    public var description: String {
+        let appl = application.map({ "\($0)" }).joined(separator: ", ")
+        return "\(function)(\(appl))"
+    }
+    
+    public func eval(assignment: BooleanAssignment) -> Boolean {
+        assert(false)
         return self
     }
 }
@@ -378,20 +402,22 @@ public protocol BooleanVisitor {
     func visit(binaryOperator: BinaryOperator) -> T
     func visit(quantifier: Quantifier) -> T
     func visit(comparator: BooleanComparator) -> T
+    func visit(application: FunctionApplication) -> T
 }
 
-struct RenamingBooleanVisitor: BooleanVisitor {
+/**
+ * Recursively traverses syntax tree and returns a modified tree (standard modification is identity function)
+ *
+ * Subclassing: override methods that perform the actual modification
+ */
+class TransformingVisitor: BooleanVisitor {
     typealias T = Boolean
-    
-    var rename: (String) -> String
     
     func visit(literal: Literal) -> T {
         return literal
     }
     func visit(proposition: Proposition) -> T {
-        var copy = proposition
-        copy.name = rename(proposition.name)
-        return copy
+        return proposition
     }
     func visit(unaryOperator: UnaryOperator) -> T {
         var copy = unaryOperator
@@ -414,29 +440,102 @@ struct RenamingBooleanVisitor: BooleanVisitor {
         copy.rhs = comparator.rhs.accept(visitor: self) as! Proposition
         return copy
     }
+    func visit(application: FunctionApplication) -> T {
+        var copy = application
+        copy.function = application.function.accept(visitor: self) as! Proposition
+        copy.application = application.application.map({ $0.accept(visitor: self) as! Proposition })
+        return copy
+    }
 }
 
-class BoundednessVisitor: BooleanVisitor {
-    typealias T = Void
+class RenamingBooleanVisitor: TransformingVisitor {
+    typealias T = Boolean
+    
+    var rename: (String) -> String
+    
+    init(rename: (String) -> String) {
+        self.rename = rename
+    }
+    
+    override func visit(proposition: Proposition) -> T {
+        var copy = proposition
+        copy.name = rename(proposition.name)
+        return copy
+    }
+}
+
+class ReplacingPropositionVisitor: TransformingVisitor {
+    typealias T = Boolean
+    
+    var replace: (Proposition) -> Boolean?
+    
+    init(replace: (Proposition) -> Boolean?) {
+        self.replace = replace
+    }
+    
+    override func visit(proposition: Proposition) -> T {
+        guard let replaced = replace(proposition) else {
+            return proposition
+        }
+        return replaced
+    }
+}
+
+/**
+ * Recursively traverses syntax tree and returns whether formula satisfies a property (default property is constant true)
+ *
+ * Subclassing: override methods that perform the actual checking
+ */
+class CheckingVisitor: BooleanVisitor {
+    typealias T = Bool
+    
+    func visit(literal: Literal) -> T {
+        return true
+    }
+    func visit(proposition: Proposition) -> T {
+        return true
+    }
+    func visit(unaryOperator: UnaryOperator) -> T {
+        return unaryOperator.operand.accept(visitor: self)
+    }
+    func visit(binaryOperator: BinaryOperator) -> T {
+        return binaryOperator.operands.map({ $0.accept(visitor: self) }).reduce(true, combine: { $0 && $1 })
+    }
+    func visit(quantifier: Quantifier) -> T {
+        return quantifier.scope.accept(visitor: self)
+    }
+    func visit(comparator: BooleanComparator) -> T {
+        return comparator.lhs.accept(visitor: self) && comparator.rhs.accept(visitor: self)
+    }
+    func visit(application: FunctionApplication) -> T {
+        return application.function.accept(visitor: self) && application.application.map({ $0.accept(visitor: self) }).reduce(true, combine: { $0 && $1 })
+    }
+}
+
+class BoundednessVisitor: CheckingVisitor {
     
     var bounded: Set<Proposition> = Set()
     
-    func visit(literal: Literal) {}
-    func visit(proposition: Proposition) {
-        assert(bounded.contains(proposition), "\(proposition) is not bound\n(\(bounded))")
+    override func visit(proposition: Proposition) -> T {
+        if !bounded.contains(proposition) {
+            Logger.default().error("\(proposition) is not bound\n(\(bounded))")
+        }
+        return bounded.contains(proposition)
     }
-    func visit(unaryOperator: UnaryOperator) {
-        unaryOperator.operand.accept(visitor: self)
-    }
-    func visit(binaryOperator: BinaryOperator) {
-        binaryOperator.operands.forEach({ $0.accept(visitor: self) })
-    }
-    func visit(quantifier: Quantifier) {
+    override func visit(quantifier: Quantifier) -> T {
         bounded = bounded.union(quantifier.variables)
-        quantifier.scope.accept(visitor: self)
-        bounded = bounded.subtracting(quantifier.variables)
+        defer {
+            bounded = bounded.subtracting(quantifier.variables)
+        }
+        return quantifier.scope.accept(visitor: self)
     }
-    func visit(comparator: BooleanComparator) {}
+    override func visit(application: FunctionApplication) -> T {
+        if !bounded.contains(application.function) {
+            Logger.default().error("\(application.function) is not bound\n(\(bounded))")
+            return false
+        }
+        return application.application.map({ $0.accept(visitor: self) }).reduce(true, combine: { $0 && $1 })
+    }
 }
 
 func order(binaryLhs: [Proposition], binaryRhs: [Proposition], strict: Bool) -> Boolean {
