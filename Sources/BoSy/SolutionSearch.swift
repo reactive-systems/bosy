@@ -58,6 +58,7 @@ struct SolutionSearch {
         while bound < limit {
             do {
                 if try encoding.solve(forBound: bound) {
+                    Logger.default().info("found solution with \(bound) states")
                     return true
                 }
             } catch BoSyEncodingError.EncodingFailed(let message) {

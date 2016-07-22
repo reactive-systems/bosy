@@ -21,56 +21,40 @@ class RemoveComparableVisitor: TransformingVisitor {
         return copy
     }
     override func visit(comparator: BooleanComparator) -> T {
-        var lhs = reverseMapping[comparator.lhs as! Proposition]
-        if lhs == nil {
-            lhs = (0..<counterBits).map({ i in Proposition("\(comparator.lhs)_\(i)")})
-            reverseMapping[comparator.lhs as! Proposition] = lhs!
+        func translateToBitRepresentation(_ atom: Boolean, bit: Int) -> Boolean {
+            if let atom = atom as? Proposition {
+                return Proposition("\(atom)_\(bit)")
+            }
+            if let atom = atom as? FunctionApplication {
+                return FunctionApplication(function: Proposition("\(atom.function)_\(bit)"), application: atom.application)
+            }
+            assert(false)
+            return Literal.False
         }
-        var rhs = reverseMapping[comparator.rhs as! Proposition]
-        if rhs == nil {
-            rhs = (0..<counterBits).map({ i in Proposition("\(comparator.rhs)_\(i)")})
-            reverseMapping[comparator.rhs as! Proposition] = rhs!
+        func getProposition(_ atom: Boolean) -> Proposition {
+            if let proposition = atom as? Proposition {
+                return proposition
+            }
+            if let application = atom as? FunctionApplication {
+                return application.function
+            }
+            assert(false)
+            return Proposition("error")
         }
-        return order(binaryLhs: lhs!, binaryRhs: rhs!, strict: comparator.type == .Less)
-    }
-}
-
-public class ReturnConstantVisitor<R>: BooleanVisitor {
-    public typealias T = R
-    
-    let constant: R
-    
-    init(constant: R) {
-        self.constant = constant
-    }
-    
-    public func visit(literal: Literal) -> T {
-        assert(false)
-        return constant
-    }
-    public func visit(proposition: Proposition) -> T {
-        assert(false)
-        return constant
-    }
-    public func visit(unaryOperator: UnaryOperator) -> T {
-        assert(false)
-        return constant
-    }
-    public func visit(binaryOperator: BinaryOperator) -> T {
-        assert(false)
-        return constant
-    }
-    public func visit(quantifier: Quantifier) -> T {
-        assert(false)
-        return constant
-    }
-    public func visit(comparator: BooleanComparator) -> T {
-        assert(false)
-        return constant
-    }
-    public func visit(application: FunctionApplication) -> T {
-        assert(false)
-        return constant
+        
+        let lhsProp = getProposition(comparator.lhs)
+        if reverseMapping[lhsProp] == nil {
+            reverseMapping[lhsProp] = (0..<counterBits).map({ i in Proposition("\(lhsProp)_\(i)")})
+        }
+        
+        let rhsProp = getProposition(comparator.rhs)
+        if reverseMapping[rhsProp] == nil {
+            reverseMapping[rhsProp] = (0..<counterBits).map({ i in Proposition("\(rhsProp)_\(i)")})
+        }
+        
+        let lhs = (0..<counterBits).map({ bit in translateToBitRepresentation(comparator.lhs, bit: bit) })
+        let rhs = (0..<counterBits).map({ bit in translateToBitRepresentation(comparator.rhs, bit: bit) })
+        return order(binaryLhs: lhs, binaryRhs: rhs, strict: comparator.type == .Less)
     }
 }
 
@@ -403,5 +387,89 @@ public class AigerVisitor: ReturnConstantVisitor<UInt32> {
         }
         let symbolPtr: UnsafeMutablePointer<aiger_symbol> = aig.pointee.latches.advanced(by: index)
         symbolPtr.pointee.next = next
+    }
+}
+
+class TPTP3Visitor: TransformingVisitor, CustomStringConvertible {
+    
+    var cnf: [String] = [
+        // Define Boolean predicate
+        "cnf(rule_true,axiom, p(1)).",
+        "cnf(rule_false,axiom, ~p(0))."
+    ]
+    var universalVariables: [Proposition]? = nil
+    var numClauses: Int = 0
+    var auxVar: Int = 0
+    
+    let clausePrinter = TPTP3Printer()
+    
+    var description: String {
+        return cnf.joined(separator: "\n")
+    }
+    
+    func nextClauseId() -> Int {
+        defer {
+            numClauses += 1
+        }
+        return numClauses
+    }
+    func nextAuxId() -> Int {
+        defer {
+            auxVar += 1
+        }
+        return auxVar
+    }
+    func auxVarFrom(id: Int) -> FunctionApplication {
+        return FunctionApplication(function: Proposition("aux\(id)"), application: universalVariables!)
+    }
+    func addClause(_ clause: Boolean) {
+        let clauseId = nextClauseId()
+        cnf.append("cnf(clause\(clauseId),plain,\(clause.accept(visitor: clausePrinter))).")
+    }
+    func addClause(_ clause: [Boolean]) {
+        assert(clause.count > 0)
+        addClause(clause.reduce(Literal.False, combine: |))
+    }
+    
+    override func visit(binaryOperator: BinaryOperator) -> Boolean {
+        let subformulas: [Boolean] = binaryOperator.operands.map({ $0.accept(visitor: self) })
+        let auxId = nextAuxId()
+        let auxVar = auxVarFrom(id: auxId)
+        
+        switch binaryOperator.type {
+        case .And:
+            subformulas.forEach({ subformula in addClause([!auxVar, subformula]) })
+            addClause([auxVar] + subformulas.map({ subformula in !subformula }))
+        case .Or:
+            subformulas.forEach({ subformula in addClause([auxVar, !subformula]) })
+            addClause([!auxVar] + subformulas)
+        case .Xnor:
+            assert(subformulas.count == 2)
+            let lhs = subformulas[0]
+            let rhs = subformulas[1]
+            addClause([!auxVar, lhs, !rhs])
+            addClause([!auxVar, !lhs, rhs])
+            addClause([auxVar, lhs, rhs])
+            addClause([auxVar, !lhs, !rhs])
+        case .Implication:
+            assert(subformulas.count == 2)
+            let lhs = subformulas[0]
+            let rhs = subformulas[1]
+            addClause([auxVar, lhs])
+            addClause([auxVar, !rhs])
+            addClause([!auxVar, !lhs, rhs])
+        }
+        return auxVar
+    }
+    override func visit(quantifier: Quantifier) -> Boolean {
+        if quantifier.type == .Forall {
+            assert(universalVariables == nil)
+            universalVariables = quantifier.variables
+        }
+        let result = quantifier.scope.accept(visitor: self)
+        if !(result is Quantifier) {
+            addClause(result)
+        }
+        return quantifier
     }
 }

@@ -538,7 +538,46 @@ class BoundednessVisitor: CheckingVisitor {
     }
 }
 
-func order(binaryLhs: [Proposition], binaryRhs: [Proposition], strict: Bool) -> Boolean {
+public class ReturnConstantVisitor<R>: BooleanVisitor {
+    public typealias T = R
+    
+    let constant: R
+    
+    init(constant: R) {
+        self.constant = constant
+    }
+    
+    public func visit(literal: Literal) -> T {
+        assert(false)
+        return constant
+    }
+    public func visit(proposition: Proposition) -> T {
+        assert(false)
+        return constant
+    }
+    public func visit(unaryOperator: UnaryOperator) -> T {
+        assert(false)
+        return constant
+    }
+    public func visit(binaryOperator: BinaryOperator) -> T {
+        assert(false)
+        return constant
+    }
+    public func visit(quantifier: Quantifier) -> T {
+        assert(false)
+        return constant
+    }
+    public func visit(comparator: BooleanComparator) -> T {
+        assert(false)
+        return constant
+    }
+    public func visit(application: FunctionApplication) -> T {
+        assert(false)
+        return constant
+    }
+}
+
+func order(binaryLhs: [Boolean], binaryRhs: [Boolean], strict: Bool) -> Boolean {
     precondition(binaryLhs.count == binaryRhs.count)
     precondition(binaryLhs.count >= 1)
     var binaryLhs = binaryLhs

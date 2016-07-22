@@ -31,10 +31,9 @@ struct StateSymbolicEncoding: BoSyEncoding {
         
         let numBits = numBitsNeeded(bound)
         for i in bound ..< (1 << numBits) {
-            print(i)
             preconditions.append(!explicitToSymbolic(base: "s", value: i, bits: numBits))
             preconditions.append(!explicitToSymbolic(base: "sp", value: i, bits: numBits))
-            matrix.append(!explicitToSymbolic(base: "t", value: i, bits: numBits, parameters: statePropositions))
+            matrix.append(!explicitToSymbolic(base: "t_", value: i, bits: numBits, parameters: statePropositions + inputPropositions))
         }
         
         // initial states
@@ -49,7 +48,8 @@ struct StateSymbolicEncoding: BoSyEncoding {
             let replacer = ReplacingPropositionVisitor(replace: {
                 proposition in
                 if self.outputs.contains(proposition.name) {
-                    return FunctionApplication(function: proposition, application: statePropositions)
+                    let dependencies = self.semantics == .Mealy ? statePropositions + inputPropositions : statePropositions
+                    return FunctionApplication(function: proposition, application: dependencies)
                 } else {
                     return nil
                 }
@@ -83,11 +83,16 @@ struct StateSymbolicEncoding: BoSyEncoding {
         let lambdaSharpPropositions: [Proposition] = self.automaton.states.map({ lambdaSharpProposition($0) })
         
         let universalQuantified: Boolean = Quantifier(.Forall, variables: statePropositions + nextStatePropositions + inputPropositions, scope: formula)
-        let outputQuantification: Boolean = Quantifier(.Exists, variables: outputPropositions, scope: universalQuantified, arity: numBitsNeeded(states.count))
+        let outputQuantification: Boolean = Quantifier(.Exists, variables: outputPropositions, scope: universalQuantified, arity: semantics == .Mealy ? numBitsNeeded(states.count) + self.inputs.count : numBitsNeeded(states.count))
         let tauQuantification: Boolean = Quantifier(.Exists, variables: tauPropositions, scope: outputQuantification, arity: numBitsNeeded(states.count) + self.inputs.count)
         let lambdaQuantification: Boolean = Quantifier(.Exists, variables: lambdaPropositions + lambdaSharpPropositions, scope: tauQuantification, arity: numBitsNeeded(states.count))
         
-        return lambdaQuantification
+        let boundednessCheck = BoundednessVisitor()
+        assert(lambdaQuantification.accept(visitor: boundednessCheck))
+        
+        let removeComparable = RemoveComparableVisitor(bound: bound)
+        let result = lambdaQuantification.accept(visitor: removeComparable)
+        return result
     }
     
     func requireTransition(q: CoBüchiAutomaton.State, qPrime: CoBüchiAutomaton.State, bound: Int, rejectingStates: Set<CoBüchiAutomaton.State>, states: [Proposition], nextStates: [Proposition], taus: [FunctionApplication]) -> Boolean {
@@ -135,7 +140,7 @@ struct StateSymbolicEncoding: BoSyEncoding {
     }
     
     func lambdaProposition(_ automatonState: CoBüchiAutomaton.State) -> Proposition {
-        return Proposition("λ_\(automatonState)")
+        return Proposition("l_\(automatonState)")
     }
     
     func lambda(_ automatonState: CoBüchiAutomaton.State, states: [Proposition]) -> FunctionApplication {
@@ -143,7 +148,7 @@ struct StateSymbolicEncoding: BoSyEncoding {
     }
     
     func lambdaSharpProposition(_ automatonState: CoBüchiAutomaton.State) -> Proposition {
-        return Proposition("λ#_\(automatonState)")
+        return Proposition("ls_\(automatonState)")
     }
     
     func lambdaSharp(_ automatonState: CoBüchiAutomaton.State, states: [Proposition]) -> FunctionApplication {
@@ -151,7 +156,7 @@ struct StateSymbolicEncoding: BoSyEncoding {
     }
     
     func tau(bit: Int) -> Proposition {
-        return Proposition("τ_\(bit)")
+        return Proposition("t_\(bit)")
     }
     
     func output(_ name: String, forState state: Int) -> String {
@@ -164,9 +169,14 @@ struct StateSymbolicEncoding: BoSyEncoding {
         guard let instance = getEncoding(forBound: bound) else {
             throw BoSyEncodingError.EncodingFailed("could not build encoding")
         }
-        throw BoSyEncodingError.SolvingFailed("solver failed on instance")
         //print(instance)
-        return false
+        let tptp3Transformer = TPTP3Visitor()
+        let _ = instance.accept(visitor: tptp3Transformer)
+        //print(tptp3Transformer)
+        guard let result = eprover(tptp3: "\(tptp3Transformer)") else {
+            throw BoSyEncodingError.SolvingFailed("solver failed on instance")
+        }
+        return result == .SAT
     }
     
     func extractSolution() -> BoSySolution? {

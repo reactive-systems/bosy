@@ -269,3 +269,31 @@ public func picosat(dimacs: String) -> (SolverResult, [Int]?)? {
     }
     return (result, assignments)
 }
+
+func eprover(tptp3: String) -> SolverResult? {
+    let tempFile = TempFile(suffix: ".tptp3")!
+    try! tptp3.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
+
+    let task = Task()
+    task.launchPath = "./eprover"
+    task.arguments = ["--auto", "--tptp3-format", tempFile.path]
+    
+    let stdoutPipe = Pipe()
+    let stderrPipe = Pipe()
+    task.standardOutput = stdoutPipe
+    task.standardError = stderrPipe
+    task.launch()
+    
+    let stdoutHandle = stdoutPipe.fileHandleForReading
+    let outputData = StreamHelper.readAllAvailableData(from: stdoutHandle)
+
+    task.waitUntilExit()
+    let output = String(data: outputData, encoding: String.Encoding.utf8)!
+    //print(output)
+    if output.contains("SZS status Satisfiable") {
+        return .SAT
+    } else if output.contains("SZS status Unsatisfiable") {
+        return .UNSAT
+    }
+    return nil
+}
