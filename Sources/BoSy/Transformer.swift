@@ -407,6 +407,11 @@ class TPTP3Visitor: TransformingVisitor, CustomStringConvertible {
         return cnf.joined(separator: "\n")
     }
     
+    init(formula: Boolean) {
+        super.init()
+        let _ = formula.accept(visitor: self)
+    }
+    
     func nextClauseId() -> Int {
         defer {
             numClauses += 1
@@ -473,3 +478,4 @@ class TPTP3Visitor: TransformingVisitor, CustomStringConvertible {
         return quantifier
     }
 }
+

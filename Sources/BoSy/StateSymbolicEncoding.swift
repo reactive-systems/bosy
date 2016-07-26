@@ -170,8 +170,7 @@ struct StateSymbolicEncoding: BoSyEncoding {
             throw BoSyEncodingError.EncodingFailed("could not build encoding")
         }
         //print(instance)
-        let tptp3Transformer = TPTP3Visitor()
-        let _ = instance.accept(visitor: tptp3Transformer)
+        let tptp3Transformer = TPTP3Visitor(formula: instance)
         //print(tptp3Transformer)
         guard let result = eprover(tptp3: "\(tptp3Transformer)") else {
             throw BoSyEncodingError.SolvingFailed("solver failed on instance")
