@@ -79,14 +79,11 @@ struct ExplicitEncoding: BoSyEncoding {
                             conjunct.append(transitionCondition)
                         } else {
                             let renamer = getRenamer(i: i)
-                            conjunct.append(BinaryOperator(.Implication, operands: [evaluatedCondition.accept(visitor: renamer), transitionCondition]))
+                            conjunct.append(evaluatedCondition.accept(visitor: renamer) --> transitionCondition)
                         }
                     }
                 }
-                matrix.append(BinaryOperator(.Implication, operands: [
-                    lambda(source, q),
-                    conjunct.reduce(Literal.True, &)
-                ]))
+                matrix.append(lambda(source, q) -->  conjunct.reduce(Literal.True, &))
             }
         }
         
@@ -146,24 +143,13 @@ struct ExplicitEncoding: BoSyEncoding {
             // no need for comparator constrain
             validTransition = (0..<bound).map({
                 sPrime in
-                BinaryOperator(
-                    .Implication,
-                    operands: [
-                        tauNextStateAssertion(state: s, i, nextState: sPrime, bound: bound),
-                        lambda(sPrime, qPrime)
-                    ]
-                )
+                tauNextStateAssertion(state: s, i, nextState: sPrime, bound: bound) --> lambda(sPrime, qPrime)
             })
         } else {
             validTransition = (0..<bound).map({
                 sPrime in
-                BinaryOperator(
-                    .Implication,
-                    operands: [
-                        tauNextStateAssertion(state: s, i, nextState: sPrime, bound: bound),
-                        lambda(sPrime, qPrime) & BooleanComparator(rejectingStates.contains(qPrime) ? .Less : .LessOrEqual, lhs: lambdaSharp(sPrime, qPrime), rhs: lambdaSharp(s, q))
-                    ]
-                )
+                tauNextStateAssertion(state: s, i, nextState: sPrime, bound: bound) -->
+                (lambda(sPrime, qPrime) & BooleanComparator(rejectingStates.contains(qPrime) ? .Less : .LessOrEqual, lhs: lambdaSharp(sPrime, qPrime), rhs: lambdaSharp(s, q)))
             })
         }
         return validTransition.reduce(Literal.True, &)
@@ -203,8 +189,7 @@ struct ExplicitEncoding: BoSyEncoding {
         }
         //print(instance)
         
-        let dimacsVisitor = DIMACSVisitor()
-        let _ = instance.accept(visitor: dimacsVisitor)
+        let dimacsVisitor = DIMACSVisitor(formula: instance)
         //print(dimacsVisitor)
         
         guard let (result, assignments) = picosat(dimacs: "\(dimacsVisitor)") else {

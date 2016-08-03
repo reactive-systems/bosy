@@ -61,13 +61,10 @@ struct InputSymbolicEncoding: BoSyEncoding {
                     if guardCondition as? Literal != nil && guardCondition as! Literal == Literal.True {
                         conjunct.append(transitionCondition)
                     } else {
-                        conjunct.append(BinaryOperator(.Implication, operands: [guardCondition.accept(visitor: renamer), transitionCondition]))
+                        conjunct.append(guardCondition.accept(visitor: renamer) --> transitionCondition)
                     }
                 }
-                matrix.append(BinaryOperator(.Implication, operands: [
-                    lambda(source, q),
-                    conjunct.reduce(Literal.True, &)
-                ]))
+                matrix.append(lambda(source, q) --> conjunct.reduce(Literal.True, &))
             }
         }
         
@@ -132,24 +129,13 @@ struct InputSymbolicEncoding: BoSyEncoding {
             // no need for comparator constrain
             validTransition = (0..<bound).map({
                 sPrime in
-                BinaryOperator(
-                    .Implication,
-                    operands: [
-                        tauNextStateAssertion(state: s, nextState: sPrime, bound: bound),
-                        lambda(sPrime, qPrime)
-                    ]
-                )
+                tauNextStateAssertion(state: s, nextState: sPrime, bound: bound) --> lambda(sPrime, qPrime)
             })
         } else {
             validTransition = (0..<bound).map({
                 sPrime in
-                BinaryOperator(
-                    .Implication,
-                    operands: [
-                        tauNextStateAssertion(state: s, nextState: sPrime, bound: bound),
-                        lambda(sPrime, qPrime) & BooleanComparator(rejectingStates.contains(qPrime) ? .Less : .LessOrEqual, lhs: lambdaSharp(sPrime, qPrime), rhs: lambdaSharp(s, q))
-                    ]
-                )
+                tauNextStateAssertion(state: s, nextState: sPrime, bound: bound) -->
+                (lambda(sPrime, qPrime) & BooleanComparator(rejectingStates.contains(qPrime) ? .Less : .LessOrEqual, lhs: lambdaSharp(sPrime, qPrime), rhs: lambdaSharp(s, q)))
             })
         }
         return validTransition.reduce(Literal.True, &)
@@ -183,8 +169,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
         }
         //print(instance)
         
-        let qdimacsVisitor = QDIMACSVisitor()
-        let _ = instance.accept(visitor: qdimacsVisitor)
+        let qdimacsVisitor = QDIMACSVisitor(formula: instance)
         //print(qdimacsVisitor)
         guard let (result, assignments) = rareqs(qdimacs: bloqqer(qdimacs: "\(qdimacsVisitor)")) else {
             throw BoSyEncodingError.SolvingFailed("solver failed on instance")
@@ -213,8 +198,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
         }
         //print(instance)
         
-        let qdimacsVisitor = QDIMACSVisitor()
-        let _ = instance.accept(visitor: qdimacsVisitor)
+        let qdimacsVisitor = QDIMACSVisitor(formula: instance)
         
         // have to solve it again without preprocessor to get useful assignments
         guard let (result, additionalAssignments) = rareqs(qdimacs: "\(qdimacsVisitor)") else {

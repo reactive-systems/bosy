@@ -68,13 +68,10 @@ struct StateSymbolicEncoding: BoSyEncoding {
                 if guardCondition as? Literal != nil && guardCondition as! Literal == Literal.True {
                     conjunct.append(transitionCondition)
                 } else {
-                    conjunct.append(BinaryOperator(.Implication, operands: [guardCondition.accept(visitor: replacer), transitionCondition]))
+                    conjunct.append(guardCondition.accept(visitor: replacer) --> transitionCondition)
                 }
             }
-            matrix.append(BinaryOperator(.Implication, operands: [
-                lambda(q, states: statePropositions),
-                conjunct.reduce(Literal.True, &)
-            ]))
+            matrix.append(lambda(q, states: statePropositions) --> conjunct.reduce(Literal.True, &))
         }
         
         let formula: Boolean = preconditions.reduce(Literal.True, &) --> matrix.reduce(Literal.True, &)
@@ -92,27 +89,17 @@ struct StateSymbolicEncoding: BoSyEncoding {
         
         let removeComparable = RemoveComparableVisitor(bound: bound)
         let result = lambdaQuantification.accept(visitor: removeComparable)
+        
         return result
     }
     
     func requireTransition(q: CoBüchiAutomaton.State, qPrime: CoBüchiAutomaton.State, bound: Int, rejectingStates: Set<CoBüchiAutomaton.State>, states: [Proposition], nextStates: [Proposition], taus: [FunctionApplication]) -> Boolean {
         if automaton.isStateInNonRejectingSCC(q) || automaton.isStateInNonRejectingSCC(qPrime) || !automaton.isInSameSCC(q, qPrime) {
             // no need for comparator constrain
-            return BinaryOperator(
-                .Implication,
-                operands: [
-                    tauNextStateAssertion(states: nextStates, taus: taus),
-                    lambda(qPrime, states: nextStates)
-                ]
-            )
+            return tauNextStateAssertion(states: nextStates, taus: taus) --> lambda(qPrime, states: nextStates)
         } else {
-            return BinaryOperator(
-                .Implication,
-                operands: [
-                    tauNextStateAssertion(states: nextStates, taus: taus),
-                    lambda(qPrime, states: nextStates) & BooleanComparator(rejectingStates.contains(qPrime) ? .Less : .LessOrEqual, lhs: lambdaSharp(qPrime, states: nextStates), rhs: lambdaSharp(q, states: states))
-                ]
-            )
+            return tauNextStateAssertion(states: nextStates, taus: taus) -->
+                   (lambda(qPrime, states: nextStates) & BooleanComparator(rejectingStates.contains(qPrime) ? .Less : .LessOrEqual, lhs: lambdaSharp(qPrime, states: nextStates), rhs: lambdaSharp(q, states: states)))
         }
     }
     
@@ -171,7 +158,7 @@ struct StateSymbolicEncoding: BoSyEncoding {
         }
         //print(instance)
         let tptp3Transformer = TPTP3Visitor(formula: instance)
-        //print(tptp3Transformer)
+        print(tptp3Transformer)
         guard let result = eprover(tptp3: "\(tptp3Transformer)") else {
             throw BoSyEncodingError.SolvingFailed("solver failed on instance")
         }

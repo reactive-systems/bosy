@@ -58,6 +58,64 @@ class RemoveComparableVisitor: TransformingVisitor {
     }
 }
 
+class NegationNormalFormVisitor: TransformingVisitor {
+    
+    var result: Boolean = Literal.False
+    var negate: Bool = false
+    
+    init(formula: Boolean) {
+        super.init()
+        result = formula.accept(visitor: self)
+    }
+    
+    override func visit(literal: Literal) -> Boolean {
+        defer {
+            negate = false
+        }
+        return negate ? !literal : literal
+    }
+    
+    override func visit(proposition: Proposition) -> Boolean {
+        defer {
+            negate = false
+        }
+        return negate ? !proposition : proposition
+    }
+    
+    override func visit(unaryOperator: UnaryOperator) -> Boolean {
+        assert(unaryOperator.type == .Negation)
+        assert(negate == false)
+        negate = true
+        return unaryOperator.operand.accept(visitor: self)
+    }
+    
+    override func visit(binaryOperator: BinaryOperator) -> Boolean {
+        var copy = binaryOperator
+        if negate {
+            negate = false
+            copy = BinaryOperator(binaryOperator.type.negated, operands: binaryOperator.operands.map(!))
+        }
+        copy.operands = copy.operands.map({ $0.accept(visitor: self) })
+        
+        // The & and | operators triggers simplifications that are not available elsewhere
+        switch copy.type {
+        case .And:
+            return copy.operands.reduce(Literal.True, &)
+        case .Or:
+            return copy.operands.reduce(Literal.False, |)
+        default:
+            return copy
+        }
+    }
+    
+    override func visit(application: FunctionApplication) -> T {
+        defer {
+            negate = false
+        }
+        return negate ? !application : application
+    }
+}
+
 class DIMACSVisitor: ReturnConstantVisitor<Int>, CustomStringConvertible {
     
     var propositions: [Proposition:Int] = [:]
@@ -65,8 +123,10 @@ class DIMACSVisitor: ReturnConstantVisitor<Int>, CustomStringConvertible {
     var dimacs: [String] = []
     var output: Int? = nil
     
-    init() {
+    init(formula: Boolean) {
         super.init(constant: 0)
+        let _ = formula.accept(visitor: self)
+        // let nnf = NegationNormalFormVisitor(formula: qbf).result
     }
     
     var description: String {
@@ -112,13 +172,14 @@ class DIMACSVisitor: ReturnConstantVisitor<Int>, CustomStringConvertible {
             dimacs.append("-\(formulaId) \(-lhs) \(rhs)")
             dimacs.append("\(formulaId) \(lhs) \(rhs)")
             dimacs.append("\(formulaId) \(-lhs) \(-rhs)")
-        case .Implication:
+        case .Xor:
             assert(subformulas.count == 2)
             let lhs = subformulas[0]
             let rhs = subformulas[1]
-            dimacs.append("\(lhs) \(formulaId)")
-            dimacs.append("\(-rhs) \(formulaId)")
-            dimacs.append("-\(formulaId) \(-lhs) \(rhs)")
+            dimacs.append("-\(formulaId) \(-lhs) \(-rhs)")
+            dimacs.append("-\(formulaId) \(lhs) \(rhs)")
+            dimacs.append("\(formulaId) \(-lhs) \(rhs)")
+            dimacs.append("\(formulaId) \(lhs) \(-rhs)")
         }
         return formulaId
     }
@@ -237,11 +298,16 @@ class QCIRVisitor: ReturnConstantVisitor<Int>, CustomStringConvertible {
             circuit.append("\(formulaId) = and(\(lhsOr), \(rhsOr))")
             circuit.append("\(lhsOr) = or(\(-lhs), \(rhs))")
             circuit.append("\(rhsOr) = or(\(lhs), \(-rhs))")
-        case .Implication:
+        case .Xor:
+            // a ^ b <=> (!a | !b) & (a | b)
             assert(subformulas.count == 2)
             let lhs = subformulas[0]
             let rhs = subformulas[1]
-            circuit.append("\(formulaId) = or(\(-lhs), \(rhs))")
+            let lhsOr = newId()
+            let rhsOr = newId()
+            circuit.append("\(formulaId) = and(\(lhsOr), \(rhsOr))")
+            circuit.append("\(lhsOr) = or(\(-lhs), \(-rhs))")
+            circuit.append("\(rhsOr) = or(\(lhs), \(rhs))")
         }
         return formulaId
     }
@@ -409,6 +475,7 @@ class TPTP3Visitor: TransformingVisitor, CustomStringConvertible {
     
     init(formula: Boolean) {
         super.init()
+        //let nnf = NegationNormalFormVisitor(formula: formula).result
         let _ = formula.accept(visitor: self)
     }
     
@@ -456,13 +523,14 @@ class TPTP3Visitor: TransformingVisitor, CustomStringConvertible {
             addClause([!auxVar, !lhs, rhs])
             addClause([auxVar, lhs, rhs])
             addClause([auxVar, !lhs, !rhs])
-        case .Implication:
+        case .Xor:
             assert(subformulas.count == 2)
             let lhs = subformulas[0]
             let rhs = subformulas[1]
-            addClause([auxVar, lhs])
-            addClause([auxVar, !rhs])
-            addClause([!auxVar, !lhs, rhs])
+            addClause([!auxVar, !lhs, !rhs])
+            addClause([!auxVar, lhs, rhs])
+            addClause([auxVar, !lhs, rhs])
+            addClause([auxVar, lhs, !rhs])
         }
         return auxVar
     }

@@ -34,6 +34,10 @@ func & (lhs: Boolean, rhs: Boolean) -> Boolean {
         if element.type == .And {
             return BinaryOperator(.And, operands: element.operands + [rhs])
         }
+    case (_, let element as BinaryOperator):
+        if element.type == .And {
+            return BinaryOperator(.And, operands: [lhs] + element.operands)
+        }
     default:
         break
     }
@@ -59,6 +63,10 @@ func | (lhs: Boolean, rhs: Boolean) -> Boolean {
     case (let element as BinaryOperator, _):
         if element.type == .Or {
             return BinaryOperator(.Or, operands: element.operands + [rhs])
+        }
+    case (_, let element as BinaryOperator):
+        if element.type == .Or {
+            return BinaryOperator(.Or, operands: [lhs] + element.operands)
         }
     default:
         break
@@ -87,7 +95,7 @@ func --> (lhs: Boolean, rhs: Boolean) -> Boolean {
     default:
         break
     }
-    return BinaryOperator(.Implication, operands: [lhs, rhs])
+    return BinaryOperator(.Or, operands: [!lhs, rhs])
 }
 
 infix operator <->
@@ -112,6 +120,28 @@ func <-> (lhs: Boolean, rhs: Boolean) -> Boolean {
         break
     }
     return BinaryOperator(.Xnor, operands: [lhs, rhs])
+}
+
+func ^ (lhs: Boolean, rhs: Boolean) -> Boolean {
+    switch (lhs, rhs) {
+    case (let lhsLiteral as Literal, let rhsLiteral as Literal):
+        return lhsLiteral != rhsLiteral ? Literal.True : Literal.False
+    case (let element as Literal, _):
+        if element == Literal.True {
+            return !rhs
+        } else if element == Literal.False {
+            return rhs
+        }
+    case (_, let element as Literal):
+        if element == Literal.True {
+            return !lhs
+        } else if element == Literal.False {
+            return lhs
+        }
+    default:
+        break
+    }
+    return BinaryOperator(.Xor, operands: [lhs, rhs])
 }
 
 prefix func ! (op: Boolean) -> Boolean {
@@ -174,8 +204,8 @@ struct BinaryOperator: Boolean, Hashable {
     enum OperatorType: CustomStringConvertible {
         case And
         case Or
-        case Implication
         case Xnor
+        case Xor
         
         var description: String {
             switch self {
@@ -183,10 +213,23 @@ struct BinaryOperator: Boolean, Hashable {
                 return "∧"
             case .Or:
                 return "∨"
-            case .Implication:
-                return "→"
             case .Xnor:
                 return "↔︎"
+            case .Xor:
+                return "⊕"
+            }
+        }
+        
+        var negated: OperatorType {
+            switch self {
+            case .And:
+                return .Or
+            case .Or:
+                return .And
+            case .Xnor:
+                return .Xor
+            case .Xor:
+                return .Xnor
             }
         }
     }
@@ -220,12 +263,12 @@ struct BinaryOperator: Boolean, Hashable {
             return evaluatedOperands.reduce(Literal.True, &)
         case .Or:
             return evaluatedOperands.reduce(Literal.False, |)
-        case .Implication:
-            assert(evaluatedOperands.count == 2)
-            return evaluatedOperands[0] --> evaluatedOperands[1]
         case .Xnor:
             assert(evaluatedOperands.count == 2)
             return evaluatedOperands[0] <-> evaluatedOperands[1]
+        case .Xor:
+            assert(evaluatedOperands.count == 2)
+            return evaluatedOperands[0] ^ evaluatedOperands[1]
         }
     }
 }
