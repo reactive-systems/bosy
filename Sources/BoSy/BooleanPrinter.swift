@@ -1,22 +1,22 @@
 
-public class TPTP3Printer: ReturnConstantVisitor<String> {
+class TPTP3Printer: ReturnConstantVisitor<String> {
     
-    public init() {
+    init() {
         super.init(constant: "")
     }
     
-    public override func visit(proposition: Proposition) -> T {
+    override func visit(proposition: Proposition) -> T {
         return "p(\(proposition.name.uppercased()))"
     }
-    public override func visit(unaryOperator: UnaryOperator) -> T {
+    override func visit(unaryOperator: UnaryOperator) -> T {
         return "~" + unaryOperator.operand.accept(visitor: self)
     }
-    public override func visit(binaryOperator: BinaryOperator) -> T {
+    override func visit(binaryOperator: BinaryOperator) -> T {
         assert(binaryOperator.type == .Or)
         let clause = binaryOperator.operands.map({ $0.accept(visitor: self) }).joined(separator: " | ")
         return "(\(clause))"
     }
-    public override func visit(application: FunctionApplication) -> T {
+    override func visit(application: FunctionApplication) -> T {
         let parameters = application.application.map({ $0.name.uppercased() }).joined(separator: ",")
         return "\(application.function)(\(parameters))"
     }

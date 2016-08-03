@@ -35,17 +35,17 @@ struct ExplicitEncoding: BoSyEncoding {
         }
         
         var matrix: [Boolean] = []
-        //matrix.append(automaton.initialStates.reduce(Literal.True, combine: { (val, state) in val & lambda(0, state) }))
+        //matrix.append(automaton.initialStates.reduce(Literal.True, { (val, state) in val & lambda(0, state) }))
         
         for source in states {
             // for every valuation of inputs, there must be at least one tau enabled
             var conjunction: [Boolean] = []
             for i in allBooleanAssignments(variables: inputPropositions) {
                 let disjunction = states.map({ target in tau(source, i, target) })
-                                        .reduce(Literal.False, combine: |)
+                                        .reduce(Literal.False, |)
                 conjunction.append(disjunction)
             }
-            matrix.append(conjunction.reduce(Literal.True, combine: &))
+            matrix.append(conjunction.reduce(Literal.True, &))
             
             func getRenamer(i: BooleanAssignment) -> RenamingBooleanVisitor {
                 if semantics == .Mealy {
@@ -85,12 +85,12 @@ struct ExplicitEncoding: BoSyEncoding {
                 }
                 matrix.append(BinaryOperator(.Implication, operands: [
                     lambda(source, q),
-                    conjunct.reduce(Literal.True, combine: &)
+                    conjunct.reduce(Literal.True, &)
                 ]))
             }
         }
         
-        let formula: Boolean = matrix.reduce(Literal.True, combine: &)
+        let formula: Boolean = matrix.reduce(Literal.True, &)
         
         var lambdas: [Proposition] = []
         for s in 0..<bound {
@@ -166,7 +166,7 @@ struct ExplicitEncoding: BoSyEncoding {
                 )
             })
         }
-        return validTransition.reduce(Literal.True, combine: &)
+        return validTransition.reduce(Literal.True, &)
     }
     
     func tauNextStateAssertion(state: Int, _ inputs: BooleanAssignment, nextState: Int, bound: Int) -> Boolean {
@@ -235,10 +235,10 @@ struct ExplicitEncoding: BoSyEncoding {
                 for i in allBooleanAssignments(variables: inputPropositions) {
                     if assignments[tau(source, i, target)]! == Literal.False {
                         let clause = i.map({ v, val in val == Literal.True ? !v : v })
-                        transitions.append(clause.reduce(Literal.False, combine: |))
+                        transitions.append(clause.reduce(Literal.False, |))
                     }
                 }
-                let transition = transitions.reduce(Literal.True, combine: &)
+                let transition = transitions.reduce(Literal.True, &)
                 if transition as? Literal != nil && transition as! Literal == Literal.False {
                     continue
                 }
@@ -253,10 +253,10 @@ struct ExplicitEncoding: BoSyEncoding {
                         let proposition = Proposition(self.output(output, forState: source, andInputs: i))
                         if assignments[proposition]! == Literal.False {
                             let clause = i.map({ v, val in val == Literal.True ? !v : v })
-                            clauses.append(clause.reduce(Literal.False, combine: |))
+                            clauses.append(clause.reduce(Literal.False, |))
                         }
                     }
-                    enabled = clauses.reduce(Literal.True, combine: &)
+                    enabled = clauses.reduce(Literal.True, &)
                 case .Moore:
                     let proposition = Proposition(self.output(output, forState: source))
                     enabled = assignments[proposition]!

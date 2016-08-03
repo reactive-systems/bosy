@@ -3,6 +3,7 @@ import Foundation
 import Utils
 
 import Jay
+import Jay_Extras
 
 enum TransitionSystemType {
     case Mealy
@@ -44,7 +45,7 @@ struct BoSyInputFileFormat: InputFileFormat {
     
     static func fromJson(string: String) -> BoSyInputFileFormat? {
         let data: [UInt8] = Array(string.utf8)
-        guard let spec = try? Jay().typesafeJsonFromData(data) else {
+        guard let spec = try? Jay().jsonFromData(data) else {
             Logger.default().error("could not decode JSON")
             return nil
         }
@@ -152,7 +153,7 @@ struct BoSyInputFileFormat: InputFileFormat {
 }*/
 
 func syfco(tlsf: String, arguments: [String]) -> String {
-    let task = Task()
+    let task = Process()
 
     task.launchPath = "./syfco"
     task.arguments = ["--stdin"] + arguments

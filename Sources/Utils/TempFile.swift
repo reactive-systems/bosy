@@ -11,15 +11,10 @@ public class TempFile {
 #if os(Linux)
         fileURL = tempDirURL.URLByAppendingPathComponent(fileName)!
 #else
-        guard let fileURL = try? tempDirURL.appendingPathComponent(fileName) else {
-            return nil
-        }
+        let fileURL = tempDirURL.appendingPathComponent(fileName)
         self.fileURL = fileURL
 #endif
-        guard let filePath = fileURL.path else {
-            return nil
-        }
-        self.path = filePath
+        self.path = fileURL.path
     }
     
     deinit {

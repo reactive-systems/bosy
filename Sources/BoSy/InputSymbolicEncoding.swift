@@ -39,7 +39,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
         for source in states {
             // there must be at least one transition
             let exists = states.map({ target in tau(source, target)})
-                               .reduce(Literal.False, combine: |)
+                               .reduce(Literal.False, |)
             matrix.append(exists)
             
             let renamer = RenamingBooleanVisitor(rename: { name in self.outputs.contains(name) ? self.output(name, forState: source) : name })
@@ -66,12 +66,12 @@ struct InputSymbolicEncoding: BoSyEncoding {
                 }
                 matrix.append(BinaryOperator(.Implication, operands: [
                     lambda(source, q),
-                    conjunct.reduce(Literal.True, combine: &)
+                    conjunct.reduce(Literal.True, &)
                 ]))
             }
         }
         
-        let formula: Boolean = matrix.reduce(Literal.True, combine: &)
+        let formula: Boolean = matrix.reduce(Literal.True, &)
         
         var lambdas: [Proposition] = []
         for s in 0..<bound {
@@ -152,7 +152,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
                 )
             })
         }
-        return validTransition.reduce(Literal.True, combine: &)
+        return validTransition.reduce(Literal.True, &)
     }
     
     func tauNextStateAssertion(state: Int, nextState: Int, bound: Int) -> Boolean {

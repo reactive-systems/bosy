@@ -73,11 +73,11 @@ struct StateSymbolicEncoding: BoSyEncoding {
             }
             matrix.append(BinaryOperator(.Implication, operands: [
                 lambda(q, states: statePropositions),
-                conjunct.reduce(Literal.True, combine: &)
+                conjunct.reduce(Literal.True, &)
             ]))
         }
         
-        let formula: Boolean = preconditions.reduce(Literal.True, combine: &) --> matrix.reduce(Literal.True, combine: &)
+        let formula: Boolean = preconditions.reduce(Literal.True, &) --> matrix.reduce(Literal.True, &)
         
         let lambdaPropositions: [Proposition] = self.automaton.states.map({ lambdaProposition($0) })
         let lambdaSharpPropositions: [Proposition] = self.automaton.states.map({ lambdaSharpProposition($0) })
@@ -127,7 +127,7 @@ struct StateSymbolicEncoding: BoSyEncoding {
             }
             and.append(bit == "1" ? prop : !prop)
         }
-        return and.reduce(Literal.True, combine: &)
+        return and.reduce(Literal.True, &)
     }
     
     func tauNextStateAssertion(states: [Proposition], taus: [FunctionApplication]) -> Boolean {
@@ -136,7 +136,7 @@ struct StateSymbolicEncoding: BoSyEncoding {
         for (state, tau) in zip(states, taus) {
             assertion.append(state <-> tau)
         }
-        return assertion.reduce(Literal.True, combine: &)
+        return assertion.reduce(Literal.True, &)
     }
     
     func lambdaProposition(_ automatonState: CoBüchiAutomaton.State) -> Proposition {

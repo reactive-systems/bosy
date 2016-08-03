@@ -18,7 +18,6 @@ public func binaryFrom(_ n: Int, bits: Int) -> String {
     if binary.characters.count == bits {
         return binary
     }
-    let zero: Character = "0"
-    let padding = String(repeating: zero, count: bits - binary.characters.count)
+    let padding = String(repeating: "0", count: bits - binary.characters.count)
     return padding + binary
 }

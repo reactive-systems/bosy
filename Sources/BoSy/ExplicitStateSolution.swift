@@ -48,7 +48,7 @@ struct ExplicitStateSolution: BoSySolution {
         // build the circuit for outputs
         for (state, outputs) in outputGuards {
             for (output, condition) in outputs {
-                let mustBeEnabled = stateToBits(state, withLatches: latches).reduce(Literal.True, combine: &) & condition
+                let mustBeEnabled = stateToBits(state, withLatches: latches).reduce(Literal.True, &) & condition
                 outputFunction[output] = (outputFunction[output] ?? Literal.False) | mustBeEnabled
             }
         }
@@ -66,7 +66,7 @@ struct ExplicitStateSolution: BoSySolution {
         // build the transition function
         for (source, outgoing) in transitions {
             for (target, condition) in outgoing {
-                let enabled = stateToBits(source, withLatches: latches).reduce(Literal.True, combine: &) & condition
+                let enabled = stateToBits(source, withLatches: latches).reduce(Literal.True, &) & condition
                 let targetEncoding = binaryFrom(target, bits: numBitsNeeded(states.count)).characters
                 for (bit, latch) in zip(targetEncoding, latches) {
                     assert(["0", "1"].contains(bit))

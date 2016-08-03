@@ -9,8 +9,8 @@ enum SearchStrategy {
     
     func next(bound: Int) -> Int {
         switch self {
-            case Linear: return bound + 1
-            case Exponential: return bound * 2
+            case .Linear: return bound + 1
+            case .Exponential: return bound * 2
         }
     }
 }

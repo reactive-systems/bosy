@@ -5,7 +5,7 @@ public class Logger {
     #if os(Linux)
     let fileHandle: NSFileHandle = NSFileHandle.fileHandleWithStandardError()
     #else
-    let fileHandle: FileHandle = FileHandle.withStandardError
+    let fileHandle: FileHandle = FileHandle.standardError
     #endif
     
     static let defaultLogger = Logger()

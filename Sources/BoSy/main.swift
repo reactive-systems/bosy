@@ -9,7 +9,7 @@ func printArguments(name: String) {
 }
 
 
-var arguments: ArraySlice<String> = Process.arguments[Process.arguments.indices]
+var arguments: ArraySlice<String> = CommandLine.arguments[CommandLine.arguments.indices]
 let executable = arguments.popFirst()!
 var specificationFile: String? = nil
 var synthesize = false
@@ -58,7 +58,7 @@ if let specificationFile = specificationFile {
     #if os(Linux)
         let standardInput = NSFileHandle.fileHandleWithStandardInput()
     #else
-        let standardInput = FileHandle.withStandardInput
+        let standardInput = FileHandle.standardInput
     #endif
     
     var input = StreamHelper.readAllAvailableData(from: standardInput)
@@ -123,7 +123,7 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
 
 //search(strategy: .Linear, player: .System, synthesize: synthesize)()
 
-let condition = Condition()
+let condition = NSCondition()
 var finished = false
 
 let searchSystem = search(strategy: searchStrategy, player: .System, synthesize: synthesize)

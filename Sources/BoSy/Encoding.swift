@@ -1,5 +1,5 @@
 
-enum BoSyEncodingError: ErrorProtocol {
+enum BoSyEncodingError: Error {
     case EncodingFailed(String)
     case SolvingFailed(String)
 }

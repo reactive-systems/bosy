@@ -30,7 +30,7 @@ public func rareqs(qdimacs: String) -> (SolverResult, [Int]?)? {
     let tempFile = TempFile(suffix: ".qdimacs")!
     try! qdimacs.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
     
-    let task = Task()
+    let task = Process()
     task.launchPath = "./rareqs"
     task.arguments = [tempFile.path]
     
@@ -81,7 +81,7 @@ public func bloqqer(qdimacs: String) -> String {
     let tempFile = TempFile(suffix: ".qdimacs")!
     try! qdimacs.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
 
-    let task = Task()
+    let task = Process()
     task.launchPath = "./bloqqer"
     task.arguments = ["--keep=1", "--partial-assignment=1", tempFile.path]
     
@@ -113,7 +113,7 @@ public func bloqqer(qdimacs: String) -> String {
 }
 
 public func depqbf(qdimacs: String) -> SolverResult? {
-    let task = Task()
+    let task = Process()
 
     task.launchPath = "./depqbf"
     task.arguments = []
@@ -144,7 +144,7 @@ public func quabs(qcir: String) -> (SolverResult, UnsafeMutablePointer<aiger>?)?
     let tempFile = TempFile(suffix: ".qcir")!
     try! qcir.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
     
-    let task = Task()
+    let task = Process()
 
     task.launchPath = "./quabs"
     task.arguments = ["-c", tempFile.path]
@@ -214,13 +214,13 @@ func minimizeWithABC(_ aig: UnsafeMutablePointer<aiger>) -> UnsafeMutablePointer
     }
     abcCommand += " write \(outputTempFile.path);"
     
-    let task = Task()
+    let task = Process()
     task.launchPath = "./abc"
     task.arguments = ["-c", abcCommand]
 #if os(Linux)
-    task.standardOutput = NSFileHandle.fileHandleWithStandardError()
+    task.standardOutput = NSFileHandle.fileHandlestandardError()
 #else
-    task.standardOutput = FileHandle.withStandardError
+    task.standardOutput = FileHandle.standardError
 #endif
     task.launch()
     task.waitUntilExit()
@@ -236,7 +236,7 @@ public func picosat(dimacs: String) -> (SolverResult, [Int]?)? {
     let tempFile = TempFile(suffix: ".dimacs")!
     try! dimacs.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
     
-    let task = Task()
+    let task = Process()
     task.launchPath = "./picosat"
     task.arguments = [tempFile.path]
     
@@ -274,7 +274,7 @@ func eprover(tptp3: String) -> SolverResult? {
     let tempFile = TempFile(suffix: ".tptp3")!
     try! tptp3.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
 
-    let task = Task()
+    let task = Process()
     task.launchPath = "./eprover"
     task.arguments = ["--auto", "--tptp3-format", tempFile.path]
     
