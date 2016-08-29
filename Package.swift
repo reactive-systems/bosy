@@ -8,7 +8,6 @@ let package = Package(
     ],
     dependencies: [
         .Package(url: "../Aiger", majorVersion: 0),
-        .Package(url: "https://github.com/czechboy0/Jay.git", majorVersion: 0, minor: 17),
-        .Package(url: "https://github.com/czechboy0/Jay-Extras.git", majorVersion: 0, minor: 17),
+        .Package(url: "https://github.com/czechboy0/Jay.git", majorVersion: 0, minor: 19),
     ]
 )

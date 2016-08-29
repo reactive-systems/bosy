@@ -3,7 +3,7 @@ import Foundation
 import Utils
 
 import Jay
-import Jay_Extras
+//import Jay_Extras
 
 enum TransitionSystemType {
     case Mealy
@@ -49,9 +49,19 @@ struct BoSyInputFileFormat: InputFileFormat {
             Logger.default().error("could not decode JSON")
             return nil
         }
-
-        guard let semanticsString = spec.dictionary?["semantics"]?.string else {
+        
+        guard case JSON.object(let specDictionary) = spec else {
+            Logger.default().error("JSON format is not valid")
+            return nil
+        }
+        
+        // Decode semantics
+        guard let semanticsJSON = specDictionary["semantics"] else {
             Logger.default().error("no semantics given")
+            return nil
+        }
+        guard case JSON.string(let semanticsString) = semanticsJSON else {
+            Logger.default().error("semantics is not given as string")
             return nil
         }
         guard let semantics = TransitionSystemType.from(string: semanticsString) else {
@@ -59,8 +69,22 @@ struct BoSyInputFileFormat: InputFileFormat {
             return nil
         }
         
+        // Decode arrays
         func toArray(key: String) -> [String]? {
-            return spec.dictionary?[key]?.array?.flatMap({ $0.string })
+            guard let json = specDictionary[key] else {
+                return nil
+            }
+            guard case JSON.array(let jsonArray) = json else {
+                return nil
+            }
+            return jsonArray.flatMap({ 
+                element in
+                if case JSON.string(let string) = element {
+                    return string
+                } else {
+                    return nil
+                }
+            })
         }
         
         guard let inputs = toArray(key: "inputs") else {
@@ -71,6 +95,7 @@ struct BoSyInputFileFormat: InputFileFormat {
             Logger.default().error("no outputs given")
             return nil
         }
+
         guard let guarantees = toArray(key: "guarantees") else {
             Logger.default().error("no guarantees given")
             return nil

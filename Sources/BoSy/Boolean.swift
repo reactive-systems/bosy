@@ -545,7 +545,7 @@ class RenamingBooleanVisitor: TransformingVisitor {
     
     var rename: (String) -> String
     
-    init(rename: (String) -> String) {
+    init(rename: @escaping (String) -> String) {
         self.rename = rename
     }
     
@@ -561,7 +561,7 @@ class ReplacingPropositionVisitor: TransformingVisitor {
     
     var replace: (Proposition) -> Boolean?
     
-    init(replace: (Proposition) -> Boolean?) {
+    init(replace: @escaping (Proposition) -> Boolean?) {
         self.replace = replace
     }
     
