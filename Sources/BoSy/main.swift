@@ -80,8 +80,8 @@ guard let specification = BoSyInputFileFormat.fromJson(string: json) else {
 
 func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -> ()) {
     return {
-        let assumptionString = specification.assumptions.joined(separator: " && ")
-        let guaranteeString = specification.guarantees.joined(separator: " && ")
+        let assumptionString = specification.assumptions.map(String.init(describing:)).joined(separator: " && ")
+        let guaranteeString = specification.guarantees.map(String.init(describing:)).joined(separator: " && ")
 
         let ltlSpec: String
         if player == .System {

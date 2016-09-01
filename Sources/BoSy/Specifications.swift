@@ -3,7 +3,7 @@ import Foundation
 import Utils
 
 import Jay
-//import Jay_Extras
+import LTL
 
 enum TransitionSystemType {
     case Mealy
@@ -32,16 +32,16 @@ protocol InputFileFormat {
     var semantics: TransitionSystemType { get }
     var inputs: [String] { get }
     var outputs: [String] { get }
-    var assumptions: [String] { get }
-    var guarantees: [String] { get }
+    var assumptions: [LTL] { get }
+    var guarantees: [LTL] { get }
 }
 
 struct BoSyInputFileFormat: InputFileFormat {
     let semantics: TransitionSystemType
     let inputs: [String]
     let outputs: [String]
-    let assumptions: [String]
-    let guarantees: [String]
+    let assumptions: [LTL]
+    let guarantees: [LTL]
     
     static func fromJson(string: String) -> BoSyInputFileFormat? {
         let data: [UInt8] = Array(string.utf8)
@@ -100,11 +100,22 @@ struct BoSyInputFileFormat: InputFileFormat {
             Logger.default().error("no guarantees given")
             return nil
         }
+        let parsedGuarantees = guarantees.flatMap({ try? LTL.parse(fromString: $0) })
+        if guarantees.count != parsedGuarantees.count {
+            Logger.default().error("could not parse guarantees")
+            return nil
+        }
+        
         guard let assumptions = toArray(key: "assumptions") else {
             Logger.default().error("no assumptions given")
             return nil
         }
-        return BoSyInputFileFormat(semantics: semantics, inputs: inputs, outputs: outputs, assumptions: assumptions, guarantees: guarantees)
+        let parsedAssumptions = assumptions.flatMap({ try? LTL.parse(fromString: $0) })
+        if assumptions.count != parsedAssumptions.count {
+            Logger.default().error("could not parse assumptions")
+            return nil
+        }
+        return BoSyInputFileFormat(semantics: semantics, inputs: inputs, outputs: outputs, assumptions: parsedAssumptions, guarantees: parsedGuarantees)
     }
 }
 
