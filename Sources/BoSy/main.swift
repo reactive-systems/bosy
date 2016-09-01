@@ -1,4 +1,5 @@
 import Foundation
+import Dispatch
 
 import Utils
 
@@ -55,11 +56,7 @@ if let specificationFile = specificationFile {
     json = specficationString
 } else {
     // Read from stdin
-    #if os(Linux)
-        let standardInput = NSFileHandle.fileHandleWithStandardInput()
-    #else
-        let standardInput = FileHandle.standardInput
-    #endif
+    let standardInput = FileHandle.standardInput
     
     var input = StreamHelper.readAllAvailableData(from: standardInput)
     
@@ -126,47 +123,25 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
 let condition = NSCondition()
 var finished = false
 
+
 let searchSystem = search(strategy: searchStrategy, player: .System, synthesize: synthesize)
 let searchEnvironment = search(strategy: searchStrategy, player: .Environment, synthesize: synthesize)
 
-#if os(Linux)
-let thread1 = NSThread() {
+DispatchQueue.global().async {
     searchSystem()
     condition.lock()
     finished = true
     condition.broadcast()
     condition.unlock()
 }
-let thread2 = NSThread() {
+
+DispatchQueue.global().async {
     searchEnvironment()
     condition.lock()
     finished = true
     condition.broadcast()
     condition.unlock()
 }
-thread1.start()
-thread2.start()
-#else
-class ThreadedExecution: Thread {
-    
-    let function: () -> ()
-    
-    init(function: (() -> ())) {
-        self.function = function
-    }
-    
-    override func main() {
-        function()
-        condition.lock()
-        finished = true
-        condition.broadcast()
-        condition.unlock()
-    }
-}
-
-ThreadedExecution(function: searchSystem).start()
-ThreadedExecution(function: searchEnvironment).start()
-#endif
 
 condition.lock()
 if !finished {

@@ -117,7 +117,11 @@ struct CoBüchiAutomaton: GraphRepresentable {
 }
 
 func ltl3ba(ltl: String) -> CoBüchiAutomaton? {
-    let task = Process()
+    #if os(Linux)
+        let task = Task()
+    #else
+        let task = Process()
+    #endif
 
     task.launchPath = "./ltl3ba"
     task.arguments = ["-f", "\"(\(ltl))\""] // read from stdin
@@ -152,7 +156,11 @@ func ltl3ba(ltl: String) -> CoBüchiAutomaton? {
 }
 
 func spot(ltl: String) -> CoBüchiAutomaton? {
-    let task = Process()
+    #if os(Linux)
+        let task = Task()
+    #else
+        let task = Process()
+    #endif
 
     task.launchPath = "./ltl2tgba"
     task.arguments = ["--spin", "--low", "-F", "-"] // read from stdin
@@ -167,11 +175,7 @@ func spot(ltl: String) -> CoBüchiAutomaton? {
     
     let stdinHandle = stdinPipe.fileHandleForWriting
     if let data = ltl.data(using: String.Encoding.utf8) {
-        #if os(Linux)
-        stdinHandle.writeData(data)
-        #else
         stdinHandle.write(data)
-        #endif
         stdinHandle.closeFile()
     }
     

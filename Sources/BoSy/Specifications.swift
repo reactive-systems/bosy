@@ -189,7 +189,11 @@ struct BoSyInputFileFormat: InputFileFormat {
 }*/
 
 func syfco(tlsf: String, arguments: [String]) -> String {
-    let task = Process()
+    #if os(Linux)
+        let task = Task()
+    #else
+        let task = Process()
+    #endif
 
     task.launchPath = "./syfco"
     task.arguments = ["--stdin"] + arguments
@@ -204,11 +208,7 @@ func syfco(tlsf: String, arguments: [String]) -> String {
     
     let stdinHandle = stdinPipe.fileHandleForWriting
     if let data = tlsf.data(using: String.Encoding.utf8) {
-        #if os(Linux)
-        stdinHandle.writeData(data)
-        #else
         stdinHandle.write(data)
-        #endif
         stdinHandle.closeFile()
     }
     
