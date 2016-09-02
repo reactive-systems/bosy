@@ -122,6 +122,7 @@ class DIMACSVisitor: ReturnConstantVisitor<Int>, CustomStringConvertible {
     var currentId = 1
     var dimacs: [String] = []
     var output: Int? = nil
+    var tseitinVariables: [Int] = []
     
     init(formula: Boolean) {
         super.init(constant: 0)
@@ -156,6 +157,7 @@ class DIMACSVisitor: ReturnConstantVisitor<Int>, CustomStringConvertible {
     override func visit(binaryOperator: BinaryOperator) -> T {
         let subformulas: [Int] = binaryOperator.operands.map({ $0.accept(visitor: self) })
         let formulaId = newId()
+        tseitinVariables.append(formulaId)
         
         switch binaryOperator.type {
         case .And:
@@ -219,10 +221,9 @@ class QDIMACSVisitor: DIMACSVisitor {
             "c \(proposition) \(literal)\n"
         }).joined(separator: "")
         let header = "p cnf \(currentId) \(self.dimacs.count + 1)\n"
-        let maxVar = propositions.values.reduce(Int.min, max) + 1
         let dimacs = self.dimacs.map({ $0 + " 0\n" }).joined(separator: "")
         var quants = quantifiers
-        quants.append("e " + (maxVar..<currentId).map(String.init).joined(separator: " ") + " 0")
+        quants.append("e " + tseitinVariables.map(String.init).joined(separator: " ") + " 0")
         assert(output != nil)
         return symboltable + header + quants.joined(separator: "\n") + "\n" + dimacs + "\(output!) 0\n"
     }
@@ -239,6 +240,86 @@ class QDIMACSVisitor: DIMACSVisitor {
         }
         return 0
     }
+}
+
+class DQDIMACSVisitor: QDIMACSVisitor {
+    typealias T = Int
+    
+    var contexts: [FunctionApplication:Int] = [:]
+    var functionConstraints: Int? = nil
+    
+    override var description: String {
+        let symboltable = propositions.map({
+            (proposition, literal) in
+            "c \(proposition) \(literal)\n"
+        }).joined(separator: "")
+        let header = "p cnf \(currentId) \(self.dimacs.count + 2)\n"
+        let dimacs = self.dimacs.map({ $0 + " 0\n" }).joined(separator: "")
+        var quants = quantifiers
+        quants.append("e " + tseitinVariables.map(String.init).joined(separator: " ") + " 0")
+        assert(output != nil)
+        assert(functionConstraints != nil)
+        return symboltable + header + quants.joined(separator: "\n") + "\n" + dimacs + "\(output!) 0\n\(functionConstraints!) 0\n"
+    }
+    
+    override func visit(application: FunctionApplication) -> T {
+        if let variable = contexts[application] {
+            return variable
+        } else {
+            let variable = newId()
+            contexts[application] = variable
+            return variable
+        }
+    }
+    
+    override func visit(quantifier: Quantifier) -> T {
+        if quantifier.type == .Forall {
+            quantifier.variables.forEach({ variable in propositions[variable] = newId() })
+            let variables = quantifier.variables.flatMap({ variable in propositions[variable] })
+            quantifiers.append("a " + variables.map(String.init).joined(separator: " ") + " 0")
+        }
+        let result = quantifier.scope.accept(visitor: self)
+        if result != 0 {
+            assert(output == nil)
+            // top level scope
+            output = result
+            
+            // TODO: have to build an additional constraint that maps different application to the same function
+            
+            var functionConstraints: [Boolean] = []
+            var contexts = self.contexts.map({ key, val in key })
+            for i in 0..<contexts.count {
+                for j in i+1..<contexts.count {
+                    let context1 = contexts[i]
+                    let context2 = contexts[j]
+                    if context1.function != context2.function {
+                        continue
+                    }
+                    assert(context1 != context2)
+                    var precondition: [Boolean] = []
+                    for (var1, var2) in zip(context1.application, context2.application) {
+                        precondition.append(var1 <-> var2)
+                    }
+                    functionConstraints.append(
+                        precondition.reduce(Literal.True, &) --> (context1 <-> context2)
+                    )
+                }
+            }
+            let constraints = functionConstraints.reduce(Literal.True, &)
+            self.functionConstraints = constraints.accept(visitor: self)
+        }
+        if quantifier.type == .Exists {
+            for (application, function) in contexts {
+                if !quantifier.variables.contains(application.function) {
+                    continue
+                }
+                let dependencies = application.application.flatMap({ variable in propositions[variable] })
+                quantifiers.append("d \(function) " + dependencies.map(String.init).joined(separator: " ") + " 0")
+            }
+        }
+        return 0
+    }
+    
 }
 
 class QCIRVisitor: ReturnConstantVisitor<Int>, CustomStringConvertible {

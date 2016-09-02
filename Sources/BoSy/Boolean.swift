@@ -458,7 +458,7 @@ struct BooleanComparator: Boolean {
     }
 }
 
-struct FunctionApplication: Boolean {
+struct FunctionApplication: Boolean, Hashable {
     var function: Proposition
     var application: [Proposition]
     
@@ -483,6 +483,11 @@ struct FunctionApplication: Boolean {
     func eval(assignment: BooleanAssignment) -> Boolean {
         assert(false)
         return self
+    }
+    
+    static func == (lhs: FunctionApplication, rhs: FunctionApplication) -> Bool {
+        return lhs.function == rhs.function
+            && lhs.application == rhs.application
     }
 }
 

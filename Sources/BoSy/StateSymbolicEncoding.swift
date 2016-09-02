@@ -157,12 +157,18 @@ struct StateSymbolicEncoding: BoSyEncoding {
             throw BoSyEncodingError.EncodingFailed("could not build encoding")
         }
         //print(instance)
-        let tptp3Transformer = TPTP3Visitor(formula: instance)
+        let dqdimacsVisitor = DQDIMACSVisitor(formula: instance)
+        //print(dqdimacsVisitor)
+        guard let result = idq(dqdimacs: "\(dqdimacsVisitor)") else {
+            throw BoSyEncodingError.SolvingFailed("solver failed on instance")
+        }
+        return result == .SAT
+        /*let tptp3Transformer = TPTP3Visitor(formula: instance)
         print(tptp3Transformer)
         guard let result = eprover(tptp3: "\(tptp3Transformer)") else {
             throw BoSyEncodingError.SolvingFailed("solver failed on instance")
         }
-        return result == .SAT
+        return result == .SAT*/
     }
     
     func extractSolution() -> BoSySolution? {

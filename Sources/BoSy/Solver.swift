@@ -317,3 +317,36 @@ func eprover(tptp3: String) -> SolverResult? {
     }
     return nil
 }
+
+func idq(dqdimacs: String) -> SolverResult? {
+    let tempFile = TempFile(suffix: ".dqdimacs")!
+    try! dqdimacs.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
+    
+    #if os(Linux)
+        let task = Task()
+    #else
+        let task = Process()
+    #endif
+    task.launchPath = "./idq"
+    task.arguments = [tempFile.path]
+    
+    let stdoutPipe = Pipe()
+    let stderrPipe = Pipe()
+    task.standardOutput = stdoutPipe
+    task.standardError = stderrPipe
+    task.launch()
+    
+    let stdoutHandle = stdoutPipe.fileHandleForReading
+    let outputData = StreamHelper.readAllAvailableData(from: stdoutHandle)
+    
+    task.waitUntilExit()
+    let output = String(data: outputData, encoding: String.Encoding.utf8)!
+    //print(output)
+    if output.contains("UNSAT") {
+        return .UNSAT
+    } else if output.contains("SAT") {
+        return .SAT
+    }
+    return nil
+}
+
