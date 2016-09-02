@@ -20,6 +20,12 @@ enum Player {
     case Environment
 }
 
+enum Backends {
+    case Explicit
+    case InputSymbolic
+    case StateSymbolic
+}
+
 struct SolutionSearch {
     let specification: InputFileFormat
     let automaton: CoBüchiAutomaton
@@ -30,7 +36,7 @@ struct SolutionSearch {
     let inputs: [String]
     let outputs: [String]
     
-    init(specification: InputFileFormat, automaton: CoBüchiAutomaton, searchStrategy: SearchStrategy = .Exponential, player: Player = .System, initialBound bound: Int = 1) {
+    init(specification: InputFileFormat, automaton: CoBüchiAutomaton, searchStrategy: SearchStrategy = .Exponential, player: Player = .System, backend: Backends = .InputSymbolic, initialBound bound: Int = 1) {
         self.specification = specification
         self.automaton = automaton
         self.searchStrategy = searchStrategy
@@ -49,9 +55,14 @@ struct SolutionSearch {
             outputs = specification.inputs
         }
         
-        encoding = InputSymbolicEncoding(automaton: automaton, semantics: semantics, inputs: inputs, outputs: outputs)
-        encoding = ExplicitEncoding(automaton: automaton, semantics: semantics, inputs: inputs, outputs: outputs)
-        //encoding = StateSymbolicEncoding(automaton: automaton, semantics: semantics, inputs: inputs, outputs: outputs)
+        switch backend {
+        case .Explicit:
+            encoding = ExplicitEncoding(automaton: automaton, semantics: semantics, inputs: inputs, outputs: outputs)
+        case .InputSymbolic:
+            encoding = InputSymbolicEncoding(automaton: automaton, semantics: semantics, inputs: inputs, outputs: outputs)
+        case .StateSymbolic:
+            encoding = StateSymbolicEncoding(automaton: automaton, semantics: semantics, inputs: inputs, outputs: outputs)
+        }
     }
     
     mutating func hasSolution(limit: Int = Int.max) -> Bool {

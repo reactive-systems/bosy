@@ -6,8 +6,9 @@ import Utils
 import CAiger
 
 func printArguments(name: String) {
-    print("\(name) [--synthesize] [--strategy linear|exponential] instance.json")
+    print("\(name) [--synthesize] [--strategy linear|exponential] [--player both|system|environment] instance.json")
 }
+
 
 
 var arguments: ArraySlice<String> = CommandLine.arguments[CommandLine.arguments.indices]
@@ -15,6 +16,7 @@ let executable = arguments.popFirst()!
 var specificationFile: String? = nil
 var synthesize = false
 var searchStrategy: SearchStrategy = .Linear
+var player: Player? = nil
 
 while arguments.count > 0 {
     guard let argument = arguments.popFirst() else {
@@ -35,6 +37,22 @@ while arguments.count > 0 {
             searchStrategy = .Exponential
         default:
             print("wrong value \"\(value)\" for strategy, can be either linear or exponential")
+            exit(1)
+        }
+    } else if argument == "--player" {
+        guard let value = arguments.popFirst() else {
+            print("no value for player given, can be either system or environment")
+            exit(1)
+        }
+        switch value {
+        case "system":
+            player = .System
+        case "environment":
+            player = .Environment
+        case "both":
+            player = nil
+        default:
+            print("wrong value \"\(value)\" for player, can be either system or environment")
             exit(1)
         }
     } else if !argument.hasPrefix("-") {
@@ -127,20 +145,27 @@ var finished = false
 let searchSystem = search(strategy: searchStrategy, player: .System, synthesize: synthesize)
 let searchEnvironment = search(strategy: searchStrategy, player: .Environment, synthesize: synthesize)
 
-DispatchQueue.global().async {
-    searchSystem()
-    condition.lock()
-    finished = true
-    condition.broadcast()
-    condition.unlock()
+let doSearchSystem = player == nil || player == .System
+let doSearchEnvironment = player == nil || player == .Environment
+
+if doSearchSystem {
+    DispatchQueue.global().async {
+        searchSystem()
+        condition.lock()
+        finished = true
+        condition.broadcast()
+        condition.unlock()
+    }
 }
 
-DispatchQueue.global().async {
-    searchEnvironment()
-    condition.lock()
-    finished = true
-    condition.broadcast()
-    condition.unlock()
+if doSearchEnvironment {
+    DispatchQueue.global().async {
+        searchEnvironment()
+        condition.lock()
+        finished = true
+        condition.broadcast()
+        condition.unlock()
+    }
 }
 
 condition.lock()
