@@ -6,8 +6,8 @@ struct CoBüchiAutomaton: GraphRepresentable {
     typealias State = String
     var initialStates: Set<State>
     var states: Set<State>
-    var transitions: [State : [State : Boolean]]
-    var safetyConditions: [State : Boolean]
+    var transitions: [State : [State : Logic]]
+    var safetyConditions: [State : Logic]
     var rejectingStates: Set<State>
     
     // SCC optimizations
@@ -29,7 +29,7 @@ struct CoBüchiAutomaton: GraphRepresentable {
         return e
     }
     
-    init(initialStates: Set<State>, states: Set<State>, transitions: [State : [State : Boolean]], safetyConditions: [State : Boolean], rejectingStates: Set<State>) {
+    init(initialStates: Set<State>, states: Set<State>, transitions: [State : [State : Logic]], safetyConditions: [State : Logic], rejectingStates: Set<State>) {
         self.initialStates = initialStates
         self.states = states
         self.transitions = transitions
@@ -74,7 +74,7 @@ struct CoBüchiAutomaton: GraphRepresentable {
                 condition = condition & !guardExpression
                 safetyConditions[source] = condition
                 
-                var newOutgoing: [State : Boolean] = [:]
+                var newOutgoing: [State : Logic] = [:]
                 for (target, outgoingGuard) in outgoing {
                     newOutgoing[target] = outgoingGuard | guardExpression
                     // TODO: check if condition becomes valid
@@ -194,7 +194,7 @@ func parseSpinNeverClaim(neverClaim: String) -> CoBüchiAutomaton? {
     var states: Set<String> = Set()
     var rejectingStates: Set<String> = Set()
     var initialState: String? = nil
-    var transitions: [String : [String: Boolean]] = [:]
+    var transitions: [String : [String: Logic]] = [:]
     
     var lastState: String? = nil
     

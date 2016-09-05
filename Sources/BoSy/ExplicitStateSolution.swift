@@ -10,8 +10,8 @@ struct ExplicitStateSolution: BoSySolution {
     
     var states: [State]
     var initial: State
-    var outputGuards: [State: [String: Boolean]]
-    var transitions: [State: [State: Boolean]]
+    var outputGuards: [State: [String: Logic]]
+    var transitions: [State: [State: Logic]]
     
     let inputs: [String]
     let outputs: [String]
@@ -25,13 +25,13 @@ struct ExplicitStateSolution: BoSySolution {
         transitions = [:]
     }
     
-    mutating func addTransition(from: State, to: State, withGuard newGuard: Boolean) {
-        var outgoing: [State:Boolean] = transitions[from] ?? [:]
+    mutating func addTransition(from: State, to: State, withGuard newGuard: Logic) {
+        var outgoing: [State:Logic] = transitions[from] ?? [:]
         outgoing[to] = (outgoing[to] ?? Literal.False) | newGuard
         transitions[from] = outgoing
     }
     
-    mutating func add(output: String, inState: State, withGuard: Boolean) {
+    mutating func add(output: String, inState: State, withGuard: Logic) {
         assert(outputs.contains(output))
         var outputInState = outputGuards[inState] ?? [:]
         outputInState[output] = (outputInState[output] ?? Literal.False) | withGuard
@@ -43,7 +43,7 @@ struct ExplicitStateSolution: BoSySolution {
         let aigerVisitor = AigerVisitor(inputs: inputs.map(Proposition.init), latches: latches)
         
         // indicates when output must be enabled (formula over state bits and inputs)
-        var outputFunction: [String:Boolean] = [:]
+        var outputFunction: [String:Logic] = [:]
         
         // build the circuit for outputs
         for (state, outputs) in outputGuards {
@@ -61,7 +61,7 @@ struct ExplicitStateSolution: BoSySolution {
             aigerVisitor.addOutput(literal: aigLiteral, name: output)
         }
         
-        var latchFunction: [Proposition:Boolean] = [:]
+        var latchFunction: [Proposition:Logic] = [:]
         
         // build the transition function
         for (source, outgoing) in transitions {
@@ -85,8 +85,8 @@ struct ExplicitStateSolution: BoSySolution {
         return aigerVisitor.aig
     }
     
-    func stateToBits(_ state: Int, withLatches latches: [Proposition]) -> [Boolean] {
-        var bits: [Boolean] = []
+    func stateToBits(_ state: Int, withLatches latches: [Proposition]) -> [Logic] {
+        var bits: [Logic] = []
         for (value, proposition) in zip(binaryFrom(state, bits: numBitsNeeded(states.count)).characters, latches) {
             assert(["0", "1"].contains(value))
             if value == "0" {

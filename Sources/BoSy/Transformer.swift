@@ -21,7 +21,7 @@ class RemoveComparableVisitor: TransformingVisitor {
         return copy
     }
     override func visit(comparator: BooleanComparator) -> T {
-        func translateToBitRepresentation(_ atom: Boolean, bit: Int) -> Boolean {
+        func translateToBitRepresentation(_ atom: Logic, bit: Int) -> Logic {
             if let atom = atom as? Proposition {
                 return Proposition("\(atom)_\(bit)")
             }
@@ -31,7 +31,7 @@ class RemoveComparableVisitor: TransformingVisitor {
             assert(false)
             return Literal.False
         }
-        func getProposition(_ atom: Boolean) -> Proposition {
+        func getProposition(_ atom: Logic) -> Proposition {
             if let proposition = atom as? Proposition {
                 return proposition
             }
@@ -60,36 +60,36 @@ class RemoveComparableVisitor: TransformingVisitor {
 
 class NegationNormalFormVisitor: TransformingVisitor {
     
-    var result: Boolean = Literal.False
+    var result: Logic = Literal.False
     var negate: Bool = false
     
-    init(formula: Boolean) {
+    init(formula: Logic) {
         super.init()
         result = formula.accept(visitor: self)
     }
     
-    override func visit(literal: Literal) -> Boolean {
+    override func visit(literal: Literal) -> Logic {
         defer {
             negate = false
         }
         return negate ? !literal : literal
     }
     
-    override func visit(proposition: Proposition) -> Boolean {
+    override func visit(proposition: Proposition) -> Logic {
         defer {
             negate = false
         }
         return negate ? !proposition : proposition
     }
     
-    override func visit(unaryOperator: UnaryOperator) -> Boolean {
+    override func visit(unaryOperator: UnaryOperator) -> Logic {
         assert(unaryOperator.type == .Negation)
         assert(negate == false)
         negate = true
         return unaryOperator.operand.accept(visitor: self)
     }
     
-    override func visit(binaryOperator: BinaryOperator) -> Boolean {
+    override func visit(binaryOperator: BinaryOperator) -> Logic {
         var copy = binaryOperator
         if negate {
             negate = false
@@ -124,7 +124,7 @@ class DIMACSVisitor: ReturnConstantVisitor<Int>, CustomStringConvertible {
     var output: Int? = nil
     var tseitinVariables: [Int] = []
     
-    init(formula: Boolean) {
+    init(formula: Logic) {
         super.init(constant: 0)
         let _ = formula.accept(visitor: self)
         // let nnf = NegationNormalFormVisitor(formula: qbf).result
@@ -286,7 +286,7 @@ class DQDIMACSVisitor: QDIMACSVisitor {
             
             // TODO: have to build an additional constraint that maps different application to the same function
             
-            var functionConstraints: [Boolean] = []
+            var functionConstraints: [Logic] = []
             var contexts = self.contexts.map({ key, val in key })
             for i in 0..<contexts.count {
                 for j in i+1..<contexts.count {
@@ -296,7 +296,7 @@ class DQDIMACSVisitor: QDIMACSVisitor {
                         continue
                     }
                     assert(context1 != context2)
-                    var precondition: [Boolean] = []
+                    var precondition: [Logic] = []
                     for (var1, var2) in zip(context1.application, context2.application) {
                         precondition.append(var1 <-> var2)
                     }
@@ -412,8 +412,8 @@ class QCIRVisitor: ReturnConstantVisitor<Int>, CustomStringConvertible {
         return 0
     }
     
-    func translate(certificate: UnsafeMutablePointer<aiger>) -> [Proposition:Boolean] {
-        var translated: [Proposition:Boolean] = [:]
+    func translate(certificate: UnsafeMutablePointer<aiger>) -> [Proposition:Logic] {
+        var translated: [Proposition:Logic] = [:]
         var reversed: [Int:Proposition] = [:]
         for (proposition, literal) in propositions {
             reversed[literal] = proposition
@@ -429,7 +429,7 @@ class QCIRVisitor: ReturnConstantVisitor<Int>, CustomStringConvertible {
         return translated
     }
     
-    func buildFunctionRecursively(aig: UnsafeMutablePointer<aiger>, mapping: [Int:Proposition], literal: UInt32) -> Boolean {
+    func buildFunctionRecursively(aig: UnsafeMutablePointer<aiger>, mapping: [Int:Proposition], literal: UInt32) -> Logic {
         switch (aiger_lit2tag(aig, literal)) {
         case 0:
             // constant
@@ -554,7 +554,7 @@ class TPTP3Visitor: TransformingVisitor, CustomStringConvertible {
         return cnf.joined(separator: "\n")
     }
     
-    init(formula: Boolean) {
+    init(formula: Logic) {
         super.init()
         //let nnf = NegationNormalFormVisitor(formula: formula).result
         let _ = formula.accept(visitor: self)
@@ -575,17 +575,17 @@ class TPTP3Visitor: TransformingVisitor, CustomStringConvertible {
     func auxVarFrom(id: Int) -> FunctionApplication {
         return FunctionApplication(function: Proposition("aux\(id)"), application: universalVariables!)
     }
-    func addClause(_ clause: Boolean) {
+    func addClause(_ clause: Logic) {
         let clauseId = nextClauseId()
         cnf.append("cnf(clause\(clauseId),plain,\(clause.accept(visitor: clausePrinter))).")
     }
-    func addClause(_ clause: [Boolean]) {
+    func addClause(_ clause: [Logic]) {
         assert(clause.count > 0)
         addClause(clause.reduce(Literal.False, |))
     }
     
-    override func visit(binaryOperator: BinaryOperator) -> Boolean {
-        let subformulas: [Boolean] = binaryOperator.operands.map({ $0.accept(visitor: self) })
+    override func visit(binaryOperator: BinaryOperator) -> Logic {
+        let subformulas: [Logic] = binaryOperator.operands.map({ $0.accept(visitor: self) })
         let auxId = nextAuxId()
         let auxVar = auxVarFrom(id: auxId)
         
@@ -615,7 +615,7 @@ class TPTP3Visitor: TransformingVisitor, CustomStringConvertible {
         }
         return auxVar
     }
-    override func visit(quantifier: Quantifier) -> Boolean {
+    override func visit(quantifier: Quantifier) -> Logic {
         if quantifier.type == .Forall {
             assert(universalVariables == nil)
             universalVariables = quantifier.variables

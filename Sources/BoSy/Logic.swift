@@ -4,19 +4,19 @@ import Utils
 
 typealias BooleanAssignment = [Proposition: Literal]
 
-protocol Boolean: CustomStringConvertible {
+protocol Logic: CustomStringConvertible {
     func accept<T>(visitor: T) -> T.T where T: BooleanVisitor
     
-    func eval(assignment: BooleanAssignment) -> Boolean
+    func eval(assignment: BooleanAssignment) -> Logic
     
     var hashValue: Int { get }
 }
 
-func ==(lhs: Boolean, rhs: Boolean) -> Bool {
+func ==(lhs: Logic, rhs: Logic) -> Bool {
     return false
 }
 
-func & (lhs: Boolean, rhs: Boolean) -> Boolean {
+func & (lhs: Logic, rhs: Logic) -> Logic {
     switch (lhs, rhs) {
     case (let element as Literal, _):
         if element == Literal.True {
@@ -44,7 +44,7 @@ func & (lhs: Boolean, rhs: Boolean) -> Boolean {
     return BinaryOperator(.And, operands: [lhs, rhs])
 }
 
-func | (lhs: Boolean, rhs: Boolean) -> Boolean {
+func | (lhs: Logic, rhs: Logic) -> Logic {
     switch (lhs, rhs) {
     case (let element as Literal, _):
         if element == Literal.True {
@@ -76,7 +76,7 @@ func | (lhs: Boolean, rhs: Boolean) -> Boolean {
 
 infix operator -->
 
-func --> (lhs: Boolean, rhs: Boolean) -> Boolean {
+func --> (lhs: Logic, rhs: Logic) -> Logic {
     switch (lhs, rhs) {
     case (let element as Literal, _):
         if element == Literal.False {
@@ -100,7 +100,7 @@ func --> (lhs: Boolean, rhs: Boolean) -> Boolean {
 
 infix operator <->
 
-func <-> (lhs: Boolean, rhs: Boolean) -> Boolean {
+func <-> (lhs: Logic, rhs: Logic) -> Logic {
     switch (lhs, rhs) {
     case (let lhsLiteral as Literal, let rhsLiteral as Literal):
         return lhsLiteral == rhsLiteral ? Literal.True : Literal.False
@@ -122,7 +122,7 @@ func <-> (lhs: Boolean, rhs: Boolean) -> Boolean {
     return BinaryOperator(.Xnor, operands: [lhs, rhs])
 }
 
-func ^ (lhs: Boolean, rhs: Boolean) -> Boolean {
+func ^ (lhs: Logic, rhs: Logic) -> Logic {
     switch (lhs, rhs) {
     case (let lhsLiteral as Literal, let rhsLiteral as Literal):
         return lhsLiteral != rhsLiteral ? Literal.True : Literal.False
@@ -144,7 +144,7 @@ func ^ (lhs: Boolean, rhs: Boolean) -> Boolean {
     return BinaryOperator(.Xor, operands: [lhs, rhs])
 }
 
-prefix func ! (op: Boolean) -> Boolean {
+prefix func ! (op: Logic) -> Logic {
     switch op {
     case let element as UnaryOperator:
         if element.type == .Negation {
@@ -158,7 +158,7 @@ prefix func ! (op: Boolean) -> Boolean {
     return UnaryOperator(.Negation, operand: op)
 }
 
-struct UnaryOperator: Boolean, Equatable {
+struct UnaryOperator: Logic, Equatable {
     enum OperatorType: CustomStringConvertible {
         case Negation
         
@@ -171,9 +171,9 @@ struct UnaryOperator: Boolean, Equatable {
     }
     
     let type: OperatorType
-    var operand: Boolean
+    var operand: Logic
     
-    init(_ type: OperatorType, operand: Boolean) {
+    init(_ type: OperatorType, operand: Logic) {
         self.type = type
         self.operand = operand
     }
@@ -190,7 +190,7 @@ struct UnaryOperator: Boolean, Equatable {
         return 1 ^ operand.hashValue
     }
     
-    func eval(assignment: BooleanAssignment) -> Boolean {
+    func eval(assignment: BooleanAssignment) -> Logic {
         return !operand.eval(assignment: assignment)
     }
 }
@@ -200,7 +200,7 @@ func ==(_ lhs: UnaryOperator, _ rhs: UnaryOperator) -> Bool {
         && lhs.operand == rhs.operand
 }
 
-struct BinaryOperator: Boolean, Hashable {
+struct BinaryOperator: Logic, Hashable {
     enum OperatorType: CustomStringConvertible {
         case And
         case Or
@@ -235,9 +235,9 @@ struct BinaryOperator: Boolean, Hashable {
     }
     
     let type: OperatorType
-    var operands: [Boolean]
+    var operands: [Logic]
     
-    init(_ type: OperatorType, operands: [Boolean]) {
+    init(_ type: OperatorType, operands: [Logic]) {
         self.type = type
         self.operands = operands
     }
@@ -256,7 +256,7 @@ struct BinaryOperator: Boolean, Hashable {
         return type.hashValue ^ operands.reduce(0, { hash, op in hash ^ op.hashValue })
     }
     
-    func eval(assignment: BooleanAssignment) -> Boolean {
+    func eval(assignment: BooleanAssignment) -> Logic {
         let evaluatedOperands = operands.map({ $0.eval(assignment: assignment) })
         switch type {
         case .And:
@@ -279,7 +279,7 @@ func ==(_ lhs: BinaryOperator, _ rhs: BinaryOperator) -> Bool {
         && zip(lhs.operands, rhs.operands).map(==).reduce(true, { $0 && $1 })
 }
 
-struct Quantifier: Boolean {
+struct Quantifier: Logic {
     enum QuantifierType: CustomStringConvertible {
         case Exists
         case Forall
@@ -296,10 +296,10 @@ struct Quantifier: Boolean {
     
     let type: QuantifierType
     var variables: [Proposition]
-    var scope: Boolean
+    var scope: Logic
     let arity: Int
     
-    init(_ type: QuantifierType, variables: [Proposition], scope: Boolean, arity: Int = 0) {
+    init(_ type: QuantifierType, variables: [Proposition], scope: Logic, arity: Int = 0) {
         self.type = type
         self.variables = variables
         self.scope = scope
@@ -319,7 +319,7 @@ struct Quantifier: Boolean {
         return type.hashValue ^ variables.reduce(0, { hash, prop in hash ^ prop.hashValue })
     }
     
-    func eval(assignment: BooleanAssignment) -> Boolean {
+    func eval(assignment: BooleanAssignment) -> Logic {
         var copy = self
         copy.scope = scope.eval(assignment: assignment)
         copy.variables = variables.filter({ assignment[$0] == nil })
@@ -337,7 +337,7 @@ func ==(lhs: Quantifier, rhs: Quantifier) -> Bool {
         && lhs.scope == rhs.scope
 }
 
-struct Literal: Boolean, Equatable {
+struct Literal: Logic, Equatable {
     enum LiteralType: CustomStringConvertible {
         case True
         case False
@@ -373,7 +373,7 @@ struct Literal: Boolean, Equatable {
         return type.hashValue
     }
     
-    func eval(assignment: BooleanAssignment) -> Boolean {
+    func eval(assignment: BooleanAssignment) -> Logic {
         return self
     }
 }
@@ -382,7 +382,7 @@ func ==(lhs: Literal, rhs: Literal) -> Bool {
     return lhs.type == rhs.type
 }
 
-struct Proposition: Boolean, Equatable, Hashable {
+struct Proposition: Logic, Equatable, Hashable {
     var name: String
     
     init(_ name: String) {
@@ -402,7 +402,7 @@ struct Proposition: Boolean, Equatable, Hashable {
         return name.hashValue
     }
     
-    func eval(assignment: BooleanAssignment) -> Boolean {
+    func eval(assignment: BooleanAssignment) -> Logic {
         guard let value = assignment[self] else {
             return self
         }
@@ -414,7 +414,7 @@ func ==(lhs: Proposition, rhs: Proposition) -> Bool {
     return lhs.name == rhs.name
 }
 
-struct BooleanComparator: Boolean {
+struct BooleanComparator: Logic {
     enum ComparatorType: CustomStringConvertible {
         case LessOrEqual
         case Less
@@ -430,10 +430,10 @@ struct BooleanComparator: Boolean {
     }
     
     let type: ComparatorType
-    var lhs: Boolean
-    var rhs: Boolean
+    var lhs: Logic
+    var rhs: Logic
     
-    init(_ type: ComparatorType, lhs: Boolean, rhs: Boolean) {
+    init(_ type: ComparatorType, lhs: Logic, rhs: Logic) {
         self.type = type
         self.lhs = lhs
         self.rhs = rhs
@@ -451,14 +451,14 @@ struct BooleanComparator: Boolean {
         return type.hashValue ^ lhs.hashValue ^ rhs.hashValue
     }
     
-    func eval(assignment: BooleanAssignment) -> Boolean {
+    func eval(assignment: BooleanAssignment) -> Logic {
         //assert(assignment[lhs] == nil)
         //assert(assignment[rhs] == nil)
         return self
     }
 }
 
-struct FunctionApplication: Boolean, Hashable {
+struct FunctionApplication: Logic, Hashable {
     var function: Proposition
     var application: [Proposition]
     
@@ -480,7 +480,7 @@ struct FunctionApplication: Boolean, Hashable {
         return function.hashValue ^ application.reduce(0, { val, prop in val ^ prop.hashValue })
     }
     
-    func eval(assignment: BooleanAssignment) -> Boolean {
+    func eval(assignment: BooleanAssignment) -> Logic {
         assert(false)
         return self
     }
@@ -508,7 +508,7 @@ protocol BooleanVisitor {
  * Subclassing: override methods that perform the actual modification
  */
 class TransformingVisitor: BooleanVisitor {
-    typealias T = Boolean
+    typealias T = Logic
     
     func visit(literal: Literal) -> T {
         return literal
@@ -546,7 +546,7 @@ class TransformingVisitor: BooleanVisitor {
 }
 
 class RenamingBooleanVisitor: TransformingVisitor {
-    typealias T = Boolean
+    typealias T = Logic
     
     var rename: (String) -> String
     
@@ -562,11 +562,11 @@ class RenamingBooleanVisitor: TransformingVisitor {
 }
 
 class ReplacingPropositionVisitor: TransformingVisitor {
-    typealias T = Boolean
+    typealias T = Logic
     
-    var replace: (Proposition) -> Boolean?
+    var replace: (Proposition) -> Logic?
     
-    init(replace: @escaping (Proposition) -> Boolean?) {
+    init(replace: @escaping (Proposition) -> Logic?) {
         self.replace = replace
     }
     
@@ -674,7 +674,7 @@ class ReturnConstantVisitor<R>: BooleanVisitor {
     }
 }
 
-func order(binaryLhs: [Boolean], binaryRhs: [Boolean], strict: Bool) -> Boolean {
+func order(binaryLhs: [Logic], binaryRhs: [Logic], strict: Bool) -> Logic {
     precondition(binaryLhs.count == binaryRhs.count)
     precondition(binaryLhs.count >= 1)
     var binaryLhs = binaryLhs
@@ -842,12 +842,12 @@ struct BooleanParser {
         self.lexer = lexer
     }
     
-    mutating func parse() throws -> Boolean {
+    mutating func parse() throws -> Logic {
         current = try lexer.next()
         return try parseExpression(minPrecedence: 0)
     }
     
-    mutating func parseExpression(minPrecedence: BooleanToken.Precedence) throws -> Boolean {
+    mutating func parseExpression(minPrecedence: BooleanToken.Precedence) throws -> Logic {
         var lhs = try parseUnaryExpression()
         
         while current.isBinaryOperator && current.precedence >= minPrecedence {
@@ -867,7 +867,7 @@ struct BooleanParser {
         return lhs
     }
     
-    mutating func parseUnaryExpression() throws -> Boolean {
+    mutating func parseUnaryExpression() throws -> Logic {
         if current.isUnaryOperator {
             current = try lexer.next()
             return !(try parseUnaryExpression())
@@ -877,7 +877,7 @@ struct BooleanParser {
         }
     }
     
-    mutating func parsePrimaryExpression() throws -> Boolean {
+    mutating func parsePrimaryExpression() throws -> Logic {
         switch current {
         case .Literal(let value):
             current = try lexer.next()
@@ -971,7 +971,7 @@ class ScalarScanner {
 }
 
 struct BooleanUtils {
-    static func parse(string: String) -> Boolean? {
+    static func parse(string: String) -> Logic? {
         let lexer = BooleanLexer(scanner: ScalarScanner(scalars: string.unicodeScalars))
         var parser = BooleanParser(lexer: lexer)
         return try? parser.parse()

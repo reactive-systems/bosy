@@ -15,12 +15,12 @@ struct StateSymbolicEncoding: BoSyEncoding {
         self.outputs = outputs
     }
     
-    func getEncoding(forBound bound: Int) -> Boolean? {
+    func getEncoding(forBound bound: Int) -> Logic? {
         
         let states = 0..<bound
         
-        var preconditions: [Boolean] = []
-        var matrix: [Boolean] = []
+        var preconditions: [Logic] = []
+        var matrix: [Logic] = []
         
         let statePropositions: [Proposition] = (0..<numBitsNeeded(states.count)).map({ bit in Proposition("s\(bit)") })
         let nextStatePropositions: [Proposition] = (0..<numBitsNeeded(states.count)).map({ bit in Proposition("sp\(bit)") })
@@ -43,7 +43,7 @@ struct StateSymbolicEncoding: BoSyEncoding {
         }
         
         for q in automaton.states {
-            var conjunct: [Boolean] = []
+            var conjunct: [Logic] = []
             
             let replacer = ReplacingPropositionVisitor(replace: {
                 proposition in
@@ -74,15 +74,15 @@ struct StateSymbolicEncoding: BoSyEncoding {
             matrix.append(lambda(q, states: statePropositions) --> conjunct.reduce(Literal.True, &))
         }
         
-        let formula: Boolean = preconditions.reduce(Literal.True, &) --> matrix.reduce(Literal.True, &)
+        let formula: Logic = preconditions.reduce(Literal.True, &) --> matrix.reduce(Literal.True, &)
         
         let lambdaPropositions: [Proposition] = self.automaton.states.map({ lambdaProposition($0) })
         let lambdaSharpPropositions: [Proposition] = self.automaton.states.map({ lambdaSharpProposition($0) })
         
-        let universalQuantified: Boolean = Quantifier(.Forall, variables: statePropositions + nextStatePropositions + inputPropositions, scope: formula)
-        let outputQuantification: Boolean = Quantifier(.Exists, variables: outputPropositions, scope: universalQuantified, arity: semantics == .Mealy ? numBitsNeeded(states.count) + self.inputs.count : numBitsNeeded(states.count))
-        let tauQuantification: Boolean = Quantifier(.Exists, variables: tauPropositions, scope: outputQuantification, arity: numBitsNeeded(states.count) + self.inputs.count)
-        let lambdaQuantification: Boolean = Quantifier(.Exists, variables: lambdaPropositions + lambdaSharpPropositions, scope: tauQuantification, arity: numBitsNeeded(states.count))
+        let universalQuantified: Logic = Quantifier(.Forall, variables: statePropositions + nextStatePropositions + inputPropositions, scope: formula)
+        let outputQuantification: Logic = Quantifier(.Exists, variables: outputPropositions, scope: universalQuantified, arity: semantics == .Mealy ? numBitsNeeded(states.count) + self.inputs.count : numBitsNeeded(states.count))
+        let tauQuantification: Logic = Quantifier(.Exists, variables: tauPropositions, scope: outputQuantification, arity: numBitsNeeded(states.count) + self.inputs.count)
+        let lambdaQuantification: Logic = Quantifier(.Exists, variables: lambdaPropositions + lambdaSharpPropositions, scope: tauQuantification, arity: numBitsNeeded(states.count))
         
         let boundednessCheck = BoundednessVisitor()
         assert(lambdaQuantification.accept(visitor: boundednessCheck))
@@ -93,7 +93,7 @@ struct StateSymbolicEncoding: BoSyEncoding {
         return result
     }
     
-    func requireTransition(q: CoBüchiAutomaton.State, qPrime: CoBüchiAutomaton.State, bound: Int, rejectingStates: Set<CoBüchiAutomaton.State>, states: [Proposition], nextStates: [Proposition], taus: [FunctionApplication]) -> Boolean {
+    func requireTransition(q: CoBüchiAutomaton.State, qPrime: CoBüchiAutomaton.State, bound: Int, rejectingStates: Set<CoBüchiAutomaton.State>, states: [Proposition], nextStates: [Proposition], taus: [FunctionApplication]) -> Logic {
         if automaton.isStateInNonRejectingSCC(q) || automaton.isStateInNonRejectingSCC(qPrime) || !automaton.isInSameSCC(q, qPrime) {
             // no need for comparator constrain
             return tauNextStateAssertion(states: nextStates, taus: taus) --> lambda(qPrime, states: nextStates)
@@ -103,10 +103,10 @@ struct StateSymbolicEncoding: BoSyEncoding {
         }
     }
     
-    func explicitToSymbolic(base: String, value: Int, bits: Int, parameters: [Proposition]? = nil) -> Boolean {
-        var and: [Boolean] = []
+    func explicitToSymbolic(base: String, value: Int, bits: Int, parameters: [Proposition]? = nil) -> Logic {
+        var and: [Logic] = []
         for (i, bit) in binaryFrom(value, bits: bits).characters.enumerated() {
-            let prop: Boolean
+            let prop: Logic
             if let parameters = parameters {
                 prop = FunctionApplication(function: Proposition("\(base)\(i)"), application: parameters)
             } else {
@@ -117,9 +117,9 @@ struct StateSymbolicEncoding: BoSyEncoding {
         return and.reduce(Literal.True, &)
     }
     
-    func tauNextStateAssertion(states: [Proposition], taus: [FunctionApplication]) -> Boolean {
+    func tauNextStateAssertion(states: [Proposition], taus: [FunctionApplication]) -> Logic {
         assert(states.count == taus.count)
-        var assertion: [Boolean] = []
+        var assertion: [Logic] = []
         for (state, tau) in zip(states, taus) {
             assertion.append(state <-> tau)
         }

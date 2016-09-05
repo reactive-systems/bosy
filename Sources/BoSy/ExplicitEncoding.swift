@@ -22,7 +22,7 @@ struct ExplicitEncoding: BoSyEncoding {
         solutionBound = 0
     }
     
-    func getEncoding(forBound bound: Int) -> Boolean? {
+    func getEncoding(forBound bound: Int) -> Logic? {
         
         let states = 0..<bound
         
@@ -34,12 +34,12 @@ struct ExplicitEncoding: BoSyEncoding {
             initialAssignment[lambda(0, state)] = Literal.True
         }
         
-        var matrix: [Boolean] = []
+        var matrix: [Logic] = []
         //matrix.append(automaton.initialStates.reduce(Literal.True, { (val, state) in val & lambda(0, state) }))
         
         for source in states {
             // for every valuation of inputs, there must be at least one tau enabled
-            var conjunction: [Boolean] = []
+            var conjunction: [Logic] = []
             for i in allBooleanAssignments(variables: inputPropositions) {
                 let disjunction = states.map({ target in tau(source, i, target) })
                                         .reduce(Literal.False, |)
@@ -56,7 +56,7 @@ struct ExplicitEncoding: BoSyEncoding {
             }
             
             for q in automaton.states {
-                var conjunct: [Boolean] = []
+                var conjunct: [Logic] = []
                 
                 if let condition = automaton.safetyConditions[q] {
                     for i in allBooleanAssignments(variables: inputPropositions) {
@@ -87,7 +87,7 @@ struct ExplicitEncoding: BoSyEncoding {
             }
         }
         
-        let formula: Boolean = matrix.reduce(Literal.True, &)
+        let formula: Logic = matrix.reduce(Literal.True, &)
         
         var lambdas: [Proposition] = []
         for s in 0..<bound {
@@ -122,7 +122,7 @@ struct ExplicitEncoding: BoSyEncoding {
         
         let existentials: [Proposition] = lambdas + lambdaSharps + taus + outputPropositions
         
-        var qbf: Boolean = Quantifier(.Exists, variables: existentials, scope: formula)
+        var qbf: Logic = Quantifier(.Exists, variables: existentials, scope: formula)
         
         qbf = qbf.eval(assignment: initialAssignment)
         
@@ -137,8 +137,8 @@ struct ExplicitEncoding: BoSyEncoding {
         return qbf
     }
     
-    func requireTransition(from s: Int, q: CoBüchiAutomaton.State, i: BooleanAssignment, qPrime: CoBüchiAutomaton.State, bound: Int, rejectingStates: Set<CoBüchiAutomaton.State>) -> Boolean {
-        let validTransition: [Boolean]
+    func requireTransition(from s: Int, q: CoBüchiAutomaton.State, i: BooleanAssignment, qPrime: CoBüchiAutomaton.State, bound: Int, rejectingStates: Set<CoBüchiAutomaton.State>) -> Logic {
+        let validTransition: [Logic]
         if automaton.isStateInNonRejectingSCC(q) || automaton.isStateInNonRejectingSCC(qPrime) || !automaton.isInSameSCC(q, qPrime) {
             // no need for comparator constrain
             validTransition = (0..<bound).map({
@@ -155,7 +155,7 @@ struct ExplicitEncoding: BoSyEncoding {
         return validTransition.reduce(Literal.True, &)
     }
     
-    func tauNextStateAssertion(state: Int, _ inputs: BooleanAssignment, nextState: Int, bound: Int) -> Boolean {
+    func tauNextStateAssertion(state: Int, _ inputs: BooleanAssignment, nextState: Int, bound: Int) -> Logic {
         return tau(state, inputs, nextState)
     }
     
@@ -216,7 +216,7 @@ struct ExplicitEncoding: BoSyEncoding {
         var solution = ExplicitStateSolution(bound: solutionBound, inputs: inputs, outputs: outputs)
         for source in 0..<solutionBound {
             for target in 0..<solutionBound {
-                var transitions: [Boolean] = []
+                var transitions: [Logic] = []
                 for i in allBooleanAssignments(variables: inputPropositions) {
                     if assignments[tau(source, i, target)]! == Literal.False {
                         let clause = i.map({ v, val in val == Literal.True ? !v : v })
@@ -230,10 +230,10 @@ struct ExplicitEncoding: BoSyEncoding {
                 solution.addTransition(from: source, to: target, withGuard: transition)
             }
             for output in outputs {
-                let enabled: Boolean
+                let enabled: Logic
                 switch semantics {
                 case .Mealy:
-                    var clauses: [Boolean] = []
+                    var clauses: [Logic] = []
                     for i in allBooleanAssignments(variables: inputPropositions) {
                         let proposition = Proposition(self.output(output, forState: source, andInputs: i))
                         if assignments[proposition]! == Literal.False {

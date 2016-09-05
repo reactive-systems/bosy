@@ -10,7 +10,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
     
     // intermediate results
     var assignments: BooleanAssignment?
-    var instance: Boolean?
+    var instance: Logic?
     var solutionBound: Int
     
     init(automaton: CoBüchiAutomaton, semantics: TransitionSystemType, inputs: [String], outputs: [String]) {
@@ -24,7 +24,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
         solutionBound = 0
     }
     
-    func getEncoding(forBound bound: Int) -> Boolean? {
+    func getEncoding(forBound bound: Int) -> Logic? {
         
         let states = 0..<bound
 
@@ -34,7 +34,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
             initialAssignment[lambda(0, state)] = Literal.True
         }
         
-        var matrix: [Boolean] = []
+        var matrix: [Logic] = []
         
         for source in states {
             // there must be at least one transition
@@ -45,7 +45,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
             let renamer = RenamingBooleanVisitor(rename: { name in self.outputs.contains(name) ? self.output(name, forState: source) : name })
             
             for q in automaton.states {
-                var conjunct: [Boolean] = []
+                var conjunct: [Logic] = []
                 
                 if let condition = automaton.safetyConditions[q] {
                     conjunct.append(condition.accept(visitor: renamer))
@@ -68,7 +68,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
             }
         }
         
-        let formula: Boolean = matrix.reduce(Literal.True, &)
+        let formula: Logic = matrix.reduce(Literal.True, &)
         
         var lambdas: [Proposition] = []
         for s in 0..<bound {
@@ -106,7 +106,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
             outerExistentials = lambdas + lambdaSharps + outputPropositions
         }
         
-        var qbf: Boolean = Quantifier(.Exists, variables: innerExistentials, scope: formula)
+        var qbf: Logic = Quantifier(.Exists, variables: innerExistentials, scope: formula)
         qbf = Quantifier(.Forall, variables: inputPropositions, scope: qbf)
         qbf = Quantifier(.Exists, variables: outerExistentials, scope: qbf)
         
@@ -123,8 +123,8 @@ struct InputSymbolicEncoding: BoSyEncoding {
         return qbf
     }
     
-    func requireTransition(from s: Int, q: CoBüchiAutomaton.State, qPrime: CoBüchiAutomaton.State, bound: Int, rejectingStates: Set<CoBüchiAutomaton.State>) -> Boolean {
-        let validTransition: [Boolean]
+    func requireTransition(from s: Int, q: CoBüchiAutomaton.State, qPrime: CoBüchiAutomaton.State, bound: Int, rejectingStates: Set<CoBüchiAutomaton.State>) -> Logic {
+        let validTransition: [Logic]
         if automaton.isStateInNonRejectingSCC(q) || automaton.isStateInNonRejectingSCC(qPrime) || !automaton.isInSameSCC(q, qPrime) {
             // no need for comparator constrain
             validTransition = (0..<bound).map({
@@ -141,7 +141,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
         return validTransition.reduce(Literal.True, &)
     }
     
-    func tauNextStateAssertion(state: Int, nextState: Int, bound: Int) -> Boolean {
+    func tauNextStateAssertion(state: Int, nextState: Int, bound: Int) -> Logic {
         return tau(state, nextState)
     }
     
