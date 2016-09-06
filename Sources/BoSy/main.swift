@@ -17,6 +17,7 @@ var specificationFile: String? = nil
 var synthesize = false
 var searchStrategy: SearchStrategy = .Linear
 var player: Player? = nil
+var backend: Backends = .InputSymbolic
 
 while arguments.count > 0 {
     guard let argument = arguments.popFirst() else {
@@ -113,7 +114,7 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
 
         //Logger.default().info("automaton: \(automaton)")
 
-        var search = SolutionSearch(specification: specification, automaton: automaton, searchStrategy: strategy, player: player)
+        var search = SolutionSearch(specification: specification, automaton: automaton, searchStrategy: strategy, player: player, backend: backend)
 
         if search.hasSolution() {
             if !synthesize {

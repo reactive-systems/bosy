@@ -13,7 +13,20 @@ protocol Logic: CustomStringConvertible {
 }
 
 func ==(lhs: Logic, rhs: Logic) -> Bool {
-    return false
+    switch (lhs, rhs) {
+    case let (lhs as Proposition, rhs as Proposition):
+        return lhs == rhs
+    default:
+        assert(type(of: lhs) != type(of: rhs))
+        return false
+    }
+}
+
+func ==(lhs: [Logic], rhs: [Logic]) -> Bool {
+    if lhs.count != rhs.count {
+        return false
+    }
+    return zip(lhs, rhs).reduce(true, { res, pair in res && pair.0 == pair.1 })
 }
 
 func & (lhs: Logic, rhs: Logic) -> Logic {
@@ -460,9 +473,9 @@ struct BooleanComparator: Logic {
 
 struct FunctionApplication: Logic, Hashable {
     var function: Proposition
-    var application: [Proposition]
+    var application: [Logic]
     
-    init(function: Proposition, application: [Proposition]) {
+    init(function: Proposition, application: [Logic]) {
         self.function = function
         self.application = application
     }

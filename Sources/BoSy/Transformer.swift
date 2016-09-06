@@ -313,7 +313,8 @@ class DQDIMACSVisitor: QDIMACSVisitor {
                 if !quantifier.variables.contains(application.function) {
                     continue
                 }
-                let dependencies = application.application.flatMap({ variable in propositions[variable] })
+                let parameter: [Proposition] = application.application as! [Proposition]
+                let dependencies = parameter.flatMap({ variable in propositions[variable] })
                 quantifiers.append("d \(function) " + dependencies.map(String.init).joined(separator: " ") + " 0")
             }
         }

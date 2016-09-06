@@ -350,3 +350,35 @@ func idq(dqdimacs: String) -> SolverResult? {
     return nil
 }
 
+func z3(smt2: String) -> SolverResult? {
+    let tempFile = TempFile(suffix: ".smt2")!
+    try! smt2.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
+    
+    #if os(Linux)
+        let task = Task()
+    #else
+        let task = Process()
+    #endif
+    task.launchPath = "./z3"
+    task.arguments = [tempFile.path]
+    
+    let stdoutPipe = Pipe()
+    let stderrPipe = Pipe()
+    task.standardOutput = stdoutPipe
+    task.standardError = stderrPipe
+    task.launch()
+    
+    let stdoutHandle = stdoutPipe.fileHandleForReading
+    let outputData = StreamHelper.readAllAvailableData(from: stdoutHandle)
+    
+    task.waitUntilExit()
+    let output = String(data: outputData, encoding: String.Encoding.utf8)!
+    //print(output)
+    if output.contains("unsat") {
+        return .UNSAT
+    } else if output.contains("sat") {
+        return .SAT
+    }
+    return nil
+}
+
