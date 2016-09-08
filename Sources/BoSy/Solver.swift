@@ -35,7 +35,7 @@ public func rareqs(qdimacs: String) -> (SolverResult, [Int]?)? {
     #else
         let task = Process()
     #endif
-    task.launchPath = "./rareqs"
+    task.launchPath = "./Tools/rareqs"
     task.arguments = [tempFile.path]
     
     //let stdinPipe = NSPipe()
@@ -90,7 +90,7 @@ public func bloqqer(qdimacs: String) -> String {
     #else
         let task = Process()
     #endif
-    task.launchPath = "./bloqqer"
+    task.launchPath = "./Tools/bloqqer"
     task.arguments = ["--keep=1", "--partial-assignment=1", tempFile.path]
     
     //let stdinPipe = NSPipe()
@@ -127,7 +127,7 @@ public func depqbf(qdimacs: String) -> SolverResult? {
         let task = Process()
     #endif
     
-    task.launchPath = "./depqbf"
+    task.launchPath = "./Tools/depqbf"
     task.arguments = []
     
     let stdinPipe = Pipe()
@@ -158,7 +158,7 @@ public func quabs(qcir: String) -> (SolverResult, UnsafeMutablePointer<aiger>?)?
         let task = Process()
     #endif
 
-    task.launchPath = "./quabs"
+    task.launchPath = "./Tools/quabs"
     task.arguments = ["-c", tempFile.path]
     
     //let stdinPipe = NSPipe()
@@ -231,7 +231,7 @@ func minimizeWithABC(_ aig: UnsafeMutablePointer<aiger>) -> UnsafeMutablePointer
     #else
         let task = Process()
     #endif
-    task.launchPath = "./abc"
+    task.launchPath = "./Tools/abc"
     task.arguments = ["-c", abcCommand]
     task.standardOutput = FileHandle.standardError
     task.launch()
@@ -253,7 +253,7 @@ public func picosat(dimacs: String) -> (SolverResult, [Int]?)? {
     #else
         let task = Process()
     #endif
-    task.launchPath = "./picosat"
+    task.launchPath = "./Tools/picosat"
     task.arguments = [tempFile.path]
     
     let stdoutPipe = Pipe()
@@ -295,7 +295,7 @@ func eprover(tptp3: String) -> SolverResult? {
     #else
         let task = Process()
     #endif
-    task.launchPath = "./eprover"
+    task.launchPath = "./Tools/eprover"
     task.arguments = ["--auto", "--tptp3-format", tempFile.path]
     
     let stdoutPipe = Pipe()
@@ -327,7 +327,7 @@ func idq(dqdimacs: String) -> SolverResult? {
     #else
         let task = Process()
     #endif
-    task.launchPath = "./idq"
+    task.launchPath = "./Tools/idq"
     task.arguments = [tempFile.path]
     
     let stdoutPipe = Pipe()
@@ -359,7 +359,7 @@ func z3(smt2: String) -> SolverResult? {
     #else
         let task = Process()
     #endif
-    task.launchPath = "./z3"
+    task.launchPath = "./Tools/z3"
     task.arguments = [tempFile.path]
     
     let stdoutPipe = Pipe()

@@ -123,7 +123,7 @@ func ltl3ba(ltl: String) -> CoBüchiAutomaton? {
         let task = Process()
     #endif
 
-    task.launchPath = "./ltl3ba"
+    task.launchPath = "./Tools/ltl3ba"
     task.arguments = ["-f", "\"(\(ltl))\""] // read from stdin
     
     //let stdinPipe = NSPipe()
@@ -162,7 +162,7 @@ func spot(ltl: String) -> CoBüchiAutomaton? {
         let task = Process()
     #endif
 
-    task.launchPath = "./ltl2tgba"
+    task.launchPath = "./Tools/ltl2tgba"
     task.arguments = ["--spin", "--low", "-F", "-"] // read from stdin
     
     let stdinPipe = Pipe()

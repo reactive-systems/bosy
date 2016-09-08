@@ -195,7 +195,7 @@ func syfco(tlsf: String, arguments: [String]) -> String {
         let task = Process()
     #endif
 
-    task.launchPath = "./syfco"
+    task.launchPath = "./Tools/syfco"
     task.arguments = ["--stdin"] + arguments
     
     let stdinPipe = Pipe()
