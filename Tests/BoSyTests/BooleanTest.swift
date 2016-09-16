@@ -13,7 +13,7 @@ class BooleanTest: XCTestCase {
         let sat_qbf = Quantifier(.Forall, variables: [x], scope: Quantifier(.Exists, variables: [y], scope: equiv))
         
         let qdimacsVisitor = QDIMACSVisitor(formula: sat_qbf)
-        guard let sat = depqbf(qdimacs: "\(qdimacsVisitor)") else {
+        guard let (sat, _) = rareqs(qdimacs: "\(qdimacsVisitor)") else {
             XCTFail()
             return
         }
@@ -22,7 +22,7 @@ class BooleanTest: XCTestCase {
         let unsat_qbf = Quantifier(.Exists, variables: [x], scope: Quantifier(.Forall, variables: [y], scope: equiv))
         
         let qdimacsVisitor2 = QDIMACSVisitor(formula: unsat_qbf)
-        guard let unsat = depqbf(qdimacs: "\(qdimacsVisitor2)") else {
+        guard let (unsat, _) = rareqs(qdimacs: "\(qdimacsVisitor2)") else {
             XCTFail()
             return
         }
@@ -38,7 +38,7 @@ class BooleanTest: XCTestCase {
         let sat_qbf = Quantifier(.Exists, variables: [x, y], scope: and)
         
         let qdimacsVisitor = QDIMACSVisitor(formula: sat_qbf)
-        guard let sat = depqbf(qdimacs: "\(qdimacsVisitor)") else {
+        guard let (sat, _) = rareqs(qdimacs: "\(qdimacsVisitor)") else {
             XCTFail()
             return
         }
@@ -47,7 +47,7 @@ class BooleanTest: XCTestCase {
         let unsat_qbf = Quantifier(.Exists, variables: [x], scope: Quantifier(.Forall, variables: [y], scope: and))
         
         let qdimacsVisitor2 = QDIMACSVisitor(formula: unsat_qbf)
-        guard let unsat = depqbf(qdimacs: "\(qdimacsVisitor2)") else {
+        guard let (unsat, _) = rareqs(qdimacs: "\(qdimacsVisitor2)") else {
             XCTFail()
             return
         }
@@ -63,7 +63,7 @@ class BooleanTest: XCTestCase {
         let sat_qbf = Quantifier(.Exists, variables: [x], scope: Quantifier(.Forall, variables: [y], scope: or))
         
         let qdimacsVisitor = QDIMACSVisitor(formula: sat_qbf)
-        guard let sat = depqbf(qdimacs: "\(qdimacsVisitor)") else {
+        guard let (sat, _) = rareqs(qdimacs: "\(qdimacsVisitor)") else {
             XCTFail()
             return
         }
@@ -72,7 +72,7 @@ class BooleanTest: XCTestCase {
         let unsat_qbf = Quantifier(.Forall, variables: [x, y], scope: or)
         
         let qdimacsVisitor2 = QDIMACSVisitor(formula: unsat_qbf)
-        guard let unsat = depqbf(qdimacs: "\(qdimacsVisitor2)") else {
+        guard let (unsat, _) = rareqs(qdimacs: "\(qdimacsVisitor2)") else {
             XCTFail()
             return
         }
@@ -89,7 +89,7 @@ class BooleanTest: XCTestCase {
         let sat_qbf = Quantifier(.Exists, variables: [x], scope: Quantifier(.Forall, variables: [y], scope: implication))
         
         let qdimacsVisitor = QDIMACSVisitor(formula: sat_qbf)
-        guard let sat = depqbf(qdimacs: "\(qdimacsVisitor)") else {
+        guard let (sat, _) = rareqs(qdimacs: "\(qdimacsVisitor)") else {
             XCTFail()
             return
         }
@@ -98,7 +98,7 @@ class BooleanTest: XCTestCase {
         let unsat_qbf = Quantifier(.Forall, variables: [x, y], scope: implication)
         
         let qdimacsVisitor2 = QDIMACSVisitor(formula: unsat_qbf)
-        guard let unsat = depqbf(qdimacs: "\(qdimacsVisitor2)") else {
+        guard let (unsat, _) = rareqs(qdimacs: "\(qdimacsVisitor2)") else {
             XCTFail()
             return
         }
