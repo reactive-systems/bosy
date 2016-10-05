@@ -213,8 +213,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
         let reducedInstance = instance.eval(assignment: origAssignment)
         //print(reducedInstance)
         
-        let newVisitor = QCIRVisitor()
-        let _ = reducedInstance.accept(visitor: newVisitor)
+        let newVisitor = QCIRVisitor(formula: reducedInstance)
         guard let (res, cert) = quabs(qcir: "\(newVisitor)") else {
             Logger.default().error("could not certify with QuAbS")
             return nil

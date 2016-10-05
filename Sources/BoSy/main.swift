@@ -18,6 +18,7 @@ var synthesize = false
 var searchStrategy: SearchStrategy = .Linear
 var player: Player? = nil
 var backend: Backends = .InputSymbolic
+var paths: Bool = false
 
 while arguments.count > 0 {
     guard let argument = arguments.popFirst() else {
@@ -56,6 +57,8 @@ while arguments.count > 0 {
             print("wrong value \"\(value)\" for player, can be either system or environment")
             exit(1)
         }
+    } else if argument == "--paths" {
+        paths = true
     } else if !argument.hasPrefix("-") {
         specificationFile = argument
         break
@@ -89,6 +92,35 @@ if let specificationFile = specificationFile {
 guard let specification = BoSyInputFileFormat.fromJson(string: json) else {
     print("error: cannot parse specification")
     exit(1)
+}
+
+if paths {
+    let unrolling = Unrolling(specification: specification)
+    var i = 1
+    while true {
+        guard let instance = unrolling.getEncoding(forBound: i) else {
+            exit(0)
+        }
+        print("Path length = \(i)")
+        
+        let qcirVisitor = QCIRVisitor(formula: instance)
+        guard let (result, certificate) = quabs(qcir: "\(qcirVisitor)") else {
+            throw BoSyEncodingError.SolvingFailed("solver failed on instance")
+        }
+        //try? "\(qcirVisitor)".write(toFile: "/Users/leander/Desktop/bounded-tree-models/arbiter_15_\(i).qcir", atomically: false, encoding: .ascii)
+        
+        
+        /*let qdimacsVisitor = QDIMACSVisitor(formula: instance)
+        guard let (result, assignments) = rareqs(qdimacs: bloqqer(qdimacs: "\(qdimacsVisitor)")) else {
+            throw BoSyEncodingError.SolvingFailed("solver failed on instance")
+        }*/
+        if result == .SAT {
+            print("realizable")
+            exit(0)
+        }
+        
+        i += 1
+    }
 }
 
 //Logger.default().info("inputs: \(specification.inputs), outputs: \(specification.outputs)")

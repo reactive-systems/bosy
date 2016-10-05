@@ -331,8 +331,9 @@ class QCIRVisitor: ReturnConstantVisitor<Int>, CustomStringConvertible {
     var quantifiers: [String] = []
     var output: Int? = nil
     
-    init() {
+    init(formula: Logic) {
         super.init(constant: 0)
+        let _ = formula.accept(visitor: self)
     }
     
     var description: String {

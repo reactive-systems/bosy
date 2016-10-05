@@ -18,4 +18,9 @@ class FunctionTest: XCTestCase {
         XCTAssertEqual(numBitsNeeded(32), 5, "bits(32) = 5")
     }
     
+    static var allTests : [(String, (FunctionTest) -> () throws -> Void)] {
+        return [
+            ("testNumBitsNeeded", testNumBitsNeeded),
+        ]
+    }
 }

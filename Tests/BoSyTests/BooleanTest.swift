@@ -104,4 +104,13 @@ class BooleanTest: XCTestCase {
         }
         XCTAssertEqual(unsat, SolverResult.UNSAT, "\(unsat_qbf) === UNSAT")
     }
+    
+    static var allTests : [(String, (BooleanTest) -> () throws -> Void)] {
+        return [
+            ("testXnorTseitin", testXnorTseitin),
+            ("testAndTseitin", testAndTseitin),
+            ("testOrTseitin", testOrTseitin),
+            ("testImplicationTseitin", testImplicationTseitin),
+        ]
+    }
 }

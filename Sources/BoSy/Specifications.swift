@@ -2,7 +2,6 @@ import Foundation
 
 import Utils
 
-import Jay
 import LTL
 
 enum TransitionSystemType {
@@ -44,13 +43,16 @@ struct BoSyInputFileFormat: InputFileFormat {
     let guarantees: [LTL]
     
     static func fromJson(string: String) -> BoSyInputFileFormat? {
-        let data: [UInt8] = Array(string.utf8)
-        guard let spec = try? Jay().jsonFromData(data) else {
+        guard let data = string.data(using: .utf8) else {
+            Logger.default().error("could not decode JSON")
+            return nil
+        }
+        guard let spec = try? JSONSerialization.jsonObject(with: data, options: []) else {
             Logger.default().error("could not decode JSON")
             return nil
         }
         
-        guard case JSON.object(let specDictionary) = spec else {
+        guard let specDictionary = spec as? [String:Any] else {
             Logger.default().error("JSON format is not valid")
             return nil
         }
@@ -60,7 +62,7 @@ struct BoSyInputFileFormat: InputFileFormat {
             Logger.default().error("no semantics given")
             return nil
         }
-        guard case JSON.string(let semanticsString) = semanticsJSON else {
+        guard let semanticsString = semanticsJSON as? String else {
             Logger.default().error("semantics is not given as string")
             return nil
         }
@@ -74,17 +76,10 @@ struct BoSyInputFileFormat: InputFileFormat {
             guard let json = specDictionary[key] else {
                 return nil
             }
-            guard case JSON.array(let jsonArray) = json else {
+            guard let jsonArray = json as? [String] else {
                 return nil
             }
-            return jsonArray.flatMap({ 
-                element in
-                if case JSON.string(let string) = element {
-                    return string
-                } else {
-                    return nil
-                }
-            })
+            return jsonArray
         }
         
         guard let inputs = toArray(key: "inputs") else {

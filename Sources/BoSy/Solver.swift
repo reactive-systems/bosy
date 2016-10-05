@@ -158,7 +158,7 @@ public func quabs(qcir: String) -> (SolverResult, UnsafeMutablePointer<aiger>?)?
         let task = Process()
     #endif
 
-    task.launchPath = "./Tools/quabs"
+    task.launchPath = "./Tools/quabsl"
     task.arguments = ["-c", tempFile.path]
     
     //let stdinPipe = NSPipe()

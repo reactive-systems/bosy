@@ -13,4 +13,9 @@ class GraphTest: XCTestCase {
         XCTAssertEqual(sccs.count, 4, "graph has 4 SCC")
     }
     
+    static var allTests : [(String, (GraphTest) -> () throws -> Void)] {
+        return [
+            ("testTrajan", testTrajan),
+        ]
+    }
 }
