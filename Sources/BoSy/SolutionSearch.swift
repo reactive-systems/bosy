@@ -24,6 +24,7 @@ enum Backends {
     case Explicit
     case InputSymbolic
     case StateSymbolic
+    case Symbolic
     case Smt
 }
 
@@ -63,6 +64,8 @@ struct SolutionSearch {
             encoding = InputSymbolicEncoding(automaton: automaton, semantics: semantics, inputs: inputs, outputs: outputs)
         case .StateSymbolic:
             encoding = StateSymbolicEncoding(automaton: automaton, semantics: semantics, inputs: inputs, outputs: outputs)
+        case .Symbolic:
+            encoding = SymbolicEncoding(automaton: automaton, semantics: semantics, inputs: inputs, outputs: outputs)
         case .Smt:
             encoding = SmtEncoding(automaton: automaton, semantics: semantics, inputs: inputs, outputs: outputs)
         }
