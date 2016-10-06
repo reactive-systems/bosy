@@ -21,6 +21,7 @@ distclean:
 tools: \
 	Tools/abc \
 	Tools/bloqqer \
+	Tools/eprover \
 	Tools/ltl3ba \
 	Tools/idq \
 	Tools/picosat \
@@ -55,6 +56,18 @@ Tools/bloqqer-037-8660cb9-151127: Tools/bloqqer-037-8660cb9-151127.tar.gz
 
 Tools/bloqqer-037-8660cb9-151127.tar.gz: Tools/.f
 	cd Tools ; curl -OL http://fmv.jku.at/bloqqer/bloqqer-037-8660cb9-151127.tar.gz
+
+# eprover
+Tools/eprover: Tools/E
+	cd Tools/E ; ./configure
+	make -C Tools/E
+	cp Tools/E/PROVER/eprover Tools/
+
+Tools/E: tools/E.tgz
+	cd Tools ; tar xzf E.tgz
+
+tools/E.tgz: Tools/.f
+	cd Tools ; curl -OL http://wwwlehre.dhbw-stuttgart.de/~sschulz/WORK/E_DOWNLOAD/V_1.9.1/E.tgz
 
 # ltl3ba
 Tools/ltl3ba: Tools/ltl3ba-1.1.3/ltl3ba
