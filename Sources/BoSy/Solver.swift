@@ -350,7 +350,7 @@ func idq(dqdimacs: String) -> SolverResult? {
     return nil
 }
 
-func z3(smt2: String) -> SolverResult? {
+func z3(smt2: String) -> (SolverResult, String?)? {
     let tempFile = TempFile(suffix: ".smt2")!
     try! smt2.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
     
@@ -375,9 +375,9 @@ func z3(smt2: String) -> SolverResult? {
     let output = String(data: outputData, encoding: String.Encoding.utf8)!
     //print(output)
     if output.contains("unsat") {
-        return .UNSAT
+        return (.UNSAT,nil)
     } else if output.contains("sat") {
-        return .SAT
+        return (.SAT,output)
     }
     return nil
 }
