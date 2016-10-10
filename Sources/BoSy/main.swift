@@ -57,6 +57,16 @@ while arguments.count > 0 {
             print("wrong value \"\(value)\" for player, can be either system or environment")
             exit(1)
         }
+    } else if argument == "--backend" {
+        guard let value = arguments.popFirst() else {
+            print("no value for backend given")
+            exit(1)
+        }
+        guard let _backend = Backends.fromString(value) else {
+            print("invalid backend selected")
+            exit(1)
+        }
+        backend = _backend
     } else if argument == "--paths" {
         paths = true
     } else if !argument.hasPrefix("-") {

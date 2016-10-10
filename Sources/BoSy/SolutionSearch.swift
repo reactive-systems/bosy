@@ -26,6 +26,23 @@ enum Backends {
     case StateSymbolic
     case Symbolic
     case Smt
+    
+    static func fromString(_ string: String) -> Backends? {
+        switch (string) {
+            case "explicit":
+                return .Explicit
+            case "input-symbolic":
+                return .InputSymbolic
+            case "state-symbolic":
+                return .StateSymbolic
+            case "symbolic":
+                return .Symbolic
+            case "smt":
+                return .Smt
+            default:
+                return nil
+        }
+    }
 }
 
 struct SolutionSearch {
