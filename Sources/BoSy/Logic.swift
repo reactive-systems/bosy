@@ -737,6 +737,19 @@ func bitStringFromAssignment(_ assignment: BooleanAssignment) -> String {
     return bitstring
 }
 
+func smtStringFromAssignment(_ assignment: BooleanAssignment) -> String {
+    var bitstring = ""
+    for key in assignment.keys.sorted(by: { $0.name < $1.name }) {
+        let value = assignment[key]!
+        if value == Literal.True {
+            bitstring += " true"
+        } else {
+            bitstring += " false"
+        }
+    }
+    return bitstring
+}
+
 /*struct PrettifyBoolean: BooleanVisitor {
     typealias T = String
     
