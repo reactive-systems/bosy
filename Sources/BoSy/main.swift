@@ -19,6 +19,7 @@ var searchStrategy: SearchStrategy = .Linear
 var player: Player? = nil
 var backend: Backends = .InputSymbolic
 var paths: Bool = false
+var converter: LTL2AutomatonConverter = .ltl3ba
 
 while arguments.count > 0 {
     guard let argument = arguments.popFirst() else {
@@ -67,6 +68,16 @@ while arguments.count > 0 {
             exit(1)
         }
         backend = _backend
+    } else if argument == "--automaton-tool" {
+        guard let value = arguments.popFirst() else {
+            print("no value for automaton tool given")
+            exit(1)
+        }
+        guard let automatonConverter = LTL2AutomatonConverter.from(string: value) else {
+            print("invalid automaton tool selected")
+            exit(1)
+        }
+        converter = automatonConverter
     } else if argument == "--paths" {
         paths = true
     } else if !argument.hasPrefix("-") {
@@ -149,7 +160,7 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
             ltlSpec = specification.assumptions.count == 0 ? "\(guaranteeString)" : "(\(assumptionString)) -> (\(guaranteeString))"
         }
         
-        guard let automaton = ltl3ba(ltl: ltlSpec) else {
+        guard let automaton = converter.convert(ltl: ltlSpec) else {
             Logger.default().error("could not construct automaton")
             return
         }

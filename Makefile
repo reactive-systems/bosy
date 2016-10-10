@@ -1,5 +1,7 @@
 .PHONY: default debug release test tools all clean distclean
 
+UNAME := $(shell uname)
+
 default: debug
 
 debug: tools
@@ -22,6 +24,7 @@ tools: \
 	Tools/abc \
 	Tools/bloqqer \
 	Tools/eprover \
+	Tools/ltl2tgba \
 	Tools/ltl3ba \
 	Tools/idq \
 	Tools/picosat \
@@ -69,6 +72,23 @@ Tools/E: tools/E.tgz
 tools/E.tgz: Tools/.f
 	cd Tools ; curl -OL http://wwwlehre.dhbw-stuttgart.de/~sschulz/WORK/E_DOWNLOAD/V_1.9.1/E.tgz
 
+# spot/ltl2tgba
+SPOT_STATIC = --enable-static
+ifeq ($(UNAME), Linux)
+	SPOT_STATIC += LDFLAGS="-static"
+endif
+
+Tools/ltl2tgba: Tools/spot-2.1.1
+	cd Tools/spot-2.1.1; ./configure $(SPOT_STATIC)
+	cd Tools/spot-2.1.1; make
+	cp Tools/spot-2.1.1/bin/ltl2tgba Tools/
+
+Tools/spot-2.1.1: Tools/spot-2.1.1.tar.gz
+	cd Tools; tar xzf spot-2.1.1.tar.gz
+
+Tools/spot-2.1.1.tar.gz: Tools/.f
+	cd Tools; curl -OL http://www.lrde.epita.fr/dload/spot/spot-2.1.1.tar.gz
+
 # ltl3ba
 Tools/ltl3ba: Tools/ltl3ba-1.1.3/ltl3ba
 	cp Tools/ltl3ba-1.1.3/ltl3ba Tools/ltl3ba
@@ -77,7 +97,7 @@ Tools/ltl3ba-1.1.3/ltl3ba: Tools/ltl3ba-1.1.3
 	cd Tools ; make -C ltl3ba-1.1.3
 
 Tools/ltl3ba-1.1.3: Tools/ltl3ba-1.1.3.tar.gz
-	cd Tools ; tar xvfz ltl3ba-1.1.3.tar.gz
+	cd Tools ; tar xzf ltl3ba-1.1.3.tar.gz
 	
 Tools/ltl3ba-1.1.3.tar.gz: Tools/.f
 	cd Tools ; curl -OL https://sourceforge.net/projects/ltl3ba/files/ltl3ba/1.1/ltl3ba-1.1.3.tar.gz

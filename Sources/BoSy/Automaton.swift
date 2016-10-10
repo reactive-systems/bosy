@@ -116,7 +116,32 @@ struct CoBüchiAutomaton: GraphRepresentable {
     }
 }
 
-func ltl3ba(ltl: String) -> CoBüchiAutomaton? {
+enum LTL2AutomatonConverter {
+    case ltl3ba
+    case spot
+    
+    func convert(ltl: String) -> CoBüchiAutomaton? {
+        switch self {
+        case .ltl3ba:
+            return _ltl3ba(ltl: ltl)
+        case .spot:
+            return _spot(ltl: ltl)
+        }
+    }
+    
+    static func from(string: String) -> LTL2AutomatonConverter? {
+        switch string {
+        case "ltl3ba":
+            return .ltl3ba
+        case "spot":
+            return .spot
+        default:
+            return nil
+        }
+    }
+}
+
+func _ltl3ba(ltl: String) -> CoBüchiAutomaton? {
     #if os(Linux)
         let task = Task()
     #else
@@ -155,14 +180,14 @@ func ltl3ba(ltl: String) -> CoBüchiAutomaton? {
     return parseSpinNeverClaim(neverClaim: neverClaim)
 }
 
-func spot(ltl: String) -> CoBüchiAutomaton? {
+func _spot(ltl: String) -> CoBüchiAutomaton? {
     #if os(Linux)
         let task = Task()
     #else
         let task = Process()
     #endif
 
-    task.launchPath = "./Tools/ltl2tgba"
+    task.launchPath = "./Tools/spot-2.1.1/bin/ltl2tgba"
     task.arguments = ["--spin", "--low", "-F", "-"] // read from stdin
     
     let stdinPipe = Pipe()
