@@ -83,19 +83,6 @@ struct SymbolicEncoding: BoSyEncoding {
                 }
             }
             deltas.append(automatonState(q, primed: true) <-> incoming.reduce(Literal.False, |))
-            
-            /*guard let outgoing = automaton.transitions[q] else {
-                continue
-            }
-            
-            for (qPrime, guardCondition) in outgoing {
-                if guardCondition as? Literal != nil && guardCondition as! Literal == Literal.True {
-                    deltas.append(automatonState(q, primed: false) & automatonState(qPrime, primed: true))
-                } else {
-                    deltas.append(automatonState(q, primed: false) & guardCondition.accept(visitor: replacer) & automatonState(qPrime, primed: true))
-                }
-                
-            }*/
         }
         let delta = deltas.reduce(Literal.True, &)
         
@@ -133,17 +120,7 @@ struct SymbolicEncoding: BoSyEncoding {
         
         return result
     }
-    
-    /*func requireTransition(q: CoBüchiAutomaton.State, qPrime: CoBüchiAutomaton.State, bound: Int, rejectingStates: Set<CoBüchiAutomaton.State>, states: [Proposition], nextStates: [Proposition], taus: [FunctionApplication]) -> Logic {
-        if automaton.isStateInNonRejectingSCC(q) || automaton.isStateInNonRejectingSCC(qPrime) || !automaton.isInSameSCC(q, qPrime) {
-            // no need for comparator constrain
-            return tauNextStateAssertion(states: nextStates, taus: taus) --> lambda(qPrime, states: nextStates)
-        } else {
-            return tauNextStateAssertion(states: nextStates, taus: taus) -->
-                   (lambda(qPrime, states: nextStates) & BooleanComparator(rejectingStates.contains(qPrime) ? .Less : .LessOrEqual, lhs: lambdaSharp(qPrime, states: nextStates), rhs: lambdaSharp(q, states: states)))
-        }
-    }*/
-    
+
     func explicitToSymbolic(base: String, value: Int, bits: Int, parameters: [Proposition]? = nil) -> Logic {
         var and: [Logic] = []
         for (i, bit) in binaryFrom(value, bits: bits).characters.enumerated() {

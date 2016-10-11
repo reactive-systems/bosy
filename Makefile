@@ -79,7 +79,7 @@ ifeq ($(UNAME), Linux)
 endif
 
 Tools/ltl2tgba: Tools/spot-2.1.1
-	cd Tools/spot-2.1.1; ./configure $(SPOT_STATIC)
+	cd Tools/spot-2.1.1; ./configure --disable-python $(SPOT_STATIC)
 	cd Tools/spot-2.1.1; make
 	cp Tools/spot-2.1.1/bin/ltl2tgba Tools/
 

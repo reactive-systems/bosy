@@ -149,7 +149,7 @@ func _ltl3ba(ltl: String) -> CoBüchiAutomaton? {
     #endif
 
     task.launchPath = "./Tools/ltl3ba"
-    task.arguments = ["-f", "\"(\(ltl))\""] // read from stdin
+    task.arguments = ["-f", "\"(\(ltl))\""]
     
     //let stdinPipe = NSPipe()
     let stdoutPipe = Pipe()
@@ -188,21 +188,13 @@ func _spot(ltl: String) -> CoBüchiAutomaton? {
     #endif
 
     task.launchPath = "./Tools/spot-2.1.1/bin/ltl2tgba"
-    task.arguments = ["--spin", "--low", "-F", "-"] // read from stdin
+    task.arguments = ["--spin", "--low", "-f", "(\(ltl))"]
     
-    let stdinPipe = Pipe()
     let stdoutPipe = Pipe()
     let stderrPipe = Pipe()
-    task.standardInput = stdinPipe
     task.standardOutput = stdoutPipe
     task.standardError = stderrPipe
     task.launch()
-    
-    let stdinHandle = stdinPipe.fileHandleForWriting
-    if let data = ltl.data(using: String.Encoding.utf8) {
-        stdinHandle.write(data)
-        stdinHandle.closeFile()
-    }
     
     let stdoutHandle = stdoutPipe.fileHandleForReading
     let outputData = StreamHelper.readAllAvailableData(from: stdoutHandle)
