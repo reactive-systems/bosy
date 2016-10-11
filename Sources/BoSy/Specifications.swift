@@ -28,7 +28,7 @@ enum TransitionSystemType {
 }
 
 protocol InputFileFormat {
-    var semantics: TransitionSystemType { get }
+    var semantics: TransitionSystemType { get set }
     var inputs: [String] { get }
     var outputs: [String] { get }
     var assumptions: [LTL] { get }
@@ -36,7 +36,7 @@ protocol InputFileFormat {
 }
 
 struct BoSyInputFileFormat: InputFileFormat {
-    let semantics: TransitionSystemType
+    var semantics: TransitionSystemType
     let inputs: [String]
     let outputs: [String]
     let assumptions: [LTL]

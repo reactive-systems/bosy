@@ -20,6 +20,7 @@ var player: Player? = nil
 var backend: Backends = .InputSymbolic
 var paths: Bool = false
 var converter: LTL2AutomatonConverter = .ltl3ba
+var semantics: TransitionSystemType? = nil
 
 while arguments.count > 0 {
     guard let argument = arguments.popFirst() else {
@@ -78,6 +79,16 @@ while arguments.count > 0 {
             exit(1)
         }
         converter = automatonConverter
+    } else if argument == "--semantics" {
+        guard let value = arguments.popFirst() else {
+            print("no value for semantics given")
+            exit(1)
+        }
+        guard let _semantics = TransitionSystemType.from(string: value) else {
+            print("invalid semantics selected")
+            exit(1)
+        }
+        semantics = _semantics
     } else if argument == "--paths" {
         paths = true
     } else if !argument.hasPrefix("-") {
@@ -110,9 +121,13 @@ if let specificationFile = specificationFile {
     json = specficationString
 }
 
-guard let specification = BoSyInputFileFormat.fromJson(string: json) else {
+guard var specification = BoSyInputFileFormat.fromJson(string: json) else {
     print("error: cannot parse specification")
     exit(1)
+}
+
+if let semantics = semantics {
+    specification.semantics = semantics
 }
 
 if paths {
