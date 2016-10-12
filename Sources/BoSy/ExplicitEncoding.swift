@@ -192,7 +192,7 @@ struct ExplicitEncoding: BoSyEncoding {
         let dimacsVisitor = DIMACSVisitor(formula: instance)
         //print(dimacsVisitor)
         
-        guard let (result, assignments) = picosat(dimacs: "\(dimacsVisitor)") else {
+        guard let (result, assignments) = cryptominisat(dimacs: "\(dimacsVisitor)") else {
             throw BoSyEncodingError.SolvingFailed("solver failed on instance")
         }
         

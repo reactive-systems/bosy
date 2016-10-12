@@ -286,6 +286,52 @@ public func picosat(dimacs: String) -> (SolverResult, [Int]?)? {
     return (result, assignments)
 }
 
+public func cryptominisat(dimacs: String) -> (SolverResult, [Int]?)? {
+    let tempFile = TempFile(suffix: ".dimacs")!
+    try! dimacs.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
+    
+    #if os(Linux)
+        let task = Task()
+    #else
+        let task = Process()
+    #endif
+    task.launchPath = "./Tools/cryptominisat5"
+    task.arguments = ["--verb", "0", tempFile.path]
+    
+    let stdoutPipe = Pipe()
+    let stderrPipe = Pipe()
+    task.standardOutput = stdoutPipe
+    task.standardError = stderrPipe
+    task.launch()
+    
+    let stdoutHandle = stdoutPipe.fileHandleForReading
+    let outputData = StreamHelper.readAllAvailableData(from: stdoutHandle)
+    
+    task.waitUntilExit()
+    
+    guard let result = SolverResult(rawValue: Int(task.terminationStatus)) else {
+        return nil
+    }
+    if result != .SAT {
+        return (result, nil)
+    }
+    
+    //let stdoutData = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
+    let output = String(data: outputData, encoding: String.Encoding.utf8)!
+    
+    var assignments: [Int] = []
+    for line in output.components(separatedBy: "\n") {
+        if !line.hasPrefix("v") {
+            continue
+        }
+        assignments += line[line.index(after: line.startIndex)..<line.endIndex]
+            .trimmingCharacters(in: NSCharacterSet.whitespacesAndNewlines)
+            .components(separatedBy: " ")
+            .flatMap({ Int($0) })
+    }
+    return (result, assignments)
+}
+
 func eprover(tptp3: String) -> SolverResult? {
     let tempFile = TempFile(suffix: ".tptp3")!
     try! tptp3.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)

@@ -23,8 +23,9 @@ distclean:
 tools: \
 	Tools/abc \
 	Tools/bloqqer \
+	Tools/cryptominisat5 \
 	Tools/eprover \
-	Tools/ltl2tgba \
+	#Tools/ltl2tgba \
 	Tools/ltl3ba \
 	Tools/idq \
 	Tools/picosat \
@@ -59,6 +60,22 @@ Tools/bloqqer-037-8660cb9-151127: Tools/bloqqer-037-8660cb9-151127.tar.gz
 
 Tools/bloqqer-037-8660cb9-151127.tar.gz: Tools/.f
 	cd Tools ; curl -OL http://fmv.jku.at/bloqqer/bloqqer-037-8660cb9-151127.tar.gz
+
+# cryptominisat
+Tools/cryptominisat5: Tools/cryptominisat-5.0.1/build
+	cp Tools/cryptominisat-5.0.1/build/cryptominisat5 Tools/cryptominisat5
+
+Tools/cryptominisat-5.0.1/build: Tools/cryptominisat-5.0.1
+	mkdir Tools/cryptominisat-5.0.1/build
+	cd Tools/cryptominisat-5.0.1/build ; cmake -DSTATICCOMPILE=ON ..
+	cd Tools/cryptominisat-5.0.1/build ; make -j4
+
+Tools/cryptominisat-5.0.1: Tools/cryptominisat-5.0.1.tar.gz
+	cd Tools ; tar xzf cryptominisat-5.0.1.tar.gz
+
+Tools/cryptominisat-5.0.1.tar.gz: Tools/.f
+	cd Tools ; curl -OL https://github.com/msoos/cryptominisat/archive/5.0.1.tar.gz
+	mv Tools/5.0.1.tar.gz Tools/cryptominisat-5.0.1.tar.gz
 
 # eprover
 Tools/eprover: Tools/E
