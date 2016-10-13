@@ -7,17 +7,19 @@ struct InputSymbolicEncoding: BoSyEncoding {
     let semantics: TransitionSystemType
     let inputs: [String]
     let outputs: [String]
+    let synthesize: Bool
     
     // intermediate results
     var assignments: BooleanAssignment?
     var instance: Logic?
     var solutionBound: Int
     
-    init(automaton: CoBüchiAutomaton, semantics: TransitionSystemType, inputs: [String], outputs: [String]) {
+    init(automaton: CoBüchiAutomaton, semantics: TransitionSystemType, inputs: [String], outputs: [String], synthesize: Bool) {
         self.automaton = automaton
         self.semantics = semantics
         self.inputs = inputs
         self.outputs = outputs
+        self.synthesize = synthesize
         
         assignments = nil
         instance = nil
@@ -171,7 +173,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
         
         let qdimacsVisitor = QDIMACSVisitor(formula: instance)
         //print(qdimacsVisitor)
-        guard let (result, assignments) = rareqs(qdimacs: bloqqer(qdimacs: "\(qdimacsVisitor)")) else {
+        guard let (result, assignments) = rareqs(qdimacs: bloqqer(qdimacs: "\(qdimacsVisitor)", keepAssignments: synthesize)) else {
             throw BoSyEncodingError.SolvingFailed("solver failed on instance")
         }
         

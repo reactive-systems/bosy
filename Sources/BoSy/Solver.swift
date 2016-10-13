@@ -80,7 +80,7 @@ public func rareqs(qdimacs: String) -> (SolverResult, [Int]?)? {
     return (result, [])
 }
 
-public func bloqqer(qdimacs: String) -> String {
+public func bloqqer(qdimacs: String, keepAssignments: Bool) -> String {
     
     let tempFile = TempFile(suffix: ".qdimacs")!
     try! qdimacs.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
@@ -90,8 +90,13 @@ public func bloqqer(qdimacs: String) -> String {
     #else
         let task = Process()
     #endif
-    task.launchPath = "./Tools/bloqqer"
-    task.arguments = ["--keep=1", "--partial-assignment=1", tempFile.path]
+    if !keepAssignments {
+        task.launchPath = "./Tools/bloqqer-031"
+        task.arguments = ["--keep=1", tempFile.path]
+    } else {
+        task.launchPath = "./Tools/bloqqer"
+        task.arguments = ["--keep=1", "--partial-assignment=1", tempFile.path]
+    }
     
     //let stdinPipe = NSPipe()
     let stdoutPipe = Pipe()
@@ -232,7 +237,7 @@ func minimizeWithABC(_ aig: UnsafeMutablePointer<aiger>) -> UnsafeMutablePointer
         let task = Process()
     #endif
     task.launchPath = "./Tools/abc"
-    task.arguments = ["-c", abcCommand]
+    task.arguments = ["-q", abcCommand]
     task.standardOutput = FileHandle.standardError
     task.launch()
     task.waitUntilExit()

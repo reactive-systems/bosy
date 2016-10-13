@@ -23,6 +23,7 @@ distclean:
 tools: \
 	Tools/abc \
 	Tools/bloqqer \
+	Tools/bloqqer-031 \
 	Tools/cryptominisat5 \
 	Tools/eprover \
 	#Tools/ltl2tgba \
@@ -60,6 +61,19 @@ Tools/bloqqer-037-8660cb9-151127: Tools/bloqqer-037-8660cb9-151127.tar.gz
 
 Tools/bloqqer-037-8660cb9-151127.tar.gz: Tools/.f
 	cd Tools ; curl -OL http://fmv.jku.at/bloqqer/bloqqer-037-8660cb9-151127.tar.gz
+
+Tools/bloqqer-031: Tools/bloqqer-031-7a176af-110509/bloqqer
+	cp Tools/bloqqer-031-7a176af-110509/bloqqer Tools/bloqqer-031
+
+Tools/bloqqer-031-7a176af-110509/bloqqer: Tools/bloqqer-031-7a176af-110509
+	cd Tools/bloqqer-031-7a176af-110509 ; ./configure
+	make -C Tools/bloqqer-031-7a176af-110509
+
+Tools/bloqqer-031-7a176af-110509: Tools/bloqqer-031-7a176af-110509.tar.gz
+	cd Tools ; tar xzf bloqqer-031-7a176af-110509.tar.gz
+
+Tools/bloqqer-031-7a176af-110509.tar.gz: Tools/.f
+	cd Tools ; curl -OL http://fmv.jku.at/bloqqer/bloqqer-031-7a176af-110509.tar.gz
 
 # cryptominisat
 Tools/cryptominisat5: Tools/cryptominisat-5.0.1/build

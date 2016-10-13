@@ -182,7 +182,7 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
 
         //Logger.default().info("automaton: \(automaton)")
 
-        var search = SolutionSearch(specification: specification, automaton: automaton, searchStrategy: strategy, player: player, backend: backend)
+        var search = SolutionSearch(specification: specification, automaton: automaton, searchStrategy: strategy, player: player, backend: backend, synthesize: synthesize)
 
         if search.hasSolution() {
             if !synthesize {

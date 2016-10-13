@@ -188,10 +188,12 @@ class DIMACSVisitor: ReturnConstantVisitor<Int>, CustomStringConvertible {
     override func visit(quantifier: Quantifier) -> T {
         quantifier.variables.forEach({ variable in propositions[variable] = newId() })
         let result = quantifier.scope.accept(visitor: self)
-        assert(result != 0)  // there is only one existential quantifier
-        assert(output == nil)
+        /*assert(result != 0)  // there is only one existential quantifier
+        assert(output == nil)*/
         // top level scope
-        output = result
+        if output == nil {
+            output = result
+        }
         return 0
     }
     
