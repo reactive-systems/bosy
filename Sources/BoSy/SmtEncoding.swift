@@ -46,10 +46,16 @@ struct SmtEncoding: BoSyEncoding {
         // tau
         smt.append("(declare-fun tau (S \(inputs.map({ name in "Bool" }).joined(separator: " "))) S)\n")
         
-        for o in outputs {
-            smt.append("(declare-fun \(o) (S) Bool)\n")
+        switch semantics {
+        case .Moore:
+            for o in outputs {
+                smt.append("(declare-fun \(o) (S) Bool)\n")
+            }
+        case .Mealy:
+            for o in outputs {
+                smt.append("(declare-fun \(o) (S \(inputs.map({ name in "Bool" }).joined(separator: " "))) Bool)\n")
+            }
         }
-        
         for state in automaton.initialStates {
             smt.append("(assert (\(lambda(state)) s0))\n")
         }
@@ -61,7 +67,13 @@ struct SmtEncoding: BoSyEncoding {
             let replacer = ReplacingPropositionVisitor(replace: {
                 proposition in
                 if self.outputs.contains(proposition.name) {
-                    return FunctionApplication(function: proposition, application: [Proposition("s")])
+                    switch self.semantics {
+                    case .Mealy:
+                        let inputProps = [Proposition("s")] + self.inputs.map({Proposition($0)})
+                        return FunctionApplication(function: proposition, application: inputProps)
+                    case .Moore:
+                        return FunctionApplication(function: proposition, application: [Proposition("s")])
+                    }
                 } else {
                     return nil
                 }

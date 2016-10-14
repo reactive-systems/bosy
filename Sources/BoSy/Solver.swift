@@ -425,7 +425,9 @@ func z3(smt2: String) -> SolverResult? {
     task.waitUntilExit()
     let output = String(data: outputData, encoding: String.Encoding.utf8)!
     //print(output)
-    if output.contains("unsat") {
+    if output.contains("error") {
+        return nil
+    } else if output.contains("unsat") {
         return .UNSAT
     } else if output.contains("sat") {
         return .SAT
