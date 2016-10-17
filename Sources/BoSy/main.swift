@@ -1,5 +1,5 @@
 import Foundation
-import Dispatch
+//import Dispatch
 
 import Utils
 
@@ -217,25 +217,51 @@ let searchEnvironment = search(strategy: searchStrategy, player: .Environment, s
 let doSearchSystem = player == nil || player == .System
 let doSearchEnvironment = player == nil || player == .Environment
 
+#if os(Linux)
+let thread1 = Thread() {
+    searchSystem()
+    condition.lock()
+    finished = true
+    condition.broadcast()
+    condition.unlock()
+}
+let thread2 = Thread() {
+    searchEnvironment()
+    condition.lock()
+    finished = true
+    condition.broadcast()
+    condition.unlock()
+}
 if doSearchSystem {
-    DispatchQueue.global().async {
-        searchSystem()
-        condition.lock()
-        finished = true
-        condition.broadcast()
-        condition.unlock()
-    }
+    thread1.start()
 }
-
 if doSearchEnvironment {
-    DispatchQueue.global().async {
-        searchEnvironment()
-        condition.lock()
-        finished = true
-        condition.broadcast()
-        condition.unlock()
-    }
+    thread2.start()
 }
+#else
+    class ThreadedExecution: Thread {
+        
+        let function: () -> ()
+        
+        init(function: @escaping (() -> ())) {
+            self.function = function
+        }
+        
+        override func main() {
+            function()
+            condition.lock()
+            finished = true
+            condition.broadcast()
+            condition.unlock()
+        }
+    }
+if doSearchSystem {
+    ThreadedExecution(function: searchSystem).start()
+}
+if doSearchEnvironment {
+    ThreadedExecution(function: searchEnvironment).start()
+}
+#endif
 
 condition.lock()
 if !finished {
