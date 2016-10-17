@@ -22,29 +22,36 @@ struct SymbolicEncoding: BoSyEncoding {
         var preconditions: [Logic] = []
         var matrix: [Logic] = []
         
+        let automatonStates = automaton.states.map({ $0 })  // fix order of automaton states
+        //print(automatonStates)
+        
         let statePropositions: [Proposition] = (0..<numBitsNeeded(states.count)).map({ bit in Proposition("s\(bit)") })
         let nextStatePropositions: [Proposition] = (0..<numBitsNeeded(states.count)).map({ bit in Proposition("sp\(bit)") })
-        let automatonStatePropositions: [Proposition] = automaton.states.map({ state in automatonState(state, primed: false) })
-        let automatonNextStatePropositions: [Proposition] = automaton.states.map({ state in automatonState(state, primed: true) })
+        let automatonStatePropositions: [Proposition] = (0..<numBitsNeeded(automaton.states.count)).map({ bit in Proposition("q\(bit)") })
+        let automatonNextStatePropositions: [Proposition] = (0..<numBitsNeeded(automaton.states.count)).map({ bit in Proposition("qp\(bit)") })
         let tauPropositions: [Proposition] = (0..<numBitsNeeded(states.count)).map({ bit in tau(bit: bit) })
         let inputPropositions: [Proposition] = self.inputs.map(Proposition.init)
         let outputPropositions: [Proposition] = self.outputs.map(Proposition.init)
         let tauApplications: [FunctionApplication] = tauPropositions.map({ FunctionApplication(function: $0, application: statePropositions + inputPropositions) })
         
-        let numBits = numBitsNeeded(bound)
-        for i in bound ..< (1 << numBits) {
-            preconditions.append(!explicitToSymbolic(base: "s", value: i, bits: numBits))
-            preconditions.append(!explicitToSymbolic(base: "sp", value: i, bits: numBits))
-            matrix.append(!explicitToSymbolic(base: "t_", value: i, bits: numBits, parameters: statePropositions + inputPropositions))
+        let numBitsSystem = numBitsNeeded(bound)
+        for i in bound ..< (1 << numBitsSystem) {
+            preconditions.append(!explicitToSymbolic(base: "s", value: i, bits: numBitsSystem))
+            preconditions.append(!explicitToSymbolic(base: "sp", value: i, bits: numBitsSystem))
+            matrix.append(!explicitToSymbolic(base: "t_", value: i, bits: numBitsSystem, parameters: statePropositions + inputPropositions))
+        }
+        
+        let numBitsAutomaton = numBitsNeeded(automaton.states.count)
+        for i in automaton.states.count ..< (1 << numBitsAutomaton) {
+            preconditions.append(!explicitToSymbolic(base: "q", value: i, bits: numBitsAutomaton))
+            preconditions.append(!explicitToSymbolic(base: "qp", value: i, bits: numBitsAutomaton))
         }
         
         // initial states
-        let initialSystem = explicitToSymbolic(base: "s", value: 0, bits: numBits)
+        let initialSystem = explicitToSymbolic(base: "s", value: 0, bits: numBitsSystem)
         var initialAutomaton: [Logic] = []
         for q in automaton.initialStates {
-            let state: Logic = automatonState(q, primed: false)
-            initialAutomaton.append(automaton.states.subtracting([q]).map({ otherQ in !automatonState(otherQ, primed: false) }).reduce(state, &))
-            //initialAutomaton.append(automaton.states.map({ otherQ in !automatonState(otherQ, primed: true) }).reduce(state, &))
+            initialAutomaton.append(automatonState(q, states: automatonStates, primed: false))
         }
         assert(!initialAutomaton.isEmpty)
         matrix.append((initialSystem & initialAutomaton.reduce(Literal.False, |)) --> lambda(automatonStatePropositions, states: statePropositions))
@@ -65,29 +72,26 @@ struct SymbolicEncoding: BoSyEncoding {
             })
             
             if let condition = automaton.safetyConditions[q] {
-                safety.append(automatonState(q, primed: false) --> condition.accept(visitor: replacer))
+                safety.append(automatonState(q, states: automatonStates, primed: false) --> condition.accept(visitor: replacer))
             }
             
-            // need incoming transitions
-            var incoming: [Logic] = []
-            for (other, outgoing) in automaton.transitions {
-                for (otherPrime, guardCondition) in outgoing {
-                    if otherPrime != q {
-                        continue
-                    }
-                    if guardCondition as? Literal != nil && guardCondition as! Literal == Literal.True {
-                        incoming.append(automatonState(other, primed: false))
-                    } else {
-                        incoming.append(automatonState(other, primed: false) & guardCondition.accept(visitor: replacer))
-                    }
+            guard let outgoing = automaton.transitions[q] else {
+                continue
+            }
+            
+            for (qPrime, guardCondition) in outgoing {
+                if guardCondition as? Literal != nil && guardCondition as! Literal == Literal.True {
+                    deltas.append(automatonState(q, states: automatonStates, primed: false) & automatonState(qPrime, states: automatonStates, primed: true))
+                } else {
+                    deltas.append(automatonState(q, states: automatonStates, primed: false) & guardCondition.accept(visitor: replacer) & automatonState(qPrime, states: automatonStates, primed: true))
                 }
             }
-            deltas.append(automatonState(q, primed: true) <-> incoming.reduce(Literal.False, |))
         }
-        let delta = deltas.reduce(Literal.True, &)
+        //let delta = deltas.reduce(Literal.True, &)
+        let delta = deltas.reduce(Literal.False, |)
         
         // rejecting states
-        let rejecting: Logic = automaton.rejectingStates.map({ state in automatonState(state, primed: true) }).reduce(Literal.False, |)
+        let rejecting: Logic = automaton.rejectingStates.map({ state in automatonState(state, states: automatonStates, primed: true) }).reduce(Literal.False, |)
         
         matrix.append(
             (lambda(automatonStatePropositions, states: statePropositions) & delta & tauNextStateAssertion(states: nextStatePropositions, taus: tauApplications))
@@ -144,12 +148,10 @@ struct SymbolicEncoding: BoSyEncoding {
         return assertion.reduce(Literal.True, &)
     }
     
-    func automatonState(_ state: String, primed: Bool) -> Proposition {
-        if primed {
-            return Proposition("\(state)p")
-        } else {
-            return Proposition("\(state)")
-        }
+    func automatonState(_ state: String, states: [String], primed: Bool) -> Logic {
+        precondition(states.contains(state))
+        let base = primed ? "qp" : "q"
+        return explicitToSymbolic(base: base, value: states.index(of: state)!, bits: numBitsNeeded(states.count))
     }
     
     func lambdaProposition() -> Proposition {
