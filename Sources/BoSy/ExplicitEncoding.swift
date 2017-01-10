@@ -184,17 +184,23 @@ struct ExplicitEncoding: BoSyEncoding {
     mutating func solve(forBound bound: Int) throws -> Bool {
         Logger.default().info("build encoding for bound \(bound)")
         
+        let constraintTimer = statistics.startTimer(phase: .constraintGeneration)
         guard let instance = getEncoding(forBound: bound) else {
             throw BoSyEncodingError.EncodingFailed("could not build encoding")
         }
+        constraintTimer.stop()
         //print(instance)
         
+        let encodingTimer = statistics.startTimer(phase: .solverEncoding)
         let dimacsVisitor = DIMACSVisitor(formula: instance)
+        encodingTimer.stop()
         //print(dimacsVisitor)
         
+        let solvingTimer = statistics.startTimer(phase: .solving)
         guard let (result, assignments) = cryptominisat(dimacs: "\(dimacsVisitor)") else {
             throw BoSyEncodingError.SolvingFailed("solver failed on instance")
         }
+        solvingTimer.stop()
         
         if result == .SAT {
             // keep top level valuations of solver

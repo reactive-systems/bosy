@@ -166,16 +166,23 @@ struct InputSymbolicEncoding: BoSyEncoding {
     mutating func solve(forBound bound: Int) throws -> Bool {
         Logger.default().info("build encoding for bound \(bound)")
         
+        let constraintTimer = statistics.startTimer(phase: .constraintGeneration)
         guard let instance = getEncoding(forBound: bound) else {
             throw BoSyEncodingError.EncodingFailed("could not build encoding")
         }
+        constraintTimer.stop()
         //print(instance)
         
+        let encodingTimer = statistics.startTimer(phase: .solverEncoding)
         let qdimacsVisitor = QDIMACSVisitor(formula: instance)
+        encodingTimer.stop()
         //print(qdimacsVisitor)
+        
+        let solvingTimer = statistics.startTimer(phase: .solving)
         guard let (result, assignments) = rareqs(qdimacs: bloqqer(qdimacs: "\(qdimacsVisitor)", keepAssignments: synthesize)) else {
             throw BoSyEncodingError.SolvingFailed("solver failed on instance")
         }
+        solvingTimer.stop()
         
         if result == .SAT {
             // keep top level valuations of solver

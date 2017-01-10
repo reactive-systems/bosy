@@ -15,12 +15,15 @@ var arguments: ArraySlice<String> = CommandLine.arguments[CommandLine.arguments.
 let executable = arguments.popFirst()!
 var specificationFile: String? = nil
 var synthesize = false
-var searchStrategy: SearchStrategy = .Linear
+var searchStrategy: SearchStrategy = .Exponential
 var player: Player? = nil
 var backend: Backends = .InputSymbolic
 var paths: Bool = false
 var converter: LTL2AutomatonConverter = .ltl3ba
 var semantics: TransitionSystemType? = nil
+var printStatistics = false
+
+var statistics = BoSyStatistics()
 
 while arguments.count > 0 {
     guard let argument = arguments.popFirst() else {
@@ -91,6 +94,8 @@ while arguments.count > 0 {
         semantics = _semantics
     } else if argument == "--paths" {
         paths = true
+    } else if argument == "--statistics" {
+        printStatistics = true
     } else if !argument.hasPrefix("-") {
         specificationFile = argument
         break
@@ -101,6 +106,8 @@ while arguments.count > 0 {
 }
 
 let json: String
+
+let parseTimer = statistics.startTimer(phase: .parsing)
 
 if let specificationFile = specificationFile {
     guard let specficationString = try? String(contentsOfFile: specificationFile, encoding: String.Encoding.utf8) else {
@@ -125,6 +132,8 @@ guard var specification = BoSyInputFileFormat.fromJson(string: json) else {
     print("error: cannot parse specification")
     exit(1)
 }
+
+parseTimer.stop()
 
 if let semantics = semantics {
     specification.semantics = semantics
@@ -175,10 +184,12 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
             ltlSpec = specification.assumptions.count == 0 ? "\(guaranteeString)" : "(\(assumptionString)) -> (\(guaranteeString))"
         }
         
+        let automatonTimer = statistics.startTimer(phase: .ltl2automaton)
         guard let automaton = converter.convert(ltl: ltlSpec) else {
             Logger.default().error("could not construct automaton")
             return
         }
+        automatonTimer.stop()
 
         //Logger.default().info("automaton: \(automaton)")
 
@@ -268,5 +279,9 @@ if !finished {
     condition.wait()
 }
 condition.unlock()
+
+if printStatistics {
+    print(statistics.description)
+}
 
 

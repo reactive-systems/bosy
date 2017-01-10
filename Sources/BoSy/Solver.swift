@@ -4,27 +4,220 @@ import Utils
 
 import CAiger
 
+#if os(Linux)
+    class Process: Task {}
+#endif
+
 public enum SolverResult: Int {
     case SAT = 10
     case UNSAT = 20
 }
 
-public enum SolverInputFormat {
-    case QDIMACS
+/* The following code may be an alternative for the current function calling solver interface.
+ 
+enum SatSolverResult {
+    case unsat
+    case sat(assignment: [Int])
+}
+
+public enum Theory {
+    case SAT
+    case SMT
+    case QBF
+    case DQBF
+}
+
+public enum SolverFormat {
     case DIMACS
-}
-
-public enum SolverCapability {
-    case ReturnResult
-    case ReturnPartialAssignment
-    case ReturnCertificate
-}
-
-protocol Solver {
-    var format: SolverInputFormat { get }
+    case QDIMACS
+    case DQDIMACS
+    case QCIR14
+    case TPTP3
     
-    func solve(input: String) -> SolverResult?
+    func encode(formula: Logic) -> String {
+        switch self {
+        case .DIMACS:
+            return DIMACSVisitor(formula: formula).description
+        case .QDIMACS:
+            return QDIMACSVisitor(formula: formula).description
+        case .DQDIMACS:
+            return DQDIMACSVisitor(formula: formula).description
+        case .QCIR14:
+            return QCIRVisitor(formula: formula).description
+        case .TPTP3:
+            return TPTP3Visitor(formula: formula).description
+        }
+    }
 }
+
+protocol SolverDefinition {
+    var name: String { get }
+    var launchPath: String { get }
+    var format: SolverFormat { get }
+    
+    func getArguments(path: String) -> [String]
+    func getResult(returnCode: Int, stdout: String, stderr: String) -> SolverResult?
+}
+
+class RAReQS: SolverDefinition {
+    let name = "RAReQS"
+    let launchPath = "./Tools/rareqs"
+    let format: SolverFormat = .QDIMACS
+    
+    func getArguments(path: String) -> [String] {
+        return [path]
+    }
+    
+    func getResult(returnCode: Int, stdout: String, stderr: String) -> SolverResult? {
+        return SolverResult(rawValue: returnCode)
+    }
+}
+
+protocol SatSolverDefinition: SolverDefinition {
+    func getAssignments(stdout: String, stderr: String) -> [Int]
+}
+
+class PicoSAT: SatSolverDefinition {
+    let name = "PicoSAT"
+    let launchPath = "./Tools/picosat"
+    let format: SolverFormat = .DIMACS
+    
+    func getArguments(path: String) -> [String] {
+        return [path]
+    }
+    
+    func getResult(returnCode: Int, stdout: String, stderr: String) -> SolverResult? {
+        return SolverResult(rawValue: returnCode)
+    }
+    
+    func getAssignments(stdout: String, stderr: String) -> [Int] {
+        var assignments: [Int] = []
+        for line in stdout.components(separatedBy: "\n") {
+            if !line.hasPrefix("v") {
+                continue
+            }
+            assignments += line[line.index(after: line.startIndex)..<line.endIndex]
+                .trimmingCharacters(in: NSCharacterSet.whitespacesAndNewlines)
+                .components(separatedBy: " ")
+                .flatMap({ Int($0) })
+        }
+        return assignments
+    }
+}
+
+enum SatSolver {
+    case picosat
+    
+    var solverConfig: SatSolverDefinition {
+        switch self {
+        case .picosat:
+            return PicoSAT()
+        }
+    }
+    
+    func solve(formula: Logic) -> SatSolverResult? {
+        // encode formula
+        let solver = solverConfig
+        let encodedFormula = solver.format.encode(formula: formula)
+        
+        // write to disk
+        guard let tempFile = TempFile(suffix: ".dimacs") else {
+            return nil
+        }
+        do {
+            try encodedFormula.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
+        } catch {
+            return nil
+        }
+        
+        // start task and extract stdout and stderr
+        let task = Process()
+        task.launchPath = solver.launchPath
+        task.arguments = solver.getArguments(path: tempFile.path)
+        let stdoutPipe = Pipe()
+        let stderrPipe = Pipe()
+        task.standardOutput = stdoutPipe
+        task.standardError = stderrPipe
+        task.launch()
+        
+        // there may be a large amount of stdout data
+        // by reading it before waiting, we avoid deadlocks
+        let stdoutHandle = stdoutPipe.fileHandleForReading
+        let stdoutData = StreamHelper.readAllAvailableData(from: stdoutHandle)
+        
+        task.waitUntilExit()
+        
+        guard let stdout = String(data: stdoutData, encoding: String.Encoding.utf8) else {
+            return nil
+        }
+        
+        let stderrData = stderrPipe.fileHandleForReading.readDataToEndOfFile()
+        guard let stderr = String(data: stderrData, encoding: String.Encoding.utf8) else {
+            return nil
+        }
+        
+        guard let result = solver.getResult(returnCode: Int(task.terminationStatus), stdout: stdout, stderr: stderr) else {
+            return nil
+        }
+        
+        if result == .UNSAT {
+            return .unsat
+        }
+        return .sat(assignment: solver.getAssignments(stdout: stdout, stderr: stderr))
+    }
+}
+
+
+struct Solver {
+    let solver: SolverDefinition
+    
+    init(definition: SolverDefinition) {
+        solver = definition
+    }
+    
+    func solve(formula: Logic) -> SolverResult? {
+        // encode formula
+        let encodedFormula = solver.format.encode(formula: formula)
+        
+        // write to disk
+        guard let tempFile = TempFile(suffix: ".qdimacs") else {
+            return nil
+        }
+        do {
+            try encodedFormula.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
+        } catch {
+            return nil
+        }
+        
+        // start task and extract stdout and stderr
+        let task = Process()
+        task.launchPath = solver.launchPath
+        task.arguments = solver.getArguments(path: tempFile.path)
+        let stdoutPipe = Pipe()
+        let stderrPipe = Pipe()
+        task.standardOutput = stdoutPipe
+        task.standardError = stderrPipe
+        task.launch()
+        
+        // there may be a large amount of stdout data
+        // by reading it before waiting, we avoid deadlocks
+        let stdoutHandle = stdoutPipe.fileHandleForReading
+        let stdoutData = StreamHelper.readAllAvailableData(from: stdoutHandle)
+        
+        task.waitUntilExit()
+        
+        guard let stdout = String(data: stdoutData, encoding: String.Encoding.utf8) else {
+            return nil
+        }
+        
+        let stderrData = stderrPipe.fileHandleForReading.readDataToEndOfFile()
+        guard let stderr = String(data: stderrData, encoding: String.Encoding.utf8) else {
+            return nil
+        }
+        
+        return solver.getResult(returnCode: Int(task.terminationStatus), stdout: stdout, stderr: stderr)
+    }
+}*/
 
 public func rareqs(qdimacs: String) -> (SolverResult, [Int]?)? {
     let tempFile = TempFile(suffix: ".qdimacs")!
