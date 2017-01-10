@@ -32,7 +32,8 @@ tools: \
 	Tools/picosat \
 	Tools/rareqs \
 	Tools/syfco \
-	Tools/z3
+	Tools/z3 \
+	Tools/vampire
 
 Tools/.f:
 	mkdir -p Tools
@@ -97,11 +98,19 @@ Tools/eprover: Tools/E
 	make -C Tools/E
 	cp Tools/E/PROVER/eprover Tools/
 
-Tools/E: tools/E.tgz
+Tools/E: Tools/E.tgz
 	cd Tools ; tar xzf E.tgz
 
 tools/E.tgz: Tools/.f
 	cd Tools ; curl -OL http://wwwlehre.dhbw-stuttgart.de/~sschulz/WORK/E_DOWNLOAD/V_1.9.1/E.tgz
+
+# vampire
+Tools/vampire: Tools/Vampires
+	cp Tools/Vampires/vampire_x86_64 Tools/vampire
+Tools/Vampires: Tools/vampire.zip
+	cd Tools ; unzip vampire.zip
+Tools/vampire.zip: Tools/.f
+	cd Tools ; curl -OL http://forsyte.at/wp-content/uploads/vampire.zip
 
 # spot/ltl2tgba
 SPOT_STATIC = --enable-static
@@ -193,5 +202,5 @@ Tools/z3: Tools/z3-git
 	cp Tools/z3-git/build/z3 Tools/z3
 
 Tools/z3-git: Tools/.f
-	cd Tools ; git clone https://github.com/Z3Prover/z3.git z3-git
+	cd Tools ; git clone --branch z3-4.5.0 https://github.com/Z3Prover/z3.git z3-git
 
