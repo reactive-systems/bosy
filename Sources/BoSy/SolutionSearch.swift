@@ -15,9 +15,24 @@ enum SearchStrategy {
     }
 }
 
-enum Player {
-    case System
-    case Environment
+enum Player: Int {
+    case System      = 0b01
+    case Environment = 0b10
+}
+
+struct Players: OptionSet {
+    let rawValue: Int
+    
+    public init(rawValue: Int) {
+        self.rawValue = rawValue
+    }
+    init(player: Player) {
+        rawValue = player.rawValue
+    }
+    
+    static let system        = Players(player: .System)
+    static let environment   = Players(player: .Environment)
+    static let both: Players = [.system, .environment]
 }
 
 enum Backends: CustomStringConvertible {

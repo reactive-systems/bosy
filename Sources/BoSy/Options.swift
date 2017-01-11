@@ -1,11 +1,24 @@
 import Foundation
 
 
-enum CommandLineOptionsError: Error {
+enum CommandLineOptionsError: Error, CustomStringConvertible {
     case empty
     case unknown(argument: String)
     case noValue(argument: String)
     case wrongChoice(argument: String, choice: String, choices: [String])
+    
+    var description: String {
+        switch self {
+        case .empty:
+            return "no command line arguments given"
+        case .unknown(let argument):
+            return "unknown command line argument \"\(argument)\""
+        case .noValue(let argument):
+            return "argument \"\(argument)\" requires a value, but no value was given"
+        case .wrongChoice(let argument, let choice, let choices):
+            return "value \"\(choice)\" given for \"\(argument)\" is not valid\npossible values are \(choices)"
+        }
+    }
 }
 
 
@@ -17,7 +30,7 @@ struct BoSyOptions {
     var specificationFile: String? = nil
     var synthesize: Bool = false
     var searchStrategy: SearchStrategy = .Exponential
-    var player: Player? = nil
+    var player: Players = .both
     var backend: Backends = .InputSymbolic
     var converter: LTL2AutomatonConverter = .ltl3ba
     var semantics: TransitionSystemType? = nil
@@ -33,6 +46,9 @@ struct BoSyOptions {
             }
             
             switch argument {
+            case "-h", "--help":
+                printHelp()
+                exit(0)
             case "--synthesize":
                 synthesize = true
             case "--strategy":
@@ -53,11 +69,11 @@ struct BoSyOptions {
                 }
                 switch value {
                 case "system":
-                    player = .System
+                    player = .system
                 case "environment":
-                    player = .Environment
+                    player = .environment
                 case "both":
-                    player = nil
+                    player = .both
                 default:
                     throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: ["system", "environment", "both"])
                 }
@@ -101,9 +117,15 @@ struct BoSyOptions {
     func printHelp() {
         print("\(name) [options] instance\n\n",
               "options:\n",
-              "  --synthesize\n",
+              "  --help\t\tshow this help and exit\n",
+              "  --synthesize\t\tconstruct AIGER solution after realizability\n",
+              "  --statistics\t\tdisplay solving statistics\n",
               "  --strategy linear|exponential\n",
-              "  --player both|system|environment")
+              "  --player both|system|environment\n",
+              "  --backend \(Backends.allValues.map(String.init(describing:)).joined(separator: "|"))\n",
+              "  --semantics \(TransitionSystemType.allValues.map(String.init(describing:)).joined(separator: "|"))\n",
+              "  --automaton-tool \(LTL2AutomatonConverter.allValues.map(String.init(describing:)).joined(separator: "|"))\n"
+        )
     }
     
 }

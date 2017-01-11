@@ -13,7 +13,7 @@ do {
 } catch {
     print(error)
     options.printHelp()
-    exit(1)
+    exit(EX_USAGE)
 }
 
 let json: String
@@ -137,8 +137,8 @@ var finished = false
 let searchSystem = search(strategy: options.searchStrategy, player: .System, synthesize: options.synthesize)
 let searchEnvironment = search(strategy: options.searchStrategy, player: .Environment, synthesize: options.synthesize)
 
-let doSearchSystem = options.player == nil || options.player == .System
-let doSearchEnvironment = options.player == nil || options.player == .Environment
+let doSearchSystem = options.player.contains(.system)
+let doSearchEnvironment = options.player.contains(.environment)
 
 #if os(Linux)
 let thread1 = Thread() {
