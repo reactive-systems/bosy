@@ -1,13 +1,20 @@
 import CAiger
 import Utils
 
-protocol BoSySolution {
-    func toAiger() -> UnsafeMutablePointer<aiger>?
+protocol AigerRepresentable {
+    var aiger: UnsafeMutablePointer<aiger>? { get }
 }
+
+protocol DotRepresentable {
+    var dot: String { get }
+}
+
+protocol BoSySolution {}
 
 struct ExplicitStateSolution: BoSySolution {
     typealias State = Int
     
+    let semantics: TransitionSystemType
     var states: [State]
     var initial: State
     var outputGuards: [State: [String: Logic]]
@@ -16,9 +23,10 @@ struct ExplicitStateSolution: BoSySolution {
     let inputs: [String]
     let outputs: [String]
     
-    init(bound: Int, inputs: [String], outputs: [String]) {
+    init(bound: Int, inputs: [String], outputs: [String], semantics: TransitionSystemType) {
         self.inputs = inputs
         self.outputs = outputs
+        self.semantics = semantics
         states = Array(0..<bound)
         initial = 0
         outputGuards = [:]
@@ -37,8 +45,10 @@ struct ExplicitStateSolution: BoSySolution {
         outputInState[output] = (outputInState[output] ?? Literal.False) | withGuard
         outputGuards[inState] = outputInState
     }
-    
-    func toAiger() -> UnsafeMutablePointer<aiger>? {
+}
+
+extension ExplicitStateSolution: AigerRepresentable {
+    private func _toAiger() -> UnsafeMutablePointer<aiger>? {
         let latches = (0..<numBitsNeeded(states.count)).map({ bit in Proposition("s\(bit)") })
         let aigerVisitor = AigerVisitor(inputs: inputs.map(Proposition.init), latches: latches)
         
@@ -85,7 +95,7 @@ struct ExplicitStateSolution: BoSySolution {
         return aigerVisitor.aig
     }
     
-    func stateToBits(_ state: Int, withLatches latches: [Proposition]) -> [Logic] {
+    private func stateToBits(_ state: Int, withLatches latches: [Proposition]) -> [Logic] {
         var bits: [Logic] = []
         for (value, proposition) in zip(binaryFrom(state, bits: numBitsNeeded(states.count)).characters, latches) {
             assert(["0", "1"].contains(value))
@@ -96,5 +106,86 @@ struct ExplicitStateSolution: BoSySolution {
             }
         }
         return bits
+    }
+    
+    var aiger: UnsafeMutablePointer<aiger>? {
+        return _toAiger()
+    }
+}
+
+extension ExplicitStateSolution: DotRepresentable {
+    
+    private func matchOutputsAndTransitions() -> [State: [State: (String, Logic)]] {
+        precondition(semantics == .Mealy)
+        var outputTransitions: [State: [State: (String, Logic)]] = [:]
+        
+        for (source, outputs) in outputGuards {
+            for (target, transitionGuard) in transitions[source]! {
+                for (output, outputGuard) in outputs {
+                    let newGuard = transitionGuard & outputGuard
+                    if newGuard as? Literal != nil && newGuard as! Literal == Literal.False {
+                        continue
+                    }
+                    var sourceOut: [State: (String, Logic)] = outputTransitions[source] ?? [:]
+                    sourceOut[target] = (output, newGuard)
+                    outputTransitions[source] = sourceOut
+                }
+            }
+            
+        }
+        return outputTransitions
+    }
+    
+    private func _toDot() -> String {
+        var dot: [String] = []
+        
+        // initial state
+        dot += ["\t_init [style=\"invis\"];", "\t_init -> s\(initial)[label=\"\"];"]
+        
+        switch semantics {
+        case .Mealy:
+            for state in states {
+                dot.append("\ts\(state)[shape=rectangle,label=\"s\(state)\"];")
+            }
+            
+            let transitionOutputs = matchOutputsAndTransitions()
+            for (source, outgoing) in transitionOutputs {
+                for (target, (output, transitionGuard)) in outgoing {
+                    dot.append("\ts\(source) -> s\(target) [label=\"\(transitionGuard) / \(output)\"];")
+                }
+            }
+            
+            
+        case .Moore:
+            for state in states {
+                var outputs: [String] = []
+                if let outputGuards = self.outputGuards[state] {
+                    for (output, outputGuard) in outputGuards {
+                        guard let literal = outputGuard as? Literal else {
+                            fatalError()
+                        }
+                        if (literal == Literal.True) {
+                            outputs.append(output)
+                        }
+                    }
+                }
+                
+                
+                dot.append("\ts\(state)[shape=rectangle,label=\"s\(state)\n\(outputs.joined())\"];")
+            }
+            
+            for (source, outgoing) in transitions {
+                for (target, constraint) in outgoing {
+                    dot.append("\ts\(source) -> s\(target) [label=\"\(constraint)\"];")
+                }
+            }
+        }
+        
+        
+        return "digraph graphname {\n\(dot.joined(separator: "\n"))\n}"
+    }
+    
+    var dot: String {
+        return _toDot()
     }
 }

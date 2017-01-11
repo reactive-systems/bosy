@@ -245,7 +245,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
             functions[proposition] = literal
         }
         
-        var solution = ExplicitStateSolution(bound: solutionBound, inputs: inputs, outputs: outputs)
+        var solution = ExplicitStateSolution(bound: solutionBound, inputs: inputs, outputs: outputs, semantics: semantics)
         for source in 0..<solutionBound {
             for target in 0..<solutionBound {
                 let transition = functions[tau(source, target)]!

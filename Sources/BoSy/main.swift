@@ -116,13 +116,23 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
                 Logger.default().error("could not construct solution")
                 return
             }
-            guard let aiger_solution = solution.toAiger() else {
-                Logger.default().error("could not encode solution as AIGER")
-                return
+            switch options.target {
+            case .aiger:
+                guard let aiger_solution = (solution as? AigerRepresentable)?.aiger else {
+                    Logger.default().error("could not encode solution as AIGER")
+                    return
+                }
+                let minimized = minimizeWithABC(aiger_solution)
+                aiger_write_to_file(minimized, aiger_ascii_mode, stdout)
+                player == .System ? print("realizable") : print("unrealizable")
+            case .dot:
+                guard let dot = (solution as? DotRepresentable)?.dot else {
+                    Logger.default().error("could not encode solution as dot")
+                    return
+                }
+                print(dot)
             }
-            let minimized = minimizeWithABC(aiger_solution)
-            aiger_write_to_file(minimized, aiger_ascii_mode, stdout)
-            player == .System ? print("realizable") : print("unrealizable")
+
             return
         }
     }

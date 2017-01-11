@@ -21,6 +21,33 @@ enum CommandLineOptionsError: Error, CustomStringConvertible {
     }
 }
 
+enum Target: CustomStringConvertible {
+    case aiger
+    case dot
+    
+    static func from(string: String) -> Target? {
+        switch string {
+        case "aiger":
+            return .aiger
+        case "dot":
+            return .dot
+        default:
+            return nil
+        }
+    }
+    
+    static let allValues: [Target] = [.aiger, .dot]
+    
+    var description: String {
+        switch self {
+        case .aiger:
+            return "aiger"
+        case .dot:
+            return "dot"
+        }
+    }
+}
+
 
 struct BoSyOptions {
     
@@ -35,6 +62,7 @@ struct BoSyOptions {
     var converter: LTL2AutomatonConverter = .ltl3ba
     var semantics: TransitionSystemType? = nil
     var statistics: BoSyStatistics? = nil
+    var target: Target = .aiger
     
     mutating func parseCommandLine() throws {
         var arguments: ArraySlice<String> = CommandLine.arguments[CommandLine.arguments.indices]
@@ -103,6 +131,14 @@ struct BoSyOptions {
                 semantics = _semantics
             case "--statistics":
                 statistics = BoSyStatistics()
+            case "--target":
+                guard let value = arguments.popFirst() else {
+                    throw CommandLineOptionsError.noValue(argument: argument)
+                }
+                guard let _target = Target.from(string: value) else {
+                    throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: Target.allValues.map(String.init(describing:)))
+                }
+                target = _target
             default:
                 if !argument.hasPrefix("-") {
                     specificationFile = argument

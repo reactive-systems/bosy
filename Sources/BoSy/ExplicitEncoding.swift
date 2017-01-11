@@ -219,7 +219,7 @@ struct ExplicitEncoding: BoSyEncoding {
             return nil
         }
         
-        var solution = ExplicitStateSolution(bound: solutionBound, inputs: inputs, outputs: outputs)
+        var solution = ExplicitStateSolution(bound: solutionBound, inputs: inputs, outputs: outputs, semantics: semantics)
         for source in 0..<solutionBound {
             for target in 0..<solutionBound {
                 var transitions: [Logic] = []
