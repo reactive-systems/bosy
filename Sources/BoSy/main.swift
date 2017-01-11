@@ -5,111 +5,22 @@ import Utils
 
 import CAiger
 
-func printArguments(name: String) {
-    print("\(name) [--synthesize] [--strategy linear|exponential] [--player both|system|environment] instance.json")
-}
 
+var options = BoSyOptions()
 
-
-var arguments: ArraySlice<String> = CommandLine.arguments[CommandLine.arguments.indices]
-let executable = arguments.popFirst()!
-var specificationFile: String? = nil
-var synthesize = false
-var searchStrategy: SearchStrategy = .Exponential
-var player: Player? = nil
-var backend: Backends = .InputSymbolic
-var paths: Bool = false
-var converter: LTL2AutomatonConverter = .ltl3ba
-var semantics: TransitionSystemType? = nil
-var printStatistics = false
-
-var statistics = BoSyStatistics()
-
-while arguments.count > 0 {
-    guard let argument = arguments.popFirst() else {
-        printArguments(name: executable)
-        exit(1)
-    }
-    if argument == "--synthesize" {
-        synthesize = true
-    } else if argument == "--strategy" {
-        guard let value = arguments.popFirst() else {
-            print("no value for strategy given, can be either linear or exponential")
-            exit(1)
-        }
-        switch value {
-        case "linear":
-            searchStrategy = .Linear
-        case "exponential":
-            searchStrategy = .Exponential
-        default:
-            print("wrong value \"\(value)\" for strategy, can be either linear or exponential")
-            exit(1)
-        }
-    } else if argument == "--player" {
-        guard let value = arguments.popFirst() else {
-            print("no value for player given, can be either system or environment")
-            exit(1)
-        }
-        switch value {
-        case "system":
-            player = .System
-        case "environment":
-            player = .Environment
-        case "both":
-            player = nil
-        default:
-            print("wrong value \"\(value)\" for player, can be either system or environment")
-            exit(1)
-        }
-    } else if argument == "--backend" {
-        guard let value = arguments.popFirst() else {
-            print("no value for backend given")
-            exit(1)
-        }
-        guard let _backend = Backends.fromString(value) else {
-            print("invalid backend selected")
-            exit(1)
-        }
-        backend = _backend
-    } else if argument == "--automaton-tool" {
-        guard let value = arguments.popFirst() else {
-            print("no value for automaton tool given")
-            exit(1)
-        }
-        guard let automatonConverter = LTL2AutomatonConverter.from(string: value) else {
-            print("invalid automaton tool selected")
-            exit(1)
-        }
-        converter = automatonConverter
-    } else if argument == "--semantics" {
-        guard let value = arguments.popFirst() else {
-            print("no value for semantics given")
-            exit(1)
-        }
-        guard let _semantics = TransitionSystemType.from(string: value) else {
-            print("invalid semantics selected")
-            exit(1)
-        }
-        semantics = _semantics
-    } else if argument == "--paths" {
-        paths = true
-    } else if argument == "--statistics" {
-        printStatistics = true
-    } else if !argument.hasPrefix("-") {
-        specificationFile = argument
-        break
-    } else {
-        printArguments(name: executable)
-        exit(1)
-    }
+do {
+    try options.parseCommandLine()
+} catch {
+    print(error)
+    options.printHelp()
+    exit(1)
 }
 
 let json: String
 
-let parseTimer = statistics.startTimer(phase: .parsing)
+let parseTimer = options.statistics?.startTimer(phase: .parsing)
 
-if let specificationFile = specificationFile {
+if let specificationFile = options.specificationFile {
     guard let specficationString = try? String(contentsOfFile: specificationFile, encoding: String.Encoding.utf8) else {
         print("error: cannot read input file \(specificationFile)")
         exit(1)
@@ -133,13 +44,14 @@ guard var specification = BoSyInputFileFormat.fromJson(string: json) else {
     exit(1)
 }
 
-parseTimer.stop()
+parseTimer?.stop()
 
-if let semantics = semantics {
+// override semantics if given as command line argument
+if let semantics = options.semantics {
     specification.semantics = semantics
 }
 
-if paths {
+/*if paths {
     let unrolling = Unrolling(specification: specification)
     var i = 1
     while true {
@@ -166,7 +78,7 @@ if paths {
         
         i += 1
     }
-}
+}*/
 
 //Logger.default().info("inputs: \(specification.inputs), outputs: \(specification.outputs)")
 //Logger.default().info("assumptions: \(specification.assumptions), guarantees: \(specification.guarantees)")
@@ -184,16 +96,16 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
             ltlSpec = specification.assumptions.count == 0 ? "\(guaranteeString)" : "(\(assumptionString)) -> (\(guaranteeString))"
         }
         
-        let automatonTimer = statistics.startTimer(phase: .ltl2automaton)
-        guard let automaton = converter.convert(ltl: ltlSpec) else {
+        let automatonTimer = options.statistics?.startTimer(phase: .ltl2automaton)
+        guard let automaton = options.converter.convert(ltl: ltlSpec) else {
             Logger.default().error("could not construct automaton")
             return
         }
-        automatonTimer.stop()
+        automatonTimer?.stop()
 
         //Logger.default().info("automaton: \(automaton)")
 
-        var search = SolutionSearch(specification: specification, automaton: automaton, searchStrategy: strategy, player: player, backend: backend, synthesize: synthesize)
+        var search = SolutionSearch(specification: specification, automaton: automaton, searchStrategy: strategy, player: player, backend: options.backend, synthesize: synthesize)
 
         if search.hasSolution() {
             if !synthesize {
@@ -222,11 +134,11 @@ let condition = NSCondition()
 var finished = false
 
 
-let searchSystem = search(strategy: searchStrategy, player: .System, synthesize: synthesize)
-let searchEnvironment = search(strategy: searchStrategy, player: .Environment, synthesize: synthesize)
+let searchSystem = search(strategy: options.searchStrategy, player: .System, synthesize: options.synthesize)
+let searchEnvironment = search(strategy: options.searchStrategy, player: .Environment, synthesize: options.synthesize)
 
-let doSearchSystem = player == nil || player == .System
-let doSearchEnvironment = player == nil || player == .Environment
+let doSearchSystem = options.player == nil || options.player == .System
+let doSearchEnvironment = options.player == nil || options.player == .Environment
 
 #if os(Linux)
 let thread1 = Thread() {
@@ -280,7 +192,7 @@ if !finished {
 }
 condition.unlock()
 
-if printStatistics {
+if let statistics = options.statistics {
     print(statistics.description)
 }
 

@@ -20,7 +20,7 @@ enum Player {
     case Environment
 }
 
-enum Backends {
+enum Backends: CustomStringConvertible {
     case Explicit
     case InputSymbolic
     case StateSymbolic
@@ -41,6 +41,29 @@ enum Backends {
                 return .Smt
             default:
                 return nil
+        }
+    }
+    
+    static let allValues: [Backends] = [
+        .Explicit,
+        .InputSymbolic,
+        .StateSymbolic,
+        .Symbolic,
+        .Smt
+    ]
+    
+    var description: String {
+        switch self {
+        case .Explicit:
+            return "explicit"
+        case .InputSymbolic:
+            return "input-symbolic"
+        case .StateSymbolic:
+            return "state-symbolic"
+        case .Symbolic:
+            return "symbolic"
+        case .Smt:
+            return "smt"
         }
     }
 }

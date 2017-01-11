@@ -4,7 +4,7 @@ import Utils
 
 import LTL
 
-enum TransitionSystemType {
+enum TransitionSystemType: CustomStringConvertible {
     case Mealy
     case Moore
     
@@ -23,6 +23,17 @@ enum TransitionSystemType {
         switch self {
             case .Mealy: return .Moore
             case .Moore: return .Mealy
+        }
+    }
+    
+    static let allValues: [TransitionSystemType] = [.Mealy, .Moore]
+    
+    var description: String {
+        switch self {
+        case .Mealy:
+            return "mealy"
+        case .Moore:
+            return "moore"
         }
     }
 }

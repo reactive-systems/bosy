@@ -138,18 +138,18 @@ struct SmtEncoding: BoSyEncoding {
     mutating func solve(forBound bound: Int) throws -> Bool {
         Logger.default().info("build encoding for bound \(bound)")
         
-        let constraintTimer = statistics.startTimer(phase: .constraintGeneration)
+        let constraintTimer = options.statistics?.startTimer(phase: .constraintGeneration)
         guard let instance = getEncoding(forBound: bound) else {
             throw BoSyEncodingError.EncodingFailed("could not build encoding")
         }
-        constraintTimer.stop()
+        constraintTimer?.stop()
         //print(instance)
         
-        let solvingTimer = statistics.startTimer(phase: .solving)
+        let solvingTimer = options.statistics?.startTimer(phase: .solving)
         guard let result = z3(smt2: instance) else {
             throw BoSyEncodingError.SolvingFailed("solver failed on instance")
         }
-        solvingTimer.stop()
+        solvingTimer?.stop()
         
         return result == .SAT
     }
