@@ -198,7 +198,7 @@ func _spot(ltl: String) -> CoBüchiAutomaton? {
         let task = Process()
     #endif
 
-    task.launchPath = "./Tools/spot-2.1.1/bin/ltl2tgba"
+    task.launchPath = "./Tools/ltl2tgba"
     task.arguments = ["--spin", "--low", "-f", "(\(ltl))"]
     
     let stdoutPipe = Pipe()
