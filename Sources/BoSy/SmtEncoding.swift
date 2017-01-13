@@ -28,10 +28,10 @@ struct SmtEncoding: BoSyEncoding {
         
         let states = 0..<bound
         
-        var smt = String()
+        var smt = "(set-logic UFDTLIA)\n"
         
         // states
-        smt.append("(declare-datatypes () ((S \(states.map({ "s\($0)" }).joined(separator: " ")))))\n")
+        smt.append("(declare-datatypes () ((S \(states.map({ "(s\($0))" }).joined(separator: " ")))))\n")
         
         // lambdas
         for q in automaton.states {
@@ -47,11 +47,11 @@ struct SmtEncoding: BoSyEncoding {
         smt.append("(declare-fun tau (S \(inputs.map({ name in "Bool" }).joined(separator: " "))) S)\n")
         
         switch semantics {
-        case .Moore:
+        case .moore:
             for o in outputs {
                 smt.append("(declare-fun \(o) (S) Bool)\n")
             }
-        case .Mealy:
+        case .mealy:
             for o in outputs {
                 smt.append("(declare-fun \(o) (S \(inputs.map({ name in "Bool" }).joined(separator: " "))) Bool)\n")
             }
@@ -68,10 +68,10 @@ struct SmtEncoding: BoSyEncoding {
                 proposition in
                 if self.outputs.contains(proposition.name) {
                     switch self.semantics {
-                    case .Mealy:
+                    case .mealy:
                         let inputProps = [Proposition("s")] + self.inputs.map({Proposition($0)})
                         return FunctionApplication(function: proposition, application: inputProps)
-                    case .Moore:
+                    case .moore:
                         return FunctionApplication(function: proposition, application: [Proposition("s")])
                     }
                 } else {
@@ -145,13 +145,17 @@ struct SmtEncoding: BoSyEncoding {
         constraintTimer?.stop()
         //print(instance)
         
+        guard let solver = options.solver?.instance as? SmtSolver else {
+            throw BoSyEncodingError.SolvingFailed("solver creation failed")
+        }
+        
         let solvingTimer = options.statistics?.startTimer(phase: .solving)
-        guard let result = z3(smt2: instance) else {
+        guard let result = solver.solve(formula: instance) else {
             throw BoSyEncodingError.SolvingFailed("solver failed on instance")
         }
         solvingTimer?.stop()
         
-        return result == .SAT
+        return result == .sat
     }
     
     func extractSolution() -> BoSySolution? {

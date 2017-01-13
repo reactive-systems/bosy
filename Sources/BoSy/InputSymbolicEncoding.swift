@@ -100,10 +100,10 @@ struct InputSymbolicEncoding: BoSyEncoding {
         let outerExistentials: [Proposition]
         
         switch semantics {
-        case .Mealy:
+        case .mealy:
             innerExistentials = taus + outputPropositions
             outerExistentials = lambdas + lambdaSharps
-        case .Moore:
+        case .moore:
             innerExistentials = taus
             outerExistentials = lambdas + lambdaSharps + outputPropositions
         }
@@ -173,21 +173,19 @@ struct InputSymbolicEncoding: BoSyEncoding {
         constraintTimer?.stop()
         //print(instance)
         
-        let encodingTimer = options.statistics?.startTimer(phase: .solverEncoding)
-        let qdimacsVisitor = QDIMACSVisitor(formula: instance)
-        encodingTimer?.stop()
-        //print(qdimacsVisitor)
+        guard let solver = options.solver?.instance as? QbfSolver else {
+            throw BoSyEncodingError.SolvingFailed("solver creation failed")
+        }
         
         let solvingTimer = options.statistics?.startTimer(phase: .solving)
-        guard let (result, assignments) = rareqs(qdimacs: bloqqer(qdimacs: "\(qdimacsVisitor)", keepAssignments: synthesize)) else {
+        guard let result = solver.solve(formula: instance, preprocessor: Bloqqer(preserveAssignments: self.synthesize)) else {
             throw BoSyEncodingError.SolvingFailed("solver failed on instance")
         }
         solvingTimer?.stop()
         
-        if result == .SAT {
+        if case .sat(var assignments) = result {
             // keep top level valuations of solver
             let topLevel = instance as! Quantifier
-            var assignments = qdimacsVisitor.getAssignment(fromAssignment: assignments!)
             let remove = assignments.filter({ (key, value) in !topLevel.variables.contains(key) })
             for (proposition, _) in remove {
                 assignments.removeValue(forKey: proposition)
@@ -197,6 +195,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
             self.solutionBound = bound
             return true
         }
+        
         return false
     }
     
@@ -207,38 +206,35 @@ struct InputSymbolicEncoding: BoSyEncoding {
         }
         //print(instance)
         
-        let qdimacsVisitor = QDIMACSVisitor(formula: instance)
+        guard let solver = options.solver?.instance as? QbfSolver else {
+            return nil
+        }
         
-        // have to solve it again without preprocessor to get useful assignments
-        guard let (result, additionalAssignments) = rareqs(qdimacs: "\(qdimacsVisitor)") else {
+        // have to solve it again without preprocessor to get assignments of remaining top-level variables
+        guard let result = solver.solve(formula: instance, preprocessor: nil) else {
             Logger.default().error("solver failed on instance")
             return nil
         }
-        assert(result == .SAT)
+        guard case .sat(let additionalAssignments) = result else {
+            Logger.default().error("solver gave unexpected result")
+            return nil
+        }
         
-        //print(assignments)
-        let origAssignment = qdimacsVisitor.getAssignment(fromAssignment: additionalAssignments!)
-        //print(origAssignment)
-        let reducedInstance = instance.eval(assignment: origAssignment)
+        //print(additionalAssignments)
+        let reducedInstance = instance.eval(assignment: additionalAssignments)
         //print(reducedInstance)
         
-        let newVisitor = QCIRVisitor(formula: reducedInstance)
-        guard let (res, cert) = quabs(qcir: "\(newVisitor)") else {
+        guard let certificationResult = QuAbS().solve(formula: reducedInstance) else {
             Logger.default().error("could not certify with QuAbS")
             return nil
         }
-        assert(res == .SAT)
-        guard let certificate = cert else {
+        
+        guard case .sat(var functions) = certificationResult else {
+            Logger.default().error("solver gave unexpected result")
             return nil
         }
-        guard let minimizedCertificate = minimizeWithABC(certificate) else {
-            Logger.default().error("could not minimize certificate with ABC")
-            return nil
-        }
-        aiger_reset(certificate)
-        var functions = newVisitor.translate(certificate: minimizedCertificate)
-        aiger_reset(minimizedCertificate)
-        for (proposition, literal) in origAssignment {
+
+        for (proposition, literal) in additionalAssignments {
             functions[proposition] = literal
         }
         for (proposition, literal) in assignments {

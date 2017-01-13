@@ -4,38 +4,18 @@ import Utils
 
 import LTL
 
-enum TransitionSystemType: CustomStringConvertible {
-    case Mealy
-    case Moore
-    
-    static func from(string: String) -> TransitionSystemType? {
-        switch string {
-        case "mealy":
-            return .Mealy
-        case "moore":
-            return .Moore
-        default:
-            return nil
-        }
-    }
+enum TransitionSystemType: String {
+    case mealy = "mealy"
+    case moore = "moore"
     
     func swap() -> TransitionSystemType {
         switch self {
-            case .Mealy: return .Moore
-            case .Moore: return .Mealy
+            case .mealy: return .moore
+            case .moore: return .mealy
         }
     }
     
-    static let allValues: [TransitionSystemType] = [.Mealy, .Moore]
-    
-    var description: String {
-        switch self {
-        case .Mealy:
-            return "mealy"
-        case .Moore:
-            return "moore"
-        }
-    }
+    static let allValues: [TransitionSystemType] = [.mealy, .moore]
 }
 
 protocol InputFileFormat {
@@ -77,7 +57,7 @@ struct BoSyInputFileFormat: InputFileFormat {
             Logger.default().error("semantics is not given as string")
             return nil
         }
-        guard let semantics = TransitionSystemType.from(string: semanticsString) else {
+        guard let semantics = TransitionSystemType(rawValue: semanticsString) else {
             Logger.default().error("invalid semantics, expect either \"mealy\" or \"moore\", found \"\(semanticsString)\"")
             return nil
         }

@@ -8,7 +8,7 @@ debug: tools
 	swift build
 
 release: tools
-	swift build --configuration release
+	swift build --configuration release -Xcc -O3 -Xcc -DNDEBUG -Xswiftc -Ounchecked
 
 test:
 	swift test
@@ -25,8 +25,10 @@ tools: \
 	Tools/bloqqer \
 	Tools/bloqqer-031 \
 	Tools/cryptominisat5 \
+	Tools/cvc4 \
+	Tools/depqbf \
 	Tools/eprover \
-	#Tools/ltl2tgba \
+	Tools/ltl2tgba \
 	Tools/ltl3ba \
 	Tools/idq \
 	Tools/picosat \
@@ -91,6 +93,35 @@ Tools/cryptominisat-5.0.1: Tools/cryptominisat-5.0.1.tar.gz
 Tools/cryptominisat-5.0.1.tar.gz: Tools/.f
 	cd Tools ; curl -OL https://github.com/msoos/cryptominisat/archive/5.0.1.tar.gz
 	mv Tools/5.0.1.tar.gz Tools/cryptominisat-5.0.1.tar.gz
+
+# cvc4
+Tools/cvc4: Tools/cvc4-1.4/builds/bin/cvc4
+	cp Tools/cvc4-1.4/builds/bin/cvc4 Tools/cvc4
+
+Tools/cvc4-1.4/builds/bin/cvc4: Tools/cvc4-1.4
+	cd Tools/cvc4-1.4 ; ./configure --enable-static-binary MAC_STATIC_BINARY_MANUAL_OVERRIDE=1 #--best --enable-gpl
+	make -j4 -C Tools/cvc4-1.4
+
+Tools/cvc4-1.4: Tools/cvc4-1.4.tar.gz
+	cd Tools ; tar xzf cvc4-1.4.tar.gz
+
+Tools/cvc4-1.4.tar.gz: Tools/.f
+	cd Tools ; curl -OL https://cvc4.cs.nyu.edu/builds/src/cvc4-1.4.tar.gz
+
+# depqbf
+Tools/depqbf: Tools/depqbf-version-5.01/depqbf
+	cp Tools/depqbf-version-5.01/depqbf Tools/depqbf
+
+Tools/depqbf-version-5.01/depqbf: Tools/depqbf-version-5.01
+	make -C Tools/depqbf-version-5.01
+
+Tools/depqbf-version-5.01: Tools/depqbf-5.01.tar.gz
+	cd Tools ; tar xzf depqbf-5.01.tar.gz
+
+Tools/depqbf-5.01.tar.gz: Tools/.f
+	cd Tools ; curl -OL https://github.com/lonsing/depqbf/archive/version-5.01.tar.gz
+	mv Tools/version-5.01.tar.gz Tools/depqbf-5.01.tar.gz
+
 
 # eprover
 Tools/eprover: Tools/E

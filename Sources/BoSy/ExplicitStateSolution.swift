@@ -116,7 +116,7 @@ extension ExplicitStateSolution: AigerRepresentable {
 extension ExplicitStateSolution: DotRepresentable {
     
     private func matchOutputsAndTransitions() -> [State: [State: (String, Logic)]] {
-        precondition(semantics == .Mealy)
+        precondition(semantics == .mealy)
         var outputTransitions: [State: [State: (String, Logic)]] = [:]
         
         for (source, outputs) in outputGuards {
@@ -143,7 +143,7 @@ extension ExplicitStateSolution: DotRepresentable {
         dot += ["\t_init [style=\"invis\"];", "\t_init -> s\(initial)[label=\"\"];"]
         
         switch semantics {
-        case .Mealy:
+        case .mealy:
             for state in states {
                 dot.append("\ts\(state)[shape=rectangle,label=\"s\(state)\"];")
             }
@@ -156,7 +156,7 @@ extension ExplicitStateSolution: DotRepresentable {
             }
             
             
-        case .Moore:
+        case .moore:
             for state in states {
                 var outputs: [String] = []
                 if let outputGuards = self.outputGuards[state] {

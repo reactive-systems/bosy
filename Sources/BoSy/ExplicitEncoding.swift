@@ -48,7 +48,7 @@ struct ExplicitEncoding: BoSyEncoding {
             matrix.append(conjunction.reduce(Literal.True, &))
             
             func getRenamer(i: BooleanAssignment) -> RenamingBooleanVisitor {
-                if semantics == .Mealy {
+                if semantics == .mealy {
                     return RenamingBooleanVisitor(rename: { name in self.outputs.contains(name) ? self.output(name, forState: source, andInputs: i) : name })
                 } else {
                     return RenamingBooleanVisitor(rename: { name in self.outputs.contains(name) ? self.output(name, forState: source) : name })
@@ -110,7 +110,7 @@ struct ExplicitEncoding: BoSyEncoding {
         var outputPropositions: [Proposition] = []
         for o in outputs {
             for s in 0..<bound {
-                if semantics == .Mealy {
+                if semantics == .mealy {
                     for i in allBooleanAssignments(variables: inputPropositions) {
                         outputPropositions.append(Proposition(output(o, forState: s, andInputs: i)))
                     }
@@ -173,10 +173,10 @@ struct ExplicitEncoding: BoSyEncoding {
     
     func output(_ name: String, forState state: Int, andInputs inputs: BooleanAssignment? = nil) -> String {
         guard let inputs = inputs else {
-            assert(semantics == .Moore)
+            assert(semantics == .moore)
             return "\(name)_\(state)"
         }
-        assert(semantics == .Mealy)
+        assert(semantics == .mealy)
         return "\(name)_\(state)_\(bitStringFromAssignment(inputs))"
     }
 
@@ -191,20 +191,19 @@ struct ExplicitEncoding: BoSyEncoding {
         constraintTimer?.stop()
         //print(instance)
         
-        let encodingTimer = options.statistics?.startTimer(phase: .solverEncoding)
-        let dimacsVisitor = DIMACSVisitor(formula: instance)
-        encodingTimer?.stop()
-        //print(dimacsVisitor)
+        guard let solver = options.solver?.instance as? SatSolver else {
+            throw BoSyEncodingError.SolvingFailed("solver creation failed")
+        }
         
         let solvingTimer = options.statistics?.startTimer(phase: .solving)
-        guard let (result, assignments) = cryptominisat(dimacs: "\(dimacsVisitor)") else {
+        guard let result = solver.solve(formula: instance) else {
             throw BoSyEncodingError.SolvingFailed("solver failed on instance")
         }
         solvingTimer?.stop()
         
-        if result == .SAT {
+        if case .sat(let assignments) = result {
             // keep top level valuations of solver
-            self.assignments = dimacsVisitor.getAssignment(fromAssignment: assignments!)
+            self.assignments = assignments
             self.solutionBound = bound
             return true
         }
@@ -238,7 +237,7 @@ struct ExplicitEncoding: BoSyEncoding {
             for output in outputs {
                 let enabled: Logic
                 switch semantics {
-                case .Mealy:
+                case .mealy:
                     var clauses: [Logic] = []
                     for i in allBooleanAssignments(variables: inputPropositions) {
                         let proposition = Proposition(self.output(output, forState: source, andInputs: i))
@@ -248,7 +247,7 @@ struct ExplicitEncoding: BoSyEncoding {
                         }
                     }
                     enabled = clauses.reduce(Literal.True, &)
-                case .Moore:
+                case .moore:
                     let proposition = Proposition(self.output(output, forState: source))
                     enabled = assignments[proposition]!
                 }

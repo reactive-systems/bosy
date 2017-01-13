@@ -64,7 +64,7 @@ struct SymbolicEncoding: BoSyEncoding {
             let replacer = ReplacingPropositionVisitor(replace: {
                 proposition in
                 if self.outputs.contains(proposition.name) {
-                    let dependencies = self.semantics == .Mealy ? statePropositions + inputPropositions : statePropositions
+                    let dependencies = self.semantics == .mealy ? statePropositions + inputPropositions : statePropositions
                     return FunctionApplication(function: proposition, application: dependencies)
                 } else {
                     return nil
@@ -110,7 +110,7 @@ struct SymbolicEncoding: BoSyEncoding {
         let lambdaSharpPropositions: [Proposition] = [lambdaSharpProposition()]
         
         let universalQuantified: Logic = Quantifier(.Forall, variables: statePropositions + nextStatePropositions + automatonStatePropositions + automatonNextStatePropositions + inputPropositions, scope: formula)
-        let outputQuantification: Logic = Quantifier(.Exists, variables: outputPropositions, scope: universalQuantified, arity: semantics == .Mealy ? numBitsNeeded(states.count) + self.inputs.count : numBitsNeeded(states.count))
+        let outputQuantification: Logic = Quantifier(.Exists, variables: outputPropositions, scope: universalQuantified, arity: semantics == .mealy ? numBitsNeeded(states.count) + self.inputs.count : numBitsNeeded(states.count))
         let tauQuantification: Logic = Quantifier(.Exists, variables: tauPropositions, scope: outputQuantification, arity: numBitsNeeded(states.count) + self.inputs.count)
         let lambdaQuantification: Logic = Quantifier(.Exists, variables: lambdaPropositions + lambdaSharpPropositions, scope: tauQuantification, arity: numBitsNeeded(states.count))
         
@@ -188,24 +188,17 @@ struct SymbolicEncoding: BoSyEncoding {
         constraintTimer?.stop()
         //print(instance)
         
-        let encodingTimer = options.statistics?.startTimer(phase: .solverEncoding)
-        let dqdimacsVisitor = DQDIMACSVisitor(formula: instance)
-        encodingTimer?.stop()
-        //print(dqdimacsVisitor)
+        guard let solver = options.solver?.instance as? DqbfSolver else {
+            throw BoSyEncodingError.SolvingFailed("solver creation failed")
+        }
         
         let solvingTimer = options.statistics?.startTimer(phase: .solving)
-        guard let result = idq(dqdimacs: "\(dqdimacsVisitor)") else {
+        guard let result = solver.solve(formula: instance) else {
             throw BoSyEncodingError.SolvingFailed("solver failed on instance")
         }
         solvingTimer?.stop()
         
-        return result == .SAT
-        /*let tptp3Transformer = TPTP3Visitor(formula: instance)
-        print(tptp3Transformer)
-        guard let result = eprover(tptp3: "\(tptp3Transformer)") else {
-            throw BoSyEncodingError.SolvingFailed("solver failed on instance")
-        }
-        return result == .SAT*/
+        return result == .sat
     }
     
     func extractSolution() -> BoSySolution? {

@@ -116,9 +116,9 @@ struct CoBüchiAutomaton: GraphRepresentable {
     }
 }
 
-enum LTL2AutomatonConverter: CustomStringConvertible {
-    case ltl3ba
-    case spot
+enum LTL2AutomatonConverter: String {
+    case ltl3ba = "ltl3ba"
+    case spot   = "spot"
     
     func convert(ltl: String) -> CoBüchiAutomaton? {
         switch self {
@@ -129,27 +129,7 @@ enum LTL2AutomatonConverter: CustomStringConvertible {
         }
     }
     
-    static func from(string: String) -> LTL2AutomatonConverter? {
-        switch string {
-        case "ltl3ba":
-            return .ltl3ba
-        case "spot":
-            return .spot
-        default:
-            return nil
-        }
-    }
-    
     static let allValues: [LTL2AutomatonConverter] = [.ltl3ba, .spot]
-    
-    var description: String {
-        switch self {
-        case .ltl3ba:
-            return "ltl3ba"
-        case .spot:
-            return "spot"
-        }
-    }
 }
 
 func _ltl3ba(ltl: String) -> CoBüchiAutomaton? {

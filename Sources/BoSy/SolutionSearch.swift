@@ -3,16 +3,18 @@ import Foundation
 import Utils
 import CAiger
 
-enum SearchStrategy {
-    case Linear
-    case Exponential
+enum SearchStrategy: String {
+    case linear      = "linear"
+    case exponential = "exponential"
     
     func next(bound: Int) -> Int {
         switch self {
-            case .Linear: return bound + 1
-            case .Exponential: return bound * 2
+            case .linear: return bound + 1
+            case .exponential: return bound * 2
         }
     }
+    
+    static let allValues: [SearchStrategy] = [.linear, .exponential]
 }
 
 enum Player: Int {
@@ -35,50 +37,46 @@ struct Players: OptionSet {
     static let both: Players = [.system, .environment]
 }
 
-enum Backends: CustomStringConvertible {
-    case Explicit
-    case InputSymbolic
-    case StateSymbolic
-    case Symbolic
-    case Smt
+enum Backends: String {
+    case explicit      = "explicit"
+    case inputSymbolic = "input-symbolic"
+    case stateSymbolic = "state-symbolic"
+    case symbolic      = "symbolic"
+    case smt           = "smt"
     
-    static func fromString(_ string: String) -> Backends? {
-        switch (string) {
-            case "explicit":
-                return .Explicit
-            case "input-symbolic":
-                return .InputSymbolic
-            case "state-symbolic":
-                return .StateSymbolic
-            case "symbolic":
-                return .Symbolic
-            case "smt":
-                return .Smt
-            default:
-                return nil
+    static let allValues: [Backends] = [
+        .explicit,
+        .inputSymbolic,
+        .stateSymbolic,
+        .symbolic,
+        .smt
+    ]
+    
+    func supports(solver: SolverInstance) -> Bool {
+        switch self {
+        case .explicit:
+            return (solver.instance as? SatSolver) != nil
+        case .inputSymbolic:
+            return (solver.instance as? QbfSolver) != nil
+        case .stateSymbolic:
+            return (solver.instance as? DqbfSolver) != nil
+        case .symbolic:
+            return (solver.instance as? DqbfSolver) != nil
+        case .smt:
+            return (solver.instance as? SmtSolver) != nil
         }
     }
     
-    static let allValues: [Backends] = [
-        .Explicit,
-        .InputSymbolic,
-        .StateSymbolic,
-        .Symbolic,
-        .Smt
-    ]
-    
-    var description: String {
+    var defaultSolver: SolverInstance {
         switch self {
-        case .Explicit:
-            return "explicit"
-        case .InputSymbolic:
-            return "input-symbolic"
-        case .StateSymbolic:
-            return "state-symbolic"
-        case .Symbolic:
-            return "symbolic"
-        case .Smt:
-            return "smt"
+        case .explicit:
+            return .cryptominisat
+        case .inputSymbolic:
+            return .rareqs
+        case .smt:
+            return .z3
+        default:
+            return .picosat
         }
     }
 }
@@ -93,7 +91,7 @@ struct SolutionSearch {
     let inputs: [String]
     let outputs: [String]
     
-    init(specification: InputFileFormat, automaton: CoBüchiAutomaton, searchStrategy: SearchStrategy = .Exponential, player: Player = .System, backend: Backends = .InputSymbolic, initialBound bound: Int = 1, synthesize: Bool = true) {
+    init(specification: InputFileFormat, automaton: CoBüchiAutomaton, searchStrategy: SearchStrategy = .exponential, player: Player = .System, backend: Backends = .inputSymbolic, initialBound bound: Int = 1, synthesize: Bool = true) {
         self.specification = specification
         self.automaton = automaton
         self.searchStrategy = searchStrategy
@@ -113,15 +111,15 @@ struct SolutionSearch {
         }
         
         switch backend {
-        case .Explicit:
+        case .explicit:
             encoding = ExplicitEncoding(automaton: automaton, semantics: semantics, inputs: inputs, outputs: outputs)
-        case .InputSymbolic:
+        case .inputSymbolic:
             encoding = InputSymbolicEncoding(automaton: automaton, semantics: semantics, inputs: inputs, outputs: outputs, synthesize: synthesize)
-        case .StateSymbolic:
+        case .stateSymbolic:
             encoding = StateSymbolicEncoding(automaton: automaton, semantics: semantics, inputs: inputs, outputs: outputs)
-        case .Symbolic:
+        case .symbolic:
             encoding = SymbolicEncoding(automaton: automaton, semantics: semantics, inputs: inputs, outputs: outputs)
-        case .Smt:
+        case .smt:
             encoding = SmtEncoding(automaton: automaton, semantics: semantics, inputs: inputs, outputs: outputs)
         }
     }

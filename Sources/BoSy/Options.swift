@@ -6,6 +6,7 @@ enum CommandLineOptionsError: Error, CustomStringConvertible {
     case unknown(argument: String)
     case noValue(argument: String)
     case wrongChoice(argument: String, choice: String, choices: [String])
+    case invalidCombination(message: String)
     
     var description: String {
         switch self {
@@ -17,35 +18,17 @@ enum CommandLineOptionsError: Error, CustomStringConvertible {
             return "argument \"\(argument)\" requires a value, but no value was given"
         case .wrongChoice(let argument, let choice, let choices):
             return "value \"\(choice)\" given for \"\(argument)\" is not valid\npossible values are \(choices)"
+        case .invalidCombination(let message):
+            return message
         }
     }
 }
 
-enum Target: CustomStringConvertible {
-    case aiger
-    case dot
-    
-    static func from(string: String) -> Target? {
-        switch string {
-        case "aiger":
-            return .aiger
-        case "dot":
-            return .dot
-        default:
-            return nil
-        }
-    }
+enum Target: String {
+    case aiger = "aiger"
+    case dot   = "dot"
     
     static let allValues: [Target] = [.aiger, .dot]
-    
-    var description: String {
-        switch self {
-        case .aiger:
-            return "aiger"
-        case .dot:
-            return "dot"
-        }
-    }
 }
 
 
@@ -56,13 +39,14 @@ struct BoSyOptions {
     // default options
     var specificationFile: String? = nil
     var synthesize: Bool = false
-    var searchStrategy: SearchStrategy = .Exponential
+    var searchStrategy: SearchStrategy = .exponential
     var player: Players = .both
-    var backend: Backends = .InputSymbolic
+    var backend: Backends = .inputSymbolic
     var converter: LTL2AutomatonConverter = .ltl3ba
     var semantics: TransitionSystemType? = nil
     var statistics: BoSyStatistics? = nil
     var target: Target = .aiger
+    var solver: SolverInstance? = nil
     
     mutating func parseCommandLine() throws {
         var arguments: ArraySlice<String> = CommandLine.arguments[CommandLine.arguments.indices]
@@ -83,14 +67,10 @@ struct BoSyOptions {
                 guard let value = arguments.popFirst() else {
                     throw CommandLineOptionsError.noValue(argument: argument)
                 }
-                switch value {
-                case "linear":
-                    searchStrategy = .Linear
-                case "exponential":
-                    searchStrategy = .Exponential
-                default:
-                    throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: ["linear", "exponential"])
+                guard let strategy = SearchStrategy(rawValue: value) else {
+                    throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: SearchStrategy.allValues.map(String.init(describing:)))
                 }
+                searchStrategy = strategy
             case "--player":
                 guard let value = arguments.popFirst() else {
                     throw CommandLineOptionsError.noValue(argument: argument)
@@ -109,7 +89,7 @@ struct BoSyOptions {
                 guard let value = arguments.popFirst() else {
                     throw CommandLineOptionsError.noValue(argument: argument)
                 }
-                guard let _backend = Backends.fromString(value) else {
+                guard let _backend = Backends(rawValue: value) else {
                     throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: Backends.allValues.map(String.init(describing:)))
                 }
                 backend = _backend
@@ -117,7 +97,7 @@ struct BoSyOptions {
                 guard let value = arguments.popFirst() else {
                     throw CommandLineOptionsError.noValue(argument: argument)
                 }
-                guard let automatonConverter = LTL2AutomatonConverter.from(string: value) else {
+                guard let automatonConverter = LTL2AutomatonConverter(rawValue: value) else {
                     throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: LTL2AutomatonConverter.allValues.map(String.init(describing:)))
                 }
                 converter = automatonConverter
@@ -125,7 +105,7 @@ struct BoSyOptions {
                 guard let value = arguments.popFirst() else {
                     throw CommandLineOptionsError.noValue(argument: argument)
                 }
-                guard let _semantics = TransitionSystemType.from(string: value) else {
+                guard let _semantics = TransitionSystemType(rawValue: value) else {
                     throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: TransitionSystemType.allValues.map(String.init(describing:)))
                 }
                 semantics = _semantics
@@ -135,10 +115,18 @@ struct BoSyOptions {
                 guard let value = arguments.popFirst() else {
                     throw CommandLineOptionsError.noValue(argument: argument)
                 }
-                guard let _target = Target.from(string: value) else {
+                guard let _target = Target(rawValue: value) else {
                     throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: Target.allValues.map(String.init(describing:)))
                 }
                 target = _target
+            case "--solver":
+                guard let value = arguments.popFirst() else {
+                    throw CommandLineOptionsError.noValue(argument: argument)
+                }
+                guard let _solver = SolverInstance(rawValue: value) else {
+                    throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: SolverInstance.allValues.map(String.init(describing:)))
+                }
+                solver = _solver
             default:
                 if !argument.hasPrefix("-") {
                     specificationFile = argument
@@ -146,6 +134,14 @@ struct BoSyOptions {
                     throw CommandLineOptionsError.unknown(argument: argument)
                 }
             }
+        }
+        
+        if let solver = solver {
+            if !backend.supports(solver: solver) {
+                throw CommandLineOptionsError.invalidCombination(message: "backend \"\(backend)\" does not support solver \"\(solver)\"")
+            }
+        } else {
+            solver = backend.defaultSolver
         }
     }
     
@@ -160,7 +156,9 @@ struct BoSyOptions {
               "  --player both|system|environment\n",
               "  --backend \(Backends.allValues.map(String.init(describing:)).joined(separator: "|"))\n",
               "  --semantics \(TransitionSystemType.allValues.map(String.init(describing:)).joined(separator: "|"))\n",
-              "  --automaton-tool \(LTL2AutomatonConverter.allValues.map(String.init(describing:)).joined(separator: "|"))\n"
+              "  --automaton-tool \(LTL2AutomatonConverter.allValues.map(String.init(describing:)).joined(separator: "|"))\n",
+              "  --target \(Target.allValues.map(String.init(describing:)).joined(separator: "|"))\n",
+              "  --solver \(SolverInstance.allValues.map(String.init(describing:)).joined(separator: "|"))\n"
         )
     }
     
