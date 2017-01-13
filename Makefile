@@ -1,14 +1,16 @@
-.PHONY: default debug release test tools all clean distclean
+.PHONY: default debug release test tools required-tools optional-tools all clean distclean
 
 UNAME := $(shell uname)
 
 default: debug
 
-debug: tools
+debug: required-tools
 	swift build
 
-release: tools
+release: required-tools
 	swift build --configuration release -Xcc -O3 -Xcc -DNDEBUG -Xswiftc -Ounchecked
+
+all: tools debug release
 
 test:
 	swift test
@@ -20,21 +22,25 @@ distclean:
 	swift build --clean=dist
 	rm -rf Tools
 
-tools: \
+tools: required-tools optional-tools
+
+required-tools: \
 	Tools/abc \
 	Tools/bloqqer \
 	Tools/bloqqer-031 \
 	Tools/cryptominisat5 \
+	Tools/ltl3ba \
+	Tools/idq \
+	Tools/rareqs \
+	Tools/syfco \
+	Tools/z3 \
+
+optional-tools: \
 	Tools/cvc4 \
 	Tools/depqbf \
 	Tools/eprover \
 	Tools/ltl2tgba \
-	Tools/ltl3ba \
-	Tools/idq \
 	Tools/picosat \
-	Tools/rareqs \
-	Tools/syfco \
-	Tools/z3 \
 	Tools/vampire
 
 Tools/.f:
@@ -132,7 +138,7 @@ Tools/eprover: Tools/E
 Tools/E: Tools/E.tgz
 	cd Tools ; tar xzf E.tgz
 
-tools/E.tgz: Tools/.f
+Tools/E.tgz: Tools/.f
 	cd Tools ; curl -OL http://wwwlehre.dhbw-stuttgart.de/~sschulz/WORK/E_DOWNLOAD/V_1.9.1/E.tgz
 
 # vampire
@@ -144,13 +150,8 @@ Tools/vampire.zip: Tools/.f
 	cd Tools ; curl -OL http://forsyte.at/wp-content/uploads/vampire.zip
 
 # spot/ltl2tgba
-SPOT_STATIC = --enable-static --disable-shared
-#ifeq ($(UNAME), Linux)
-#	SPOT_STATIC += LDFLAGS="-static"
-#endif
-
 Tools/ltl2tgba: Tools/spot-2.2.2
-	cd Tools/spot-2.2.2; ./configure --disable-python $(SPOT_STATIC)
+	cd Tools/spot-2.2.2; ./configure --disable-python --enable-static --disable-shared
 	cd Tools/spot-2.2.2; make
 	cp Tools/spot-2.2.2/bin/ltl2tgba Tools/
 
