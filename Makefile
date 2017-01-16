@@ -106,7 +106,7 @@ Tools/cvc4: Tools/cvc4-1.4/builds/bin/cvc4
 	cp Tools/cvc4-1.4/builds/bin/cvc4 Tools/cvc4
 
 Tools/cvc4-1.4/builds/bin/cvc4: Tools/cvc4-1.4
-	cd Tools/cvc4-1.4 ; ./configure --enable-static-binary MAC_STATIC_BINARY_MANUAL_OVERRIDE=1 #--best --enable-gpl
+	cd Tools/cvc4-1.4 ; curl -OL https://raw.githubusercontent.com/tsuna/boost.m4/master/build-aux/boost.m4 -o config/boost.m4 ; autoconf ; ./configure --enable-static-binary MAC_STATIC_BINARY_MANUAL_OVERRIDE=1 #--best --enable-gpl
 	make -j4 -C Tools/cvc4-1.4
 
 Tools/cvc4-1.4: Tools/cvc4-1.4.tar.gz
