@@ -9,6 +9,10 @@ protocol DotRepresentable {
     var dot: String { get }
 }
 
+protocol SmvRepresentable {
+    var smv: String { get }
+}
+
 protocol BoSySolution {}
 
 struct ExplicitStateSolution: BoSySolution {
@@ -171,7 +175,7 @@ extension ExplicitStateSolution: DotRepresentable {
                 }
                 
                 
-                dot.append("\ts\(state)[shape=rectangle,label=\"s\(state)\n\(outputs.joined())\"];")
+                dot.append("\ts\(state)[shape=rectangle,label=\"s\(state)\n\(outputs.joined(separator: " "))\"];")
             }
             
             for (source, outgoing) in transitions {
@@ -187,5 +191,58 @@ extension ExplicitStateSolution: DotRepresentable {
     
     var dot: String {
         return _toDot()
+    }
+}
+
+extension ExplicitStateSolution: SmvRepresentable {
+    private func _toSMV() -> String {
+        var smv: [String] = ["MODULE main"]
+        
+        // variable: states and inputs
+        smv.append("\tVAR")
+        smv.append("\t\tstate: {\(states.map({ "s\($0)" }).joined(separator: ", "))};")
+        for input in inputs {
+            smv.append("\t\t\(input) : boolean;")
+        }
+        
+        // transitions
+        smv.append("\tASSIGN")
+        smv.append("\t\tinit(state) := s\(initial);")
+        
+        let smvPrinter = SmvPrinter()
+        var nextState: [String] = []
+        for (source, outgoing) in transitions {
+            for (target, transitionGuard) in outgoing {
+                let smvGuard = transitionGuard.accept(visitor: smvPrinter)
+                nextState.append("state = s\(source) & \(smvGuard) : s\(target);")
+            }
+        }
+        smv.append("\t\tnext(state) := case\n\t\t\t\(nextState.joined(separator: "\n\t\t\t"))\n\t\tesac;")
+        
+        // outputs
+        smv.append("\tDEFINE")
+        for output in outputs {
+            var smvGuard: [String] = []
+            for (source, outputDefinitions) in outputGuards {
+                guard let outputGuard = outputDefinitions[output] else {
+                    continue
+                }
+                if outputGuard as? Literal != nil && outputGuard as! Literal == Literal.False {
+                    continue
+                }
+                smvGuard.append("state = s\(source) & \(outputGuard.accept(visitor: smvPrinter))")
+            }
+            if smvGuard.isEmpty {
+                smvGuard.append("FALSE")
+            }
+            smv.append("\t\t\(output) := (\(smvGuard.joined(separator: " | ")));")
+        }
+        
+        
+        return smv.joined(separator: "\n")
+    }
+    
+    var smv: String {
+        return _toSMV()
     }
 }

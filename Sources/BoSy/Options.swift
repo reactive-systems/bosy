@@ -27,8 +27,9 @@ enum CommandLineOptionsError: Error, CustomStringConvertible {
 enum Target: String {
     case aiger = "aiger"
     case dot   = "dot"
+    case smv   = "smv"
     
-    static let allValues: [Target] = [.aiger, .dot]
+    static let allValues: [Target] = [.aiger, .dot, .smv]
 }
 
 

@@ -131,6 +131,12 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
                     return
                 }
                 print(dot)
+            case .smv:
+                guard let smv = (solution as? SmvRepresentable)?.smv else {
+                    Logger.default().error("could not encode solution as SMV")
+                    return
+                }
+                print(smv)
             }
 
             return
