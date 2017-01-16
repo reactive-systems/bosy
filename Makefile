@@ -31,6 +31,7 @@ required-tools: \
 	Tools/cryptominisat5 \
 	Tools/ltl3ba \
 	Tools/idq \
+	Tools/quabscm \
 	Tools/rareqs \
 	Tools/syfco \
 	Tools/z3 \
@@ -201,6 +202,16 @@ Tools/picosat-965: Tools/picosat-965.tar.gz
 
 Tools/picosat-965.tar.gz: Tools/.f
 	cd Tools ; curl -OL http://fmv.jku.at/picosat/picosat-965.tar.gz
+
+# QuAbS
+Tools/quabscm: Tools/quabs-bin
+	cp Tools/quabs-bin/quabscm Tools/quabscm
+
+Tools/quabs-bin: Tools/quabs-bin.tar.gz
+	cd Tools ; tar xzf quabs-bin.tar.gz
+
+Tools/quabs-bin.tar.gz: Tools/.f
+	cd Tools ; curl -OL -G -d dl=1 https://www.dropbox.com/s/zfkfj3f4uns5de5/quabs-bin.tar.gz
 
 # rareqs
 Tools/rareqs: Tools/rareqs-1.1
