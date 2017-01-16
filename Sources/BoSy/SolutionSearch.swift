@@ -73,10 +73,12 @@ enum Backends: String {
             return .cryptominisat
         case .inputSymbolic:
             return .rareqs
+        case .stateSymbolic:
+            return .idq
+        case .symbolic:
+            return .idq
         case .smt:
             return .z3
-        default:
-            return .picosat
         }
     }
 }

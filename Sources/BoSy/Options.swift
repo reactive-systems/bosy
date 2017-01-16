@@ -155,11 +155,11 @@ struct BoSyOptions {
               "  --statistics\t\tdisplay solving statistics\n",
               "  --strategy linear|exponential\n",
               "  --player both|system|environment\n",
-              "  --backend \(Backends.allValues.map(String.init(describing:)).joined(separator: "|"))\n",
-              "  --semantics \(TransitionSystemType.allValues.map(String.init(describing:)).joined(separator: "|"))\n",
-              "  --automaton-tool \(LTL2AutomatonConverter.allValues.map(String.init(describing:)).joined(separator: "|"))\n",
-              "  --target \(Target.allValues.map(String.init(describing:)).joined(separator: "|"))\n",
-              "  --solver \(SolverInstance.allValues.map(String.init(describing:)).joined(separator: "|"))\n"
+              "  --backend \(Backends.allValues.map({ $0.rawValue }).joined(separator: "|"))\n",
+              "  --semantics \(TransitionSystemType.allValues.map({ $0.rawValue }).joined(separator: "|"))\n",
+              "  --automaton-tool \(LTL2AutomatonConverter.allValues.map({ $0.rawValue }).joined(separator: "|"))\n",
+              "  --target \(Target.allValues.map({ $0.rawValue }).joined(separator: "|"))\n",
+              "  --solver \(SolverInstance.allValues.map({ $0.rawValue }).joined(separator: "|"))\n"
         )
     }
     
