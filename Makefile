@@ -2,7 +2,7 @@
 
 UNAME := $(shell uname)
 
-default: debug
+default: release
 
 debug: required-tools
 	swift build
@@ -10,7 +10,7 @@ debug: required-tools
 release: required-tools
 	swift build --configuration release -Xcc -O3 -Xcc -DNDEBUG -Xswiftc -Ounchecked
 
-all: tools debug release
+all: tools release
 
 test:
 	swift test
@@ -228,11 +228,17 @@ Tools/syfco-git: Tools/.f
 	cd Tools ; git clone https://github.com/reactive-systems/syfco.git syfco-git
 
 # z3
-Tools/z3: Tools/z3-git
-	cd Tools/z3-git ; ./configure
-	make -C Tools/z3-git/build
-	cp Tools/z3-git/build/z3 Tools/z3
+Tools/z3: Tools/z3-4.5.0/build/z3
+	cp Tools/z3-4.5.0/build/z3 Tools/z3
 
-Tools/z3-git: Tools/.f
-	cd Tools ; git clone --branch z3-4.5.0 https://github.com/Z3Prover/z3.git z3-git
+Tools/z3-4.5.0/build/z3: Tools/z3-4.5.0
+	cd Tools/z3-4.5.0 ; ./configure
+	make -C Tools/z3-4.5.0/build
+
+Tools/z3-4.5.0: Tools/z3-4.5.0.tar.gz
+	cd Tools ; tar xzf z3-4.5.0.tar.gz
+	cd Tools ; mv z3-z3-4.5.0 z3-4.5.0
+
+Tools/z3-4.5.0.tar.gz: Tools/.f
+	cd Tools ; curl -OL https://github.com/Z3Prover/z3/archive/z3-4.5.0.tar.gz
 
