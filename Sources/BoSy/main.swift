@@ -13,7 +13,7 @@ do {
 } catch {
     print(error)
     options.printHelp()
-    exit(EX_USAGE)
+    exit(1)
 }
 
 let json: String
