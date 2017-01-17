@@ -17,6 +17,7 @@ enum SolverInstance: String {
     // QBF solver
     case rareqs = "rareqs"
     case depqbf = "depqbf"
+    case caqe   = "caqe"
     
     // DQBF solver
     case idq = "idq"
@@ -38,6 +39,8 @@ enum SolverInstance: String {
             return RAReQS()
         case .depqbf:
             return DepQBF()
+        case .caqe:
+            return CAQE()
         case .idq:
             return iDQ()
         case .eprover:
@@ -54,6 +57,7 @@ enum SolverInstance: String {
         .cryptominisat,
         .rareqs,
         .depqbf,
+        .caqe,
         .idq,
         .eprover,
         .z3,
@@ -337,6 +341,50 @@ struct Bloqqer: QbfPreprocessor {
             return nil
         }
         return stdout
+    }
+}
+
+struct CAQE: QbfSolver {
+    func solve(formula: Logic, preprocessor: QbfPreprocessor?) -> SatSolverResult? {
+        // encode formula
+        let qdimacsVisitor = QDIMACSVisitor(formula: formula)
+        var encodedFormula = qdimacsVisitor.description
+        
+        if let preprocessor = preprocessor {
+            guard let preprocessedFormula = preprocessor.preprocess(qbf: encodedFormula) else {
+                return nil
+            }
+            encodedFormula = preprocessedFormula
+        }
+        
+        // write to disk
+        guard let tempFile = TempFile(suffix: ".qdimacs") else {
+            return nil
+        }
+        do {
+            try encodedFormula.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
+        } catch {
+            return nil
+        }
+        
+        // start task and extract stdout and stderr
+        let task = Process()
+        task.launchPath = "./Tools/caqem"
+        task.arguments = ["--partial-assignments", "--expansion-refinement=1", tempFile.path]
+        
+        guard let stdout = SolverHelper.executeAndReturnStdout(task: task) else {
+            return nil
+        }
+        
+        guard let result = SolverHelper.result(from: task.terminationStatus) else {
+            return nil
+        }
+        
+        if result == .unsat {
+            return .unsat
+        }
+        let assignments = SolverHelper.getDimacsAssignments(stdout: stdout)
+        return .sat(assignment: qdimacsVisitor.getAssignment(fromAssignment: assignments))
     }
 }
 
