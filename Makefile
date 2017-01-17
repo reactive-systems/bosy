@@ -146,7 +146,7 @@ Tools/E.tgz: Tools/.f
 Tools/vampire: Tools/Vampires
 	cp Tools/Vampires/vampire_x86_64 Tools/vampire
 Tools/Vampires: Tools/vampire.zip
-	cd Tools ; unzip vampire.zip
+	cd Tools ; unzip -D vampire.zip
 Tools/vampire.zip: Tools/.f
 	cd Tools ; curl -OL http://forsyte.at/wp-content/uploads/vampire.zip
 

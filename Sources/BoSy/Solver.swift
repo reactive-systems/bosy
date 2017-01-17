@@ -23,6 +23,7 @@ enum SolverInstance: String {
     
     // FO solver
     case eprover = "eprover"
+    case vampire  = "vampire"
     
     // SMT solver
     case z3 = "z3"
@@ -42,6 +43,8 @@ enum SolverInstance: String {
             return iDQ()
         case .eprover:
             return Eprover()
+        case .vampire:
+            return Vampire()
         case .z3:
             return Z3()
         case .cvc4:
@@ -56,6 +59,7 @@ enum SolverInstance: String {
         .depqbf,
         .idq,
         .eprover,
+        .vampire,
         .z3,
         .cvc4
     ]
@@ -499,6 +503,41 @@ struct Eprover: DqbfSolver {
         } else if output.contains("SZS status Unsatisfiable") {
             return .unsat
         }
+        return nil
+    }
+}
+
+struct Vampire: DqbfSolver {
+    func solve(formula: Logic) -> SolverResult? {
+        // encode formula
+        let dqdimacsVisitor = TPTP3Visitor(formula: formula)
+        let encodedFormula = dqdimacsVisitor.description
+        
+        // write to disk
+        guard let tempFile = TempFile(suffix: ".tptp3") else {
+            return nil
+        }
+        do {
+            try encodedFormula.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
+        } catch {
+            return nil
+        }
+        
+        // start task and extract stdout and stderr
+        let task = Process()
+        task.launchPath = "./Tools/vampire"
+        task.arguments = ["--mode", "casc", tempFile.path]
+        
+        guard let output = SolverHelper.executeAndReturnStdout(task: task) else {
+            return nil
+        }
+        //print(output)
+        if output.contains("SZS status Satisfiable") || output.contains("Termination reason: Satisfiable") {
+            return .sat
+        } else if output.contains("SZS status Unsatisfiable") || output.contains("Termination reason: Refutation") {
+            return .unsat
+        }
+
         return nil
     }
 }
