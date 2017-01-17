@@ -37,6 +37,7 @@ required-tools: \
 	Tools/z3 \
 
 optional-tools: \
+	Tools/caqem \
 	Tools/cvc4 \
 	Tools/depqbf \
 	Tools/eprover \
@@ -85,6 +86,16 @@ Tools/bloqqer-031-7a176af-110509: Tools/bloqqer-031-7a176af-110509.tar.gz
 Tools/bloqqer-031-7a176af-110509.tar.gz: Tools/.f
 	cd Tools ; curl -OL http://fmv.jku.at/bloqqer/bloqqer-031-7a176af-110509.tar.gz
 
+# caqe
+Tools/caqem: Tools/caqe-bin
+	cp Tools/caqe-bin/caqem Tools/caqem
+
+Tools/caqe-bin: Tools/caqe-bin.tar.gz
+	cd Tools ; tar xzf caqe-bin.tar.gz
+
+Tools/caqe-bin.tar.gz: Tools/.f
+	cd Tools ; curl -OL -G -d dl=1 https://www.dropbox.com/s/8a0c61ua2w6glik/caqe-bin.tar.gz
+
 # cryptominisat
 Tools/cryptominisat5: Tools/cryptominisat-5.0.1/build
 	cp Tools/cryptominisat-5.0.1/build/cryptominisat5 Tools/cryptominisat5
@@ -128,7 +139,6 @@ Tools/depqbf-version-5.01: Tools/depqbf-5.01.tar.gz
 Tools/depqbf-5.01.tar.gz: Tools/.f
 	cd Tools ; curl -OL https://github.com/lonsing/depqbf/archive/version-5.01.tar.gz
 	mv Tools/version-5.01.tar.gz Tools/depqbf-5.01.tar.gz
-
 
 # eprover
 Tools/eprover: Tools/E
