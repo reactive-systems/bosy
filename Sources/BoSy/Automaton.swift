@@ -141,7 +141,7 @@ func _ltl3ba(ltl: String) -> CoBüchiAutomaton? {
 
     task.launchPath = "./Tools/ltl3ba"
     task.arguments = ["-f", "\"(\(ltl))\""]
-    print(ltl)
+    //print(ltl)
     
     //let stdinPipe = NSPipe()
     let stdoutPipe = Pipe()

@@ -574,7 +574,7 @@ struct Vampire: DqbfSolver {
         // start task and extract stdout and stderr
         let task = Process()
         task.launchPath = "./Tools/vampire"
-        task.arguments = ["--mode", "casc", tempFile.path]
+        task.arguments = ["--mode", "casc", "-t","1200", tempFile.path]
         
         guard let output = SolverHelper.executeAndReturnStdout(task: task) else {
             return nil
