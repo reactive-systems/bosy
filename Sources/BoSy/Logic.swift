@@ -983,7 +983,7 @@ class ScalarScanner {
     }
 }
 
-struct BooleanUtils {
+enum BooleanUtils {
     static func parse(string: String) -> Logic? {
         let lexer = BooleanLexer(scanner: ScalarScanner(scalars: string.unicodeScalars))
         var parser = BooleanParser(lexer: lexer)
