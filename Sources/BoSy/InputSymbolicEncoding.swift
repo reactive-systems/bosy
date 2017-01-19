@@ -229,7 +229,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
         }
         
         guard let certificationResult = certifier.solve(formula: reducedInstance) else {
-            Logger.default().error("could not certify with QuAbS")
+            Logger.default().error("could not certify QBF query")
             return nil
         }
         

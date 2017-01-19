@@ -176,7 +176,7 @@ func _spot(ltl: String, hoaf: Bool = false) -> CoBüchiAutomaton? {
     let task = Process()
 
     task.launchPath = "./Tools/ltl2tgba"
-    task.arguments = ["--low", "-f", "(\(ltl))"]
+    task.arguments = ["-f", "(\(ltl))"]
     if hoaf {
         task.arguments? += ["-H", "-B"]
     } else {

@@ -103,7 +103,7 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
         }
         automatonTimer?.stop()
 
-        //Logger.default().info("automaton: \(automaton)")
+        Logger.default().info("automaton contains \(automaton.states.count) states")
 
         var search = SolutionSearch(specification: specification, automaton: automaton, searchStrategy: strategy, player: player, backend: options.backend, synthesize: synthesize)
 
