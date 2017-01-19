@@ -242,6 +242,23 @@ class QDIMACSVisitor: DIMACSVisitor {
         }
         return 0
     }
+    
+    func translate(certificate: UnsafeMutablePointer<aiger>) -> [Proposition:Logic] {
+        var translated: [Proposition:Logic] = [:]
+        var reversed: [Int:Proposition] = [:]
+        for (proposition, literal) in propositions {
+            reversed[literal] = proposition
+        }
+        
+        for (proposition, literal) in propositions {
+            guard let outputSymbol = aiger_contains_output(aig: certificate, withName: String(literal)) else {
+                continue
+            }
+            translated[proposition] = buildFunctionRecursively(aig: certificate, mapping: reversed, literal: outputSymbol.pointee.lit)
+        }
+        
+        return translated
+    }
 }
 
 class DQDIMACSVisitor: QDIMACSVisitor {
@@ -432,33 +449,33 @@ class QCIRVisitor: ReturnConstantVisitor<Int>, CustomStringConvertible {
         
         return translated
     }
-    
-    func buildFunctionRecursively(aig: UnsafeMutablePointer<aiger>, mapping: [Int:Proposition], literal: UInt32) -> Logic {
-        switch (aiger_lit2tag(aig, literal)) {
-        case 0:
-            // constant
-            assert(literal <= 1)
-            return literal == 1 ? Literal.True : Literal.False
-        case 1:
-            // input
-            let (negated, normalized) = aiger_normalize(literal)
-            let symbol = aiger_is_input(aig, normalized)!
-            let translatedLit = Int(String(cString: symbol.pointee.name))!
-            let proposition = mapping[translatedLit]!
-            return negated ? !proposition : proposition
-        case 3:
-            // and
-            let (negated, normalized) = aiger_normalize(literal)
-            let and = aiger_is_and(aig, normalized)!
-            let lhs = buildFunctionRecursively(aig: aig, mapping: mapping, literal: and.pointee.rhs0)
-            let rhs = buildFunctionRecursively(aig: aig, mapping: mapping, literal: and.pointee.rhs1)
-            let result = lhs & rhs
-            return negated ? !result : result
-        default:
-            assert(false)
-        }
-        return Literal.True
+}
+
+private func buildFunctionRecursively(aig: UnsafeMutablePointer<aiger>, mapping: [Int:Proposition], literal: UInt32) -> Logic {
+    switch (aiger_lit2tag(aig, literal)) {
+    case 0:
+        // constant
+        assert(literal <= 1)
+        return literal == 1 ? Literal.True : Literal.False
+    case 1:
+        // input
+        let (negated, normalized) = aiger_normalize(literal)
+        let symbol = aiger_is_input(aig, normalized)!
+        let translatedLit = Int(String(cString: symbol.pointee.name))!
+        let proposition = mapping[translatedLit]!
+        return negated ? !proposition : proposition
+    case 3:
+        // and
+        let (negated, normalized) = aiger_normalize(literal)
+        let and = aiger_is_and(aig, normalized)!
+        let lhs = buildFunctionRecursively(aig: aig, mapping: mapping, literal: and.pointee.rhs0)
+        let rhs = buildFunctionRecursively(aig: aig, mapping: mapping, literal: and.pointee.rhs1)
+        let result = lhs & rhs
+        return negated ? !result : result
+    default:
+        assert(false)
     }
+    return Literal.True
 }
 
 /**

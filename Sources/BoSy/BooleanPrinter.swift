@@ -100,6 +100,6 @@ class SmvPrinter: ReturnConstantVisitor<String> {
         default:
             fatalError()
         }
-        return "(\(operands.joined(separator: type))"
+        return "(\(operands.joined(separator: type)))"
     }
 }

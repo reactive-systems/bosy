@@ -37,6 +37,7 @@ required-tools: \
 	Tools/z3 \
 
 optional-tools: \
+	Tools/cadet \
 	Tools/caqem \
 	Tools/cvc4 \
 	Tools/depqbf \
@@ -85,6 +86,18 @@ Tools/bloqqer-031-7a176af-110509: Tools/bloqqer-031-7a176af-110509.tar.gz
 
 Tools/bloqqer-031-7a176af-110509.tar.gz: Tools/.f
 	cd Tools ; curl -OL http://fmv.jku.at/bloqqer/bloqqer-031-7a176af-110509.tar.gz
+
+.PHONY: Tools/cadet
+Tools/cadet: Tools/cadet_mac
+
+Tools/cadet_mac: Tools/cadet-bin
+	cp Tools/cadet-bin/cadet_* Tools/
+
+Tools/cadet-bin: Tools/cadet-bin.tar.gz
+	cd Tools ; tar xzf cadet-bin.tar.gz
+
+Tools/cadet-bin.tar.gz: Tools/.f
+	cd Tools ; curl -OL -G -d dl=1 https://www.dropbox.com/s/8hd2qh3v2lcgd9w/cadet-bin.tar.gz
 
 # caqe
 Tools/caqem: Tools/caqe-bin

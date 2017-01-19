@@ -18,13 +18,15 @@ enum SolverInstance: String {
     case rareqs = "rareqs"
     case depqbf = "depqbf"
     case caqe   = "caqe"
+    case cadet  = "cadet"
+    case quabs  = "quabs"
     
     // DQBF solver
     case idq = "idq"
     
     // FO solver
     case eprover = "eprover"
-    case vampire  = "vampire"
+    case vampire = "vampire"
     
     // SMT solver
     case z3 = "z3"
@@ -40,8 +42,12 @@ enum SolverInstance: String {
             return RAReQS()
         case .depqbf:
             return DepQBF()
+        case .cadet:
+            return CADET()
         case .caqe:
             return CAQE()
+        case .quabs:
+            return QuAbS()
         case .idq:
             return iDQ()
         case .eprover:
@@ -60,7 +66,9 @@ enum SolverInstance: String {
         .cryptominisat,
         .rareqs,
         .depqbf,
+        .cadet,
         .caqe,
+        .quabs,
         .idq,
         .eprover,
         .vampire,
@@ -348,7 +356,7 @@ struct Bloqqer: QbfPreprocessor {
     }
 }
 
-struct CAQE: QbfSolver {
+struct CAQE: QbfSolver, CertifyingQbfSolver {
     func solve(formula: Logic, preprocessor: QbfPreprocessor?) -> SatSolverResult? {
         // encode formula
         let qdimacsVisitor = QDIMACSVisitor(formula: formula)
@@ -389,6 +397,61 @@ struct CAQE: QbfSolver {
         }
         let assignments = SolverHelper.getDimacsAssignments(stdout: stdout)
         return .sat(assignment: qdimacsVisitor.getAssignment(fromAssignment: assignments))
+    }
+    
+    func solve(formula: Logic) -> QbfSolverResult? {
+        let qdimacsVisitor = QDIMACSVisitor(formula: formula)
+        let encodedFormula = qdimacsVisitor.description
+        
+        guard let tempFile = TempFile(suffix: ".qdimacs") else {
+            return nil
+        }
+        do {
+            try encodedFormula.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
+        } catch {
+            return nil
+        }
+        
+        let task = Process()
+        task.launchPath = "./Tools/caqem"
+        task.arguments = ["-c", tempFile.path]
+        
+        let stdoutPipe = Pipe()
+        let stderrPipe = Pipe()
+        task.standardOutput = stdoutPipe
+        task.standardError = stderrPipe
+        task.launch()
+        
+        let stdoutHandle = stdoutPipe.fileHandleForReading
+        let file = fdopen(stdoutHandle.fileDescriptor, "r")
+        guard let aiger = aiger_init() else {
+            return nil
+        }
+        let error = aiger_read_from_file(aiger, file)
+        fclose(file)
+        if error != nil {
+            //print(String(cString: aiger_error(aiger)))
+            return nil
+        }
+        
+        task.waitUntilExit()
+        
+        guard let result = SolverHelper.result(from: task.terminationStatus) else {
+            return nil
+        }
+        if result != .sat {
+            return .unsat
+        }
+        
+        guard let minimizedCertificate = minimizeWithABC(aiger) else {
+            Logger.default().error("could not minimize certificate with ABC")
+            return nil
+        }
+        aiger_reset(aiger)
+        let functions = qdimacsVisitor.translate(certificate: minimizedCertificate)
+        aiger_reset(minimizedCertificate)
+        
+        return .sat(functions: functions)
     }
 }
 
@@ -449,6 +512,68 @@ struct QuAbS: CertifyingQbfSolver {
         return .sat(functions: functions)
     }
 }
+
+struct CADET: CertifyingQbfSolver {
+    func solve(formula: Logic) -> QbfSolverResult? {
+        let qdimacsVisitor = QDIMACSVisitor(formula: formula)
+        let encodedFormula = qdimacsVisitor.description
+        
+        guard let tempFile = TempFile(suffix: ".qdimacs") else {
+            return nil
+        }
+        do {
+            try encodedFormula.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
+        } catch {
+            return nil
+        }
+        
+        let task = Process()
+        #if os(Linux)
+            task.launchPath = "./Tools/cadet_linux"
+        #else
+            task.launchPath = "./Tools/cadet_mac"
+        #endif
+        task.arguments = ["-c", "stdout", tempFile.path]
+        
+        let stdoutPipe = Pipe()
+        let stderrPipe = Pipe()
+        task.standardOutput = stdoutPipe
+        task.standardError = stderrPipe
+        task.launch()
+        
+        let stdoutHandle = stdoutPipe.fileHandleForReading
+        let file = fdopen(stdoutHandle.fileDescriptor, "r")
+        guard let aiger = aiger_init() else {
+            return nil
+        }
+        let error = aiger_read_from_file(aiger, file)
+        fclose(file)
+        if error != nil {
+            //print(String(cString: aiger_error(aiger)))
+            return nil
+        }
+        
+        task.waitUntilExit()
+        
+        guard let result = SolverHelper.result(from: task.terminationStatus) else {
+            return nil
+        }
+        if result != .sat {
+            return .unsat
+        }
+        
+        guard let minimizedCertificate = minimizeWithABC(aiger) else {
+            Logger.default().error("could not minimize certificate with ABC")
+            return nil
+        }
+        aiger_reset(aiger)
+        let functions = qdimacsVisitor.translate(certificate: minimizedCertificate)
+        aiger_reset(minimizedCertificate)
+        
+        return .sat(functions: functions)
+    }
+}
+
 
 func minimizeWithABC(_ aig: UnsafeMutablePointer<aiger>) -> UnsafeMutablePointer<aiger>? {
     let minimized = aiger_init()

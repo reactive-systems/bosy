@@ -224,7 +224,11 @@ struct InputSymbolicEncoding: BoSyEncoding {
         let reducedInstance = instance.eval(assignment: additionalAssignments)
         //print(reducedInstance)
         
-        guard let certificationResult = QuAbS().solve(formula: reducedInstance) else {
+        guard let certifier = options.qbfCertifier?.instance as? CertifyingQbfSolver else {
+            return nil
+        }
+        
+        guard let certificationResult = certifier.solve(formula: reducedInstance) else {
             Logger.default().error("could not certify with QuAbS")
             return nil
         }

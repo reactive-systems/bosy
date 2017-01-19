@@ -1,5 +1,7 @@
 import Foundation
 
+import Utils
+
 
 enum CommandLineOptionsError: Error, CustomStringConvertible {
     case empty
@@ -48,6 +50,7 @@ struct BoSyOptions {
     var statistics: BoSyStatistics? = nil
     var target: Target = .aiger
     var solver: SolverInstance? = nil
+    var qbfCertifier: SolverInstance? = nil
     
     mutating func parseCommandLine() throws {
         var arguments: ArraySlice<String> = CommandLine.arguments[CommandLine.arguments.indices]
@@ -69,7 +72,7 @@ struct BoSyOptions {
                     throw CommandLineOptionsError.noValue(argument: argument)
                 }
                 guard let strategy = SearchStrategy(rawValue: value) else {
-                    throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: SearchStrategy.allValues.map(String.init(describing:)))
+                    throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: SearchStrategy.allValues.map({ $0.rawValue }))
                 }
                 searchStrategy = strategy
             case "--player":
@@ -91,7 +94,7 @@ struct BoSyOptions {
                     throw CommandLineOptionsError.noValue(argument: argument)
                 }
                 guard let _backend = Backends(rawValue: value) else {
-                    throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: Backends.allValues.map(String.init(describing:)))
+                    throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: Backends.allValues.map({ $0.rawValue }))
                 }
                 backend = _backend
             case "--automaton-tool":
@@ -99,7 +102,7 @@ struct BoSyOptions {
                     throw CommandLineOptionsError.noValue(argument: argument)
                 }
                 guard let automatonConverter = LTL2AutomatonConverter(rawValue: value) else {
-                    throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: LTL2AutomatonConverter.allValues.map(String.init(describing:)))
+                    throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: LTL2AutomatonConverter.allValues.map({ $0.rawValue }))
                 }
                 converter = automatonConverter
             case "--semantics":
@@ -107,7 +110,7 @@ struct BoSyOptions {
                     throw CommandLineOptionsError.noValue(argument: argument)
                 }
                 guard let _semantics = TransitionSystemType(rawValue: value) else {
-                    throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: TransitionSystemType.allValues.map(String.init(describing:)))
+                    throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: TransitionSystemType.allValues.map({ $0.rawValue }))
                 }
                 semantics = _semantics
             case "--statistics":
@@ -117,7 +120,7 @@ struct BoSyOptions {
                     throw CommandLineOptionsError.noValue(argument: argument)
                 }
                 guard let _target = Target(rawValue: value) else {
-                    throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: Target.allValues.map(String.init(describing:)))
+                    throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: Target.allValues.map({ $0.rawValue }))
                 }
                 target = _target
             case "--solver":
@@ -125,9 +128,20 @@ struct BoSyOptions {
                     throw CommandLineOptionsError.noValue(argument: argument)
                 }
                 guard let _solver = SolverInstance(rawValue: value) else {
-                    throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: SolverInstance.allValues.map(String.init(describing:)))
+                    throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: SolverInstance.allValues.map({ $0.rawValue }))
                 }
                 solver = _solver
+            case "--qbf-certifier":
+                guard let value = arguments.popFirst() else {
+                    throw CommandLineOptionsError.noValue(argument: argument)
+                }
+                guard let _solver = SolverInstance(rawValue: value) else {
+                    throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: SolverInstance.allValues.filter({ $0.instance as? CertifyingQbfSolver != nil }).map({ $0.rawValue }))
+                }
+                if _solver.instance as? CertifyingQbfSolver == nil {
+                    throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: SolverInstance.allValues.filter({ $0.instance as? CertifyingQbfSolver != nil }).map({ $0.rawValue }))
+                }
+                qbfCertifier = _solver
             default:
                 if !argument.hasPrefix("-") {
                     specificationFile = argument
@@ -144,6 +158,14 @@ struct BoSyOptions {
         } else {
             solver = backend.defaultSolver
         }
+        
+        if backend == .inputSymbolic {
+            if qbfCertifier == nil {
+                qbfCertifier = .quabs
+            }
+        } else if qbfCertifier != nil {
+            Logger.default().info("switch --qbf-certifier has no effect in this configuration")
+        }
     }
     
     
@@ -159,7 +181,8 @@ struct BoSyOptions {
               "  --semantics \(TransitionSystemType.allValues.map({ $0.rawValue }).joined(separator: "|"))\n",
               "  --automaton-tool \(LTL2AutomatonConverter.allValues.map({ $0.rawValue }).joined(separator: "|"))\n",
               "  --target \(Target.allValues.map({ $0.rawValue }).joined(separator: "|"))\n",
-              "  --solver \(SolverInstance.allValues.map({ $0.rawValue }).joined(separator: "|"))\n"
+              "  --solver \(SolverInstance.allValues.map({ $0.rawValue }).joined(separator: "|"))\n",
+              "  --qbf-certifier \(SolverInstance.allValues.filter({ $0.instance as? CertifyingQbfSolver != nil }).map({ $0.rawValue }).joined(separator: "|"))\n"
         )
     }
     
