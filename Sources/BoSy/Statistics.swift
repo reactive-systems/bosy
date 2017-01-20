@@ -7,10 +7,17 @@ enum Phase: CustomStringConvertible {
     case ltl2automaton
     case automatonOptimizations
     case constraintGeneration
-    case solverEncoding
     case solving
+    case solutionExtraction
     
-    static let allValues: [Phase] = [.parsing, .ltl2automaton, .automatonOptimizations, .constraintGeneration, .solverEncoding, .solving]
+    static let allValues: [Phase] = [
+        .parsing,
+        .ltl2automaton,
+        .automatonOptimizations,
+        .constraintGeneration,
+        .solving,
+        .solutionExtraction
+    ]
     
     // Conformance to CustomStringConvertible
     var description: String {
@@ -23,10 +30,10 @@ enum Phase: CustomStringConvertible {
             return "AutomatonOptimization"
         case .constraintGeneration:
             return "ConstraintGeneration"
-        case .solverEncoding:
-            return "SolverEncoding"
         case .solving:
             return "Solving"
+        case .solutionExtraction:
+            return "SolutionExtraction"
         }
     }
 }

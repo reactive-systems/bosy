@@ -211,6 +211,7 @@ struct ExplicitEncoding: BoSyEncoding {
     }
     
     func extractSolution() -> BoSySolution? {
+        let extractionTimer = options.statistics?.startTimer(phase: .solutionExtraction)
         let inputPropositions: [Proposition] = inputs.map({ Proposition($0) })
         
         guard let assignments = assignments else {
@@ -254,6 +255,7 @@ struct ExplicitEncoding: BoSyEncoding {
                 solution.add(output: output, inState: source, withGuard: enabled)
             }
         }
+        extractionTimer?.stop()
         return solution
     }
 }

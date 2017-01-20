@@ -200,6 +200,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
     }
     
     func extractSolution() -> BoSySolution? {
+        let extractionTimer = options.statistics?.startTimer(phase: .solutionExtraction)
         guard let instance = self.instance, let assignments = self.assignments else {
             Logger.default().error("hasSolution() must be true before calling this function")
             return nil
@@ -260,6 +261,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
                 solution.add(output: output, inState: source, withGuard: enabled)
             }
         }
+        extractionTimer?.stop()
         return solution
     }
 }
