@@ -47,3 +47,6 @@ We provide 3 different scenarios that are encoded in shell scripts:
 
 Additionally, we provide a script to verify the results from the paper:
 * load-balancer-experiments.sh executes multiple configurations of BoSy on the load_balancer_5.tlsf benchmark and reports run time and solution size. (warning: the run time is ca 1h 30min)
+
+The scatter plot provided in the paper cannot be verified in the VM within reasonable time due to the need for a large timeout (1 h).
+However, BoSy was already evaluated in the reactive synthesis competition and the results of the input-symbolic variant is available online at http://syntcomp.cs.uni-saarland.de/syntcomp2016/experiment/6.
