@@ -1,6 +1,6 @@
 # BoSy Artifact Evaluation
 
-We provide an Ubuntu 16.04 LTS 64-bit VM with a single user `cav` and password `ae`. The machine runs best with 2 vCores and at least 4GB RAM. 
+We provide an Ubuntu 16.04 LTS 64-bit VM with a single user `cav` and password `ae`. The machine runs best with 2 vCores and at least 4GB RAM. The host machine used to create the VM in VirtualBox 5.0.32 runs under MacOS 10.12.3, with a quad-core i7 2.6GHz CPU, and has 8GB RAM.
 
 
 ## Getting Started
@@ -42,14 +42,14 @@ extracts an SMV implementation after determining realizability.
 ## Provided Scenarios
 
 We provide 3 different scenarios that are provided in shell scripts:
-* small-experiments.sh runs every possible backend on a small example specification
+* small-experiments.sh runs every possible encoding on a small example specification
 * small-experiments-synthesis.sh additionally synthesizes implementations and displays them
 * small-experiments-verify.sh verifies a synthesized solution using the NuSMV model checker
 
 Additionally, we provide a script to verify the results from the paper:
 * load-balancer-experiments.sh executes multiple configurations of BoSy on the load_balancer_5.tlsf benchmark and reports run time and solution size. (warning: the run time is ca 1h 30min)
 
-The scatter plot provided in the paper cannot be verified in the VM within reasonable time due to the need for a large timeout (1 h) per benchmark.
+The scatter plot provided in the paper cannot be verified in the VM within reasonable time due to the need for a large timeout (1 h) per benchmark, but individual benchmarks can be run by modifying small-experiments.sh.
 However, BoSy was already evaluated independently in the reactive synthesis competition and the results of the input-symbolic variant are available online at http://syntcomp.cs.uni-saarland.de/syntcomp2016/experiment/6.
 
 ## Guide to the source code
