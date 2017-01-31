@@ -2,19 +2,14 @@ import Foundation
 
 import Utils
 
-struct CoBüchiAutomaton: GraphRepresentable {
-    typealias State = String
-    var initialStates: Set<State>
-    var states: Set<State>
-    var transitions: [State : [State : Logic]]
-    var safetyConditions: [State : Logic]
-    var rejectingStates: Set<State>
-    
-    // SCC optimizations
-    var scc: [State: Int] = [:]
-    var inRejectingScc: [State: Bool] = [:]
-    
-    // conformance with GraphRepresentable
+protocol Automaton: GraphRepresentable {
+    var initialStates: Set<State> { get set }
+    var states: Set<State> { get set }
+    var transitions: [State : [State : Logic]] { get set }
+}
+
+extension Automaton {
+    // default implementation for GraphRepresentable
     var edges: [State: [State]] {
         var e: [State: [State]] = [:]
         for (source, outgoing) in transitions {
@@ -28,14 +23,20 @@ struct CoBüchiAutomaton: GraphRepresentable {
         }
         return e
     }
-    
-    init(initialStates: Set<State>, states: Set<State>, transitions: [State : [State : Logic]], safetyConditions: [State : Logic], rejectingStates: Set<State>) {
-        self.initialStates = initialStates
-        self.states = states
-        self.transitions = transitions
-        self.safetyConditions = safetyConditions
-        self.rejectingStates = rejectingStates
-    }
+}
+
+protocol SafetyAcceptance {
+    associatedtype State: Hashable
+    var safetyConditions: [State : Logic] { get set }
+}
+
+protocol CoBüchiAcceptance {
+    associatedtype State: Hashable
+    var rejectingStates: Set<State> { get set }
+}
+
+extension Automaton where Self: CoBüchiAcceptance, Self: SafetyAcceptance {
+    // FIXME: where Self: CoBüchiAcceptance & SafetyAcceptance is nicer but crashes compiler
     
     /**
      * Remove rejecting sink states
@@ -83,10 +84,56 @@ struct CoBüchiAutomaton: GraphRepresentable {
             }
         }
     }
+}
+
+struct CoBüchiAutomaton: Automaton, SafetyAcceptance, CoBüchiAcceptance {
+    typealias State = String
+    var initialStates: Set<State>
+    var states: Set<State>
+    var transitions: [State : [State : Logic]]
+    var safetyConditions: [State : Logic]
+    var rejectingStates: Set<State>
     
-    func isSafety() -> Bool {
-        return rejectingStates.isEmpty
+    // SCC optimizations
+    var scc: [State: Int] = [:]
+    var inRejectingScc: [State: Bool] = [:]
+    
+    init(initialStates: Set<State>, states: Set<State>, transitions: [State : [State : Logic]], safetyConditions: [State : Logic], rejectingStates: Set<State>) {
+        self.initialStates = initialStates
+        self.states = states
+        self.transitions = transitions
+        self.safetyConditions = safetyConditions
+        self.rejectingStates = rejectingStates
     }
+    
+    init(automata: [CoBüchiAutomaton]) {
+        /// makes sure every state is unique
+        func transform(state: State, index: Int) -> State {
+            return "s\(index)_\(state)"
+        }
+        self.initialStates = Set<State>()
+        self.states = Set<State>()
+        self.transitions = [:]
+        self.safetyConditions = [:]
+        self.rejectingStates = Set<State>()
+        
+        for (i, automaton) in automata.enumerated() {
+            self.initialStates.formUnion(automaton.initialStates.map({ transform(state: $0, index: i) }))
+            self.states.formUnion(automaton.states.map({ transform(state: $0, index: i) }))
+            for (source, outgoing) in automaton.transitions {
+                var newOutgoing: [State:Logic] = [:]
+                for (target, guardCondition) in outgoing {
+                    newOutgoing[transform(state: target, index: i)] = guardCondition
+                }
+                self.transitions[transform(state: source, index: i)] = newOutgoing
+            }
+            for (source, safetyCondition) in automaton.safetyConditions {
+                self.safetyConditions[transform(state: source, index: i)] = safetyCondition
+            }
+            self.rejectingStates.formUnion(automaton.rejectingStates.map({ transform(state: $0, index: i) }))
+        }
+    }
+    
     
     mutating func claculateSCC() {
         for (i, scc) in trajan(graph: self).enumerated() {
@@ -133,11 +180,7 @@ enum LTL2AutomatonConverter: String {
 }
 
 func _ltl3ba(ltl: String) -> CoBüchiAutomaton? {
-    #if os(Linux)
-        let task = Task()
-    #else
-        let task = Process()
-    #endif
+    let task = Process()
 
     task.launchPath = "./Tools/ltl3ba"
     task.arguments = ["-f", "\"(\(ltl))\""]

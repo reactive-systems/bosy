@@ -51,6 +51,7 @@ struct BoSyOptions {
     var target: Target = .aiger
     var solver: SolverInstance? = nil
     var qbfCertifier: SolverInstance? = nil
+    var monolithic: Bool = true
     
     mutating func parseCommandLine() throws {
         var arguments: ArraySlice<String> = CommandLine.arguments[CommandLine.arguments.indices]
@@ -142,6 +143,8 @@ struct BoSyOptions {
                     throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: SolverInstance.allValues.filter({ $0.instance as? CertifyingQbfSolver != nil }).map({ $0.rawValue }))
                 }
                 qbfCertifier = _solver
+            case "--monolithic":
+                monolithic = true
             default:
                 if !argument.hasPrefix("-") {
                     specificationFile = argument

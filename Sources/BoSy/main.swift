@@ -83,11 +83,11 @@ if let semantics = options.semantics {
 //Logger.default().info("inputs: \(specification.inputs), outputs: \(specification.outputs)")
 //Logger.default().info("assumptions: \(specification.assumptions), guarantees: \(specification.guarantees)")
 
-func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -> ()) {
-    return {
+private func buildAutomaton(player: Player) -> CoBüchiAutomaton? {
+    if options.monolithic || player == .Environment || specification.assumptions.count > 0 {
         let assumptionString = specification.assumptions.map(String.init(describing:)).joined(separator: " && ")
         let guaranteeString = specification.guarantees.map(String.init(describing:)).joined(separator: " && ")
-
+        
         let ltlSpec: String
         if player == .System {
             ltlSpec = specification.assumptions.count == 0 ? "!(\(guaranteeString))" : "!((\(assumptionString)) -> (\(guaranteeString)))"
@@ -99,9 +99,34 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
         let automatonTimer = options.statistics?.startTimer(phase: .ltl2automaton)
         guard let automaton = options.converter.convert(ltl: ltlSpec) else {
             Logger.default().error("could not construct automaton")
-            return
+            return nil
         }
         automatonTimer?.stop()
+        return automaton
+    } else {
+        assert(specification.assumptions.count == 0)
+        assert(player == .System)
+        
+        var automata: [CoBüchiAutomaton] = []
+        for guarantee in specification.guarantees {
+            let automatonTimer = options.statistics?.startTimer(phase: .ltl2automaton)
+            guard let automaton = options.converter.convert(ltl: "!(\(guarantee))") else {
+                Logger.default().error("could not construct automaton")
+                return nil
+            }
+            automatonTimer?.stop()
+            automata.append(automaton)
+        }
+        
+        return CoBüchiAutomaton(automata: automata)
+    }
+}
+
+func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -> ()) {
+    return {
+        guard let automaton = buildAutomaton(player: player) else {
+            return
+        }
 
         Logger.default().info("automaton contains \(automaton.states.count) states")
 
