@@ -1,6 +1,6 @@
 .PHONY: default debug release test tools required-tools optional-tools all clean distclean
-.INTERMEDIATE: Tools/ltl3ba-1.1.3.tar.gz Tools/bloqqer-037-8660cb9-151127.tar.gz Tools/bloqqer-031-7a176af-110509.tar.gz Tools/cadet-bin.tar.gz Tools/caqe-bin.tar.gz Tools/cryptominisat-5.0.1.tar.gz Tools/cvc4-1.4.tar.gz Tools/depqbf-5.01.tar.gz Tools/spot-2.2.2.tar.gz Tools/z3-4.5.0.tar.gz Tools/rareqs-1.1.src.tgz Tools/picosat-965.tar.gz Tools/idq-1.0.tar.gz Tools/quabs-bin.tar.gz Tools/vampire.zip Tools/E.tgz
-.SECONDARY: Tools/abc-hg/abc Tools/abc-hg Tools/bloqqer-031-7a176af-110509 Tools/bloqqer-031-7a176af-110509/bloqqer Tools/bloqqer-037-8660cb9-151127 Tools/bloqqer-037-8660cb9-151127/bloqqer Tools/ltl3ba Tools/ltl3ba-1.1.3 Tools/ltl3ba-1.1.3/ltl3ba Tools/cryptominisat-5.0.1 Tools/cryptominisat-5.0.1/build Tools/depqbf-version-5.01/depqbf Tools/depqbf-version-5.01 Tools/spot-2.2.2 Tools/cvc4-1.4 Tools/cvc4-1.4/builds/bin/cvc4 Tools/z3-4.5.0/build/z3 Tools/z3-4.5.0 Tools/rareqs-1.1 Tools/syfco-git Tools/syfco-git/syfco Tools/picosat-965 Tools/idq-1.0 Tools/idq-1.0/idq
+.INTERMEDIATE: Tools/ltl3ba-1.1.3.tar.gz Tools/bloqqer-037-8660cb9-151127.tar.gz Tools/bloqqer-031-7a176af-110509.tar.gz Tools/cadet-bin.tar.gz Tools/caqe-bin.tar.gz Tools/cryptominisat-5.0.1.tar.gz Tools/cvc4-1.4.tar.gz Tools/depqbf-5.01.tar.gz Tools/spot-2.3.tar.gz Tools/z3-4.5.0.tar.gz Tools/rareqs-1.1.src.tgz Tools/picosat-965.tar.gz Tools/idq-1.0.tar.gz Tools/quabs-bin.tar.gz Tools/vampire.zip Tools/E.tgz
+.SECONDARY: Tools/abc-hg/abc Tools/abc-hg Tools/bloqqer-031-7a176af-110509 Tools/bloqqer-031-7a176af-110509/bloqqer Tools/bloqqer-037-8660cb9-151127 Tools/bloqqer-037-8660cb9-151127/bloqqer Tools/ltl3ba Tools/ltl3ba-1.1.3 Tools/ltl3ba-1.1.3/ltl3ba Tools/cryptominisat-5.0.1 Tools/cryptominisat-5.0.1/build Tools/depqbf-version-5.01/depqbf Tools/depqbf-version-5.01 Tools/spot-2.3 Tools/cvc4-1.4 Tools/cvc4-1.4/builds/bin/cvc4 Tools/z3-4.5.0/build/z3 Tools/z3-4.5.0 Tools/rareqs-1.1 Tools/syfco-git Tools/syfco-git/syfco Tools/picosat-965 Tools/idq-1.0 Tools/idq-1.0/idq
 
 UNAME := $(shell uname)
 
@@ -27,7 +27,7 @@ clean-source-tools:
 	rm -rf Tools/bloqqer-031-7a176af-110509
 	rm -rf Tools/cryptominisat-5.0.1
 	rm -rf Tools/depqbf-version-5.01
-	rm -rf Tools/spot-2.2.2
+	rm -rf Tools/spot-2.3
 	rm -rf Tools/cvc4-1.4
 	rm -rf Tools/z3-4.5.0
 	rm -rf Tools/rareqs-1.1
@@ -191,16 +191,16 @@ Tools/vampire.zip: Tools/.f
 	cd Tools ; curl -OL http://forsyte.at/wp-content/uploads/vampire.zip
 
 # spot/ltl2tgba
-Tools/ltl2tgba: Tools/spot-2.2.2
-	cd Tools/spot-2.2.2; ./configure --disable-python --enable-static --disable-shared
-	cd Tools/spot-2.2.2; make
-	cp Tools/spot-2.2.2/bin/ltl2tgba Tools/
+Tools/ltl2tgba: Tools/spot-2.3
+	cd Tools/spot-2.3; ./configure --disable-python --enable-static --disable-shared
+	cd Tools/spot-2.3; make
+	cp Tools/spot-2.3/bin/ltl2tgba Tools/
 
-Tools/spot-2.2.2: Tools/spot-2.2.2.tar.gz
-	cd Tools; tar xzf spot-2.2.2.tar.gz
+Tools/spot-2.3: Tools/spot-2.3.tar.gz
+	cd Tools; tar xzf spot-2.3.tar.gz
 
-Tools/spot-2.2.2.tar.gz: Tools/.f
-	cd Tools; curl -OL http://www.lrde.epita.fr/dload/spot/spot-2.2.2.tar.gz
+Tools/spot-2.3.tar.gz: Tools/.f
+	cd Tools; curl -OL http://www.lrde.epita.fr/dload/spot/spot-2.3.tar.gz
 
 # ltl3ba
 Tools/ltl3ba: Tools/ltl3ba-1.1.3/ltl3ba
