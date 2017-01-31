@@ -18,8 +18,8 @@ enum SearchStrategy: String {
 }
 
 enum Player: Int {
-    case System      = 0b01
-    case Environment = 0b10
+    case system      = 0b01
+    case environment = 0b10
 }
 
 struct Players: OptionSet {
@@ -32,8 +32,8 @@ struct Players: OptionSet {
         rawValue = player.rawValue
     }
     
-    static let system        = Players(player: .System)
-    static let environment   = Players(player: .Environment)
+    static let system        = Players(player: .system)
+    static let environment   = Players(player: .environment)
     static let both: Players = [.system, .environment]
 }
 
@@ -93,7 +93,7 @@ struct SolutionSearch {
     let inputs: [String]
     let outputs: [String]
     
-    init(specification: InputFileFormat, automaton: CoBüchiAutomaton, searchStrategy: SearchStrategy = .exponential, player: Player = .System, backend: Backends = .inputSymbolic, initialBound bound: Int = 1, synthesize: Bool = true) {
+    init(specification: InputFileFormat, automaton: CoBüchiAutomaton, searchStrategy: SearchStrategy = .exponential, player: Player = .system, backend: Backends = .inputSymbolic, initialBound bound: Int = 1, synthesize: Bool = true) {
         self.specification = specification
         self.automaton = automaton
         self.searchStrategy = searchStrategy
@@ -102,11 +102,11 @@ struct SolutionSearch {
         
         let semantics: TransitionSystemType
         switch player {
-        case .System:
+        case .system:
             semantics = specification.semantics
             inputs = specification.inputs
             outputs = specification.outputs
-        case .Environment:
+        case .environment:
             semantics = specification.semantics.swap()
             inputs = specification.outputs
             outputs = specification.inputs

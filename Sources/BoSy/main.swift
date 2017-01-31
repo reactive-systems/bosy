@@ -84,15 +84,15 @@ if let semantics = options.semantics {
 //Logger.default().info("assumptions: \(specification.assumptions), guarantees: \(specification.guarantees)")
 
 private func buildAutomaton(player: Player) -> CoBüchiAutomaton? {
-    if options.monolithic || player == .Environment || specification.assumptions.count > 0 {
+    if options.monolithic || player == .environment || specification.assumptions.count > 0 {
         let assumptionString = specification.assumptions.map(String.init(describing:)).joined(separator: " && ")
         let guaranteeString = specification.guarantees.map(String.init(describing:)).joined(separator: " && ")
         
         let ltlSpec: String
-        if player == .System {
+        if player == .system {
             ltlSpec = specification.assumptions.count == 0 ? "!(\(guaranteeString))" : "!((\(assumptionString)) -> (\(guaranteeString)))"
         } else {
-            assert(player == .Environment)
+            assert(player == .environment)
             ltlSpec = specification.assumptions.count == 0 ? "\(guaranteeString)" : "(\(assumptionString)) -> (\(guaranteeString))"
         }
         
@@ -105,7 +105,7 @@ private func buildAutomaton(player: Player) -> CoBüchiAutomaton? {
         return automaton
     } else {
         assert(specification.assumptions.count == 0)
-        assert(player == .System)
+        assert(player == .system)
         
         var automata: [CoBüchiAutomaton] = []
         for guarantee in specification.guarantees {
@@ -134,7 +134,7 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
 
         if search.hasSolution() {
             if !synthesize {
-                player == .System ? print("realizable") : print("unrealizable")
+                player == .system ? print("realizable") : print("unrealizable")
                 return
             }
             guard let solution = search.getSolution() else {
@@ -149,7 +149,7 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
                 }
                 let minimized = minimizeWithABC(aiger_solution)
                 aiger_write_to_file(minimized, aiger_ascii_mode, stdout)
-                player == .System ? print("realizable") : print("unrealizable")
+                player == .system ? print("realizable") : print("unrealizable")
             case .dot:
                 guard let dot = (solution as? DotRepresentable)?.dot else {
                     Logger.default().error("could not encode solution as dot")
@@ -169,14 +169,14 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
     }
 }
 
-//search(strategy: .Linear, player: .System, synthesize: synthesize)()
+//search(strategy: .Linear, player: .system, synthesize: synthesize)()
 
 let condition = NSCondition()
 var finished = false
 
 
-let searchSystem = search(strategy: options.searchStrategy, player: .System, synthesize: options.synthesize)
-let searchEnvironment = search(strategy: options.searchStrategy, player: .Environment, synthesize: options.synthesize)
+let searchSystem = search(strategy: options.searchStrategy, player: .system, synthesize: options.synthesize)
+let searchEnvironment = search(strategy: options.searchStrategy, player: .environment, synthesize: options.synthesize)
 
 let doSearchSystem = options.player.contains(.system)
 let doSearchEnvironment = options.player.contains(.environment)
