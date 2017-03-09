@@ -178,7 +178,17 @@ struct InputSymbolicEncoding: BoSyEncoding {
         }
         
         let solvingTimer = options.statistics?.startTimer(phase: .solving)
-        guard let result = solver.solve(formula: instance, preprocessor: Bloqqer(preserveAssignments: self.synthesize)) else {
+        guard let preprocessorName = options.qbfPreprocessor else {
+            throw BoSyEncodingError.SolvingFailed("no preprocessor selected")
+        }
+        let preprocessor: QbfPreprocessor
+        switch preprocessorName {
+        case .bloqqer:
+            preprocessor = Bloqqer(preserveAssignments: self.synthesize)
+        case .hqspre:
+            preprocessor = HQSPre()
+        }
+        guard let result = solver.solve(formula: instance, preprocessor: preprocessor) else {
             throw BoSyEncodingError.SolvingFailed("solver failed on instance")
         }
         solvingTimer?.stop()

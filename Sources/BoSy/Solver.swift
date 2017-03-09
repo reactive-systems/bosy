@@ -23,6 +23,7 @@ enum SolverInstance: String {
     
     // DQBF solver
     case idq = "idq"
+    case hqs = "hqs"
     
     // FO solver
     case eprover = "eprover"
@@ -50,6 +51,8 @@ enum SolverInstance: String {
             return QuAbS()
         case .idq:
             return iDQ()
+        case .hqs:
+            return HQS()
         case .eprover:
             return Eprover()
         case .vampire:
@@ -70,10 +73,21 @@ enum SolverInstance: String {
         .caqe,
         .quabs,
         .idq,
+        .hqs,
         .eprover,
         .vampire,
         .z3,
         .cvc4
+    ]
+}
+
+enum QBFPreprocessorInstance: String {
+    case bloqqer = "bloqqer"
+    case hqspre = "hqspre"
+    
+    static let allValues: [QBFPreprocessorInstance] = [
+        .bloqqer,
+        .hqspre
     ]
 }
 
@@ -356,6 +370,37 @@ struct Bloqqer: QbfPreprocessor {
     }
 }
 
+struct HQSPre: QbfPreprocessor {
+    func preprocess(qbf: String) -> String? {
+        guard let tempFile = TempFile(suffix: ".qdimacs") else {
+            return nil
+        }
+        do {
+            try qbf.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
+        } catch {
+            return nil
+        }
+        
+        guard let outFile = TempFile(suffix: ".qdimacs") else {
+            return nil
+        }
+        
+        let task = Process()
+        task.launchPath = "./Tools/hqspre-linux"
+        task.arguments = ["-o", outFile.path, tempFile.path]
+        
+        guard let _ = SolverHelper.executeAndReturnStdout(task: task) else {
+            return nil
+        }
+        
+        guard let qdimacs = try? String(contentsOfFile: outFile.path, encoding: String.Encoding.utf8) else {
+            return nil
+        }
+        
+        return qdimacs
+    }
+}
+
 struct CAQE: QbfSolver, CertifyingQbfSolver {
     func solve(formula: Logic, preprocessor: QbfPreprocessor?) -> SatSolverResult? {
         // encode formula
@@ -631,6 +676,40 @@ struct iDQ: DqbfSolver {
         // start task and extract stdout and stderr
         let task = Process()
         task.launchPath = "./Tools/idq"
+        task.arguments = [tempFile.path]
+        
+        guard let output = SolverHelper.executeAndReturnStdout(task: task) else {
+            return nil
+        }
+        //print(output)
+        if output.contains("UNSAT") {
+            return .unsat
+        } else if output.contains("SAT") {
+            return .sat
+        }
+        return nil
+    }
+}
+
+struct HQS: DqbfSolver {
+    func solve(formula: Logic) -> SolverResult? {
+        // encode formula
+        let dqdimacsVisitor = DQDIMACSVisitor(formula: formula)
+        let encodedFormula = dqdimacsVisitor.description
+        
+        // write to disk
+        guard let tempFile = TempFile(suffix: ".dqdimacs") else {
+            return nil
+        }
+        do {
+            try encodedFormula.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
+        } catch {
+            return nil
+        }
+        
+        // start task and extract stdout and stderr
+        let task = Process()
+        task.launchPath = "./Tools/hqs-linux"
         task.arguments = [tempFile.path]
         
         guard let output = SolverHelper.executeAndReturnStdout(task: task) else {

@@ -51,6 +51,7 @@ struct BoSyOptions {
     var target: Target = .aiger
     var solver: SolverInstance? = nil
     var qbfCertifier: SolverInstance? = nil
+    var qbfPreprocessor: QBFPreprocessorInstance? = nil
     var monolithic: Bool = true
     
     mutating func parseCommandLine() throws {
@@ -143,6 +144,14 @@ struct BoSyOptions {
                     throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: SolverInstance.allValues.filter({ $0.instance as? CertifyingQbfSolver != nil }).map({ $0.rawValue }))
                 }
                 qbfCertifier = _solver
+            case "--qbf-preprocessor":
+                guard let value = arguments.popFirst() else {
+                    throw CommandLineOptionsError.noValue(argument: argument)
+                }
+                guard let _preprocessor = QBFPreprocessorInstance(rawValue: value) else {
+                    throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: QBFPreprocessorInstance.allValues.map({ $0.rawValue }))
+                }
+                qbfPreprocessor = _preprocessor
             case "--monolithic":
                 monolithic = true
             default:
@@ -166,8 +175,16 @@ struct BoSyOptions {
             if qbfCertifier == nil {
                 qbfCertifier = .quabs
             }
-        } else if qbfCertifier != nil {
-            Logger.default().info("switch --qbf-certifier has no effect in this configuration")
+            if qbfPreprocessor == nil {
+                qbfPreprocessor = .bloqqer
+            }
+        } else {
+            if qbfCertifier != nil {
+                Logger.default().info("switch --qbf-certifier has no effect in this configuration")
+            }
+            if qbfPreprocessor != nil {
+                Logger.default().info("switch --qbf-preprocessor has no effect in this configuration")
+            }
         }
     }
     

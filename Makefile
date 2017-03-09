@@ -2,8 +2,6 @@
 .INTERMEDIATE: Tools/ltl3ba-1.1.3.tar.gz Tools/bloqqer-037-8660cb9-151127.tar.gz Tools/bloqqer-031-7a176af-110509.tar.gz Tools/cadet-bin.tar.gz Tools/caqe-bin.tar.gz Tools/cryptominisat-5.0.1.tar.gz Tools/cvc4-1.4.tar.gz Tools/depqbf-5.01.tar.gz Tools/spot-2.3.tar.gz Tools/z3-4.5.0.tar.gz Tools/rareqs-1.1.src.tgz Tools/picosat-965.tar.gz Tools/idq-1.0.tar.gz Tools/quabs-bin.tar.gz Tools/vampire.zip Tools/E.tgz
 .SECONDARY: Tools/abc-hg/abc Tools/abc-hg Tools/bloqqer-031-7a176af-110509 Tools/bloqqer-031-7a176af-110509/bloqqer Tools/bloqqer-037-8660cb9-151127 Tools/bloqqer-037-8660cb9-151127/bloqqer Tools/ltl3ba Tools/ltl3ba-1.1.3 Tools/ltl3ba-1.1.3/ltl3ba Tools/cryptominisat-5.0.1 Tools/cryptominisat-5.0.1/build Tools/depqbf-version-5.01/depqbf Tools/depqbf-version-5.01 Tools/spot-2.3 Tools/cvc4-1.4 Tools/cvc4-1.4/builds/bin/cvc4 Tools/z3-4.5.0/build/z3 Tools/z3-4.5.0 Tools/rareqs-1.1 Tools/syfco-git Tools/syfco-git/syfco Tools/picosat-965 Tools/idq-1.0 Tools/idq-1.0/idq
 
-UNAME := $(shell uname)
-
 default: release
 
 debug: required-tools
@@ -61,7 +59,8 @@ optional-tools: \
 	Tools/eprover \
 	Tools/ltl2tgba \
 	Tools/picosat \
-	Tools/vampire
+	Tools/vampire \
+	Tools/hqs
 
 Tools/.f:
 	mkdir -p Tools
@@ -230,6 +229,17 @@ Tools/idq-1.0: Tools/idq-1.0.tar.gz
 
 Tools/idq-1.0.tar.gz: Tools/.f
 	cd Tools ; curl -OL http://fmv.jku.at/idq/idq-1.0.tar.gz
+
+#hqs
+Tools/hqs: Tools/hqs-bin/hqs
+	cp Tools/hqs-bin/hqs Tools/hqs-linux
+	cp Tools/hqs-bin/preprocess Tools/hqspre-linux
+
+Tools/hqs-bin/hqs: Tools/hqs-bin.tar.gz
+	cd Tools ; tar xzf hqs-bin.tar.gz
+
+Tools/hqs-bin.tar.gz: Tools/.f
+	cd Tools ; curl -OL -G -d dl=1 https://www.dropbox.com/s/cdesqq4ckh96x2i/hqs-bin.tar.gz
 
 # picosat
 Tools/picosat: Tools/picosat-965
