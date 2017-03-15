@@ -201,7 +201,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
                 assignments.removeValue(forKey: proposition)
             }
             self.assignments = assignments
-            self.instance = instance.eval(assignment: assignments)
+            self.instance = instance//.eval(assignment: assignments)
             self.solutionBound = bound
             return true
         }
@@ -221,8 +221,9 @@ struct InputSymbolicEncoding: BoSyEncoding {
             return nil
         }
         
+        let reducedInstance = instance.eval(assignment: assignments)
         // have to solve it again without preprocessor to get assignments of remaining top-level variables
-        guard let result = solver.solve(formula: instance, preprocessor: nil) else {
+        guard let result = solver.solve(formula: reducedInstance, preprocessor: nil) else {
             Logger.default().error("solver failed on instance")
             return nil
         }
@@ -232,14 +233,42 @@ struct InputSymbolicEncoding: BoSyEncoding {
         }
         
         //print(additionalAssignments)
-        let reducedInstance = instance.eval(assignment: additionalAssignments)
-        //print(reducedInstance)
+        var twoQBFInstance = reducedInstance.eval(assignment: additionalAssignments)
+        //print(twoQBFInstance)
+        
+        let greedyOptimizeLambda = false
+        if greedyOptimizeLambda {
+            var totalAssignment = assignments
+            for (variable, assigmment) in additionalAssignments {
+                assert(totalAssignment[variable] == nil)
+                totalAssignment[variable] = assigmment
+            }
+            let before = totalAssignment
+            let topLevel = instance as! Quantifier
+            for variable in topLevel.variables {
+                if totalAssignment[variable] == Literal.True {
+                    totalAssignment[variable] = Literal.False
+                }
+                guard let result = solver.solve(formula: instance.eval(assignment: totalAssignment), preprocessor: nil) else {
+                    Logger.default().error("solver failed on instance")
+                    return nil
+                }
+                if case .unsat = result {
+                    totalAssignment[variable] = Literal.True
+                }
+            }
+            //print(before)
+            //print(totalAssignment)
+            
+            twoQBFInstance = instance.eval(assignment: totalAssignment)
+        }
+        print(QCIRVisitor(formula: twoQBFInstance).description)
         
         guard let certifier = options.qbfCertifier?.instance as? CertifyingQbfSolver else {
             return nil
         }
         
-        guard let certificationResult = certifier.solve(formula: reducedInstance) else {
+        guard let certificationResult = certifier.solve(formula: twoQBFInstance) else {
             Logger.default().error("could not certify QBF query")
             return nil
         }
