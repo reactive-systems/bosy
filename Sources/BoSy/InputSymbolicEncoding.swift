@@ -262,7 +262,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
             
             twoQBFInstance = instance.eval(assignment: totalAssignment)
         }
-        print(QCIRVisitor(formula: twoQBFInstance).description)
+        //print(QCIRVisitor(formula: twoQBFInstance).description)
         
         guard let certifier = options.qbfCertifier?.instance as? CertifyingQbfSolver else {
             return nil

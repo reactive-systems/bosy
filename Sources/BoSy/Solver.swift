@@ -573,11 +573,7 @@ struct CADET: CertifyingQbfSolver {
         }
         
         let task = Process()
-        #if os(Linux)
-            task.launchPath = "./Tools/cadet_linux"
-        #else
-            task.launchPath = "./Tools/cadet_mac"
-        #endif
+        task.launchPath = "./Tools/cadet"
         task.arguments = ["-c", "stdout", tempFile.path]
         
         let stdoutPipe = Pipe()
