@@ -1,6 +1,6 @@
 import Foundation
 
-public class StreamHelper {
+public enum StreamHelper {
     public static func readAllAvailableData(from handle: FileHandle) -> Data {
         var data = Data()
         var readData = Data()

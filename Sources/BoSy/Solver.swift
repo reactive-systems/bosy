@@ -124,6 +124,11 @@ protocol SmtSolver: Solver {
     func solve(formula: String) -> SolverResult?
 }
 
+protocol InteractiveSmtSolver: Solver {
+    func solve(formula: String) -> SolverResult?
+    func getValue(expression: String) -> Logic?
+}
+
 protocol DqbfSolver: Solver {
     func solve(formula: Logic) -> SolverResult?
 }
@@ -628,13 +633,13 @@ func minimizeWithABC(_ aig: UnsafeMutablePointer<aiger>) -> UnsafeMutablePointer
     aiger_open_and_write_to_file(aig, inputTempFile.path)
     
     var abcCommand = "read \(inputTempFile.path); strash; refactor -zl; rewrite -zl;"
-    if aig.pointee.num_ands < 1000000 {
+    if aig.pointee.num_ands < 1_000_000 {
         abcCommand += " strash; refactor -zl; rewrite -zl;"
     }
-    if aig.pointee.num_ands < 200000 {
+    if aig.pointee.num_ands < 200_000 {
         abcCommand += " strash; refactor -zl; rewrite -zl;"
     }
-    if aig.pointee.num_ands < 200000 {
+    if aig.pointee.num_ands < 200_000 {
         abcCommand += " dfraig; rewrite -zl; dfraig;"
     }
     abcCommand += " write \(outputTempFile.path);"
@@ -790,34 +795,67 @@ struct Vampire: DqbfSolver {
     }
 }
 
-struct Z3: SmtSolver {
+class Z3: InteractiveSmtSolver {
+    
+    let task: Process
+    let inputPipe: Pipe
+    let outputPipe: Pipe
+    
+    init() {
+        task = Process()
+        inputPipe = Pipe()
+        outputPipe = Pipe()
+    }
+    
+    deinit {
+        if task.isRunning {
+            task.terminate()
+        }
+    }
+    
     func solve(formula: String) -> SolverResult? {
-        guard let tempFile = TempFile(suffix: ".smt2") else {
-            return nil
-        }
-        do {
-            try formula.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
-        } catch {
-            return nil
-        }
-        
-        let task = Process()
         task.launchPath = "./Tools/z3"
-        task.arguments = [tempFile.path]
+        task.arguments = ["-in"]
+        task.standardInput = inputPipe
+        task.standardOutput = outputPipe
+        task.launch()
         
-        guard let output = SolverHelper.executeAndReturnStdout(task: task) else {
+        guard let encodedFormula = (formula + "(check-sat)\n").data(using: .utf8) else {
             return nil
         }
+        inputPipe.fileHandleForWriting.write(encodedFormula)
         
-        //print(output)
-        if output.contains("error") {
-            return nil
-        } else if output.contains("unsat") {
-            return .unsat
-        } else if output.contains("sat") {
-            return .sat
-        }
+        //inputPipe.fileHandleForWriting.write("(check-sat)\n".data(using: .utf8)!)
+        var result: SolverResult? = nil
+        repeat {
+            let data = outputPipe.fileHandleForReading.availableData
+            guard let output = String(data: data, encoding: .utf8) else {
+                return nil
+            }
+            if output.contains("unsat") {
+                result = .unsat
+                return .unsat
+            } else if output.contains("sat") {
+                result = .sat
+                return .sat
+            }
+        } while (result == nil)
         return nil
+    }
+    
+    func getValue(expression: String) -> Logic? {
+        guard let encoded = "(get-value (\(expression)))\n".data(using: .utf8) else {
+            return nil
+        }
+        inputPipe.fileHandleForWriting.write(encoded)
+        let data = outputPipe.fileHandleForReading.availableData
+        guard let resultString = String(data: data, encoding: .utf8) else {
+            return nil
+        }
+        guard let result = BooleanUtils.parse(string: resultString.replacingOccurrences(of: "\(expression)", with: "")) else {
+            return nil
+        }
+        return result
     }
 }
 

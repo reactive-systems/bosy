@@ -837,6 +837,10 @@ struct BooleanLexer {
             return .Literal(false)
         case "1":
             return .Literal(true)
+        case "false":
+            return .Literal(false)
+        case "true":
+            return .Literal(true)
         case "a"..."z":
             return .Proposition(scanner.getIdentifier())
         default:

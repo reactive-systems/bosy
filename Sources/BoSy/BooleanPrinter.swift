@@ -31,6 +31,13 @@ class SmtPrinter: ReturnConstantVisitor<String> {
         super.init(constant: "")
     }
     
+    override func visit(literal: Literal) -> T {
+        if literal == Literal.True {
+            return "true"
+        } else {
+            return "false"
+        }
+    }
     override func visit(proposition: Proposition) -> T {
         return proposition.name
     }

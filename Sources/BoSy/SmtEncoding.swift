@@ -12,6 +12,7 @@ struct SmtEncoding: BoSyEncoding {
     var assignments: BooleanAssignment?
     var instance: Logic?
     var solutionBound: Int
+    var solver: InteractiveSmtSolver?
     
     init(automaton: CoBüchiAutomaton, semantics: TransitionSystemType, inputs: [String], outputs: [String]) {
         self.automaton = automaton
@@ -94,8 +95,6 @@ struct SmtEncoding: BoSyEncoding {
             }
         }
         
-        smt.append("(check-sat)\n")
-        
         return smt
     }
     
@@ -118,21 +117,13 @@ struct SmtEncoding: BoSyEncoding {
                                                   rhs: FunctionApplication(function: lambdaSharp(q), application: [Proposition("s")]))
         }
     }
-
-    func lambda(_ automatonState: CoBüchiAutomaton.State) -> String {
-        return "lambda_\(automatonState)"
-    }
     
     func lambda(_ automatonState: CoBüchiAutomaton.State) -> Proposition {
-        return Proposition(lambda(automatonState))
-    }
-    
-    func lambdaSharp(_ automatonState: CoBüchiAutomaton.State) -> String {
-        return "lambdaSharp_\(automatonState)"
+        return Proposition("lambda_\(automatonState)")
     }
     
     func lambdaSharp(_ automatonState: CoBüchiAutomaton.State) -> Proposition {
-        return Proposition(lambdaSharp(automatonState))
+        return Proposition("lambdaSharp_\(automatonState)")
     }
 
     mutating func solve(forBound bound: Int) throws -> Bool {
@@ -145,9 +136,10 @@ struct SmtEncoding: BoSyEncoding {
         constraintTimer?.stop()
         //print(instance)
         
-        guard let solver = options.solver?.instance as? SmtSolver else {
+        guard let solver = options.solver?.instance as? InteractiveSmtSolver else {
             throw BoSyEncodingError.SolvingFailed("solver creation failed")
         }
+        self.solver = solver
         
         let solvingTimer = options.statistics?.startTimer(phase: .solving)
         guard let result = solver.solve(formula: instance) else {
@@ -155,10 +147,81 @@ struct SmtEncoding: BoSyEncoding {
         }
         solvingTimer?.stop()
         
+        if result == .sat {
+            self.solutionBound = bound
+        }
+        
         return result == .sat
     }
     
     func extractSolution() -> BoSySolution? {
-        return nil
+        guard let solver = solver else {
+            return nil
+        }
+        
+        let printer = SmtPrinter()
+        
+        let extractionTimer = options.statistics?.startTimer(phase: .solutionExtraction)
+        let inputPropositions: [Proposition] = inputs.map({ Proposition($0) })
+
+        var solution = ExplicitStateSolution(bound: solutionBound, inputs: inputs, outputs: outputs, semantics: semantics)
+        
+        // extract solution: transition relation
+        for source in 0..<solutionBound {
+            for i in allBooleanAssignments(variables: inputPropositions) {
+                let parameters = inputPropositions.map({ i[$0]! })
+                let tauApplication = FunctionApplication(function: Proposition("tau"), application: [Proposition("s\(source)")] as [Logic] + parameters)
+                guard let value = solver.getValue(expression: tauApplication.accept(visitor: printer)) else {
+                    return nil
+                }
+                guard let proposition = value as? Proposition else {
+                    return nil
+                }
+                let transition = i.map({ v, val in val == Literal.True ? !v : v }).reduce(Literal.True, &)
+                guard let target = Int(proposition.name.substring(from: proposition.name.index(after: proposition.name.startIndex)), radix: 10) else {
+                    return nil
+                }
+                solution.addTransition(from: source, to: target, withGuard: transition)
+            }
+        }
+        
+        // extract solution: outputs
+        for output in outputs {
+            for source in 0..<solutionBound {
+                let enabled: Logic
+                switch self.semantics {
+                case .mealy:
+                    var clauses: [Logic] = []
+                    for i in allBooleanAssignments(variables: inputPropositions) {
+                        let parameters: [Logic] = inputPropositions.map({ i[$0]! })
+                        let inputProps: [Logic] = [Proposition("s\(source)")] + parameters
+                        let outputApplication = FunctionApplication(function: Proposition(output), application: inputProps)
+                        guard let value = solver.getValue(expression: outputApplication.accept(visitor: printer)) else {
+                            return nil
+                        }
+                        guard let literal = value as? Literal else {
+                            return nil
+                        }
+                        if literal == Literal.False {
+                            let clause = i.map({ v, val in val == Literal.True ? !v : v })
+                            clauses.append(clause.reduce(Literal.False, |))
+                        }
+                    }
+                    enabled = clauses.reduce(Literal.True, &)
+                case .moore:
+                    let outputApplication = FunctionApplication(function: Proposition(output), application: [Proposition("s\(source)")])
+                    guard let value = solver.getValue(expression: outputApplication.accept(visitor: printer)) else {
+                        return nil
+                    }
+                    guard let literal = value as? Literal else {
+                        return nil
+                    }
+                    enabled = literal
+                }
+                solution.add(output: output, inState: source, withGuard: enabled)
+            }
+        }
+        extractionTimer?.stop()
+        return solution
     }
 }
