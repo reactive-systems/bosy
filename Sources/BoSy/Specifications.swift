@@ -175,11 +175,7 @@ struct BoSyInputFileFormat: InputFileFormat {
 }*/
 
 func syfco(tlsf: String, arguments: [String]) -> String {
-    #if os(Linux)
-        let task = Task()
-    #else
-        let task = Process()
-    #endif
+    let task = Process()
 
     task.launchPath = "./Tools/syfco"
     task.arguments = ["--stdin"] + arguments
