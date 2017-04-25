@@ -233,10 +233,10 @@ struct InputSymbolicEncoding: BoSyEncoding {
         }
         
         //print(additionalAssignments)
-        var twoQBFInstance = reducedInstance.eval(assignment: additionalAssignments)
+        let twoQBFInstance = reducedInstance.eval(assignment: additionalAssignments)
         //print(twoQBFInstance)
         
-        let greedyOptimizeLambda = false
+        /*let greedyOptimizeLambda = false
         if greedyOptimizeLambda {
             var totalAssignment = assignments
             for (variable, assigmment) in additionalAssignments {
@@ -261,7 +261,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
             //print(totalAssignment)
             
             twoQBFInstance = instance.eval(assignment: totalAssignment)
-        }
+        }*/
         //print(QCIRVisitor(formula: twoQBFInstance).description)
         
         guard let certifier = options.qbfCertifier?.instance as? CertifyingQbfSolver else {

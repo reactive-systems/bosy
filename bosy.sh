@@ -8,4 +8,4 @@ if [ ! -f "$tlsf_input" ]; then
 fi
 
 ./Tools/syfco --format bosy $1 | .build/release/BoSy ${@:2}
-killall abc bloqqer eprover idq ltl2tgba ltl3ba spot picosat quabsl rareqs syfco z3 vampire &> /dev/null
+killall abc bloqqer eprover idq ltl2tgba ltl3ba spot picosat quabscm rareqs syfco z3 vampire &> /dev/null

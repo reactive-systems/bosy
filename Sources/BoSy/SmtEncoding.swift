@@ -177,7 +177,7 @@ struct SmtEncoding: BoSyEncoding {
                 guard let proposition = value as? Proposition else {
                     return nil
                 }
-                let transition = i.map({ v, val in val == Literal.True ? !v : v }).reduce(Literal.True, &)
+                let transition = i.map({ v, val in val == Literal.True ? v : !v }).reduce(Literal.True, &)
                 guard let target = Int(proposition.name.substring(from: proposition.name.index(after: proposition.name.startIndex)), radix: 10) else {
                     return nil
                 }

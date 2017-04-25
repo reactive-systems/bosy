@@ -16,7 +16,7 @@ test:
 	swift test
 
 clean:
-	swift build --clean
+	swift package clean
 	
 clean-source-tools:
 	rm -rf Tools/abc-hg
@@ -229,7 +229,7 @@ Tools/idq-1.0: Tools/idq-1.0.tar.gz
 Tools/idq-1.0.tar.gz: Tools/.f
 	cd Tools ; curl -OL http://fmv.jku.at/idq/idq-1.0.tar.gz
 
-#hqs
+# hqs
 Tools/hqs: Tools/hqs-bin/hqs
 	cp Tools/hqs-bin/hqs Tools/hqs-linux
 	cp Tools/hqs-bin/preprocess Tools/hqspre-linux
