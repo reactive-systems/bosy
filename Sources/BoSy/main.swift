@@ -130,9 +130,9 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
 
         Logger.default().info("automaton contains \(automaton.states.count) states")
 
-        var search = SolutionSearch(specification: specification, automaton: automaton, searchStrategy: strategy, player: player, backend: options.backend, synthesize: synthesize)
+        var search = SolutionSearch(specification: specification, automaton: automaton, searchStrategy: strategy, player: player, backend: options.backend, initialBound: options.minBound, synthesize: synthesize)
 
-        if search.hasSolution() {
+        if search.hasSolution(limit: options.maxBound ?? Int.max) {
             if !synthesize {
                 player == .system ? print("realizable") : print("unrealizable")
                 return
@@ -170,6 +170,7 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
                 return
             }
         }
+        print("unknown")
     }
 }
 

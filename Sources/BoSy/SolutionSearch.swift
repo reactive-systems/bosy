@@ -127,7 +127,7 @@ struct SolutionSearch {
     }
     
     mutating func hasSolution(limit: Int = Int.max) -> Bool {
-        while bound < limit {
+        while bound <= limit {
             do {
                 if try encoding.solve(forBound: bound) {
                     Logger.default().info("found solution with \(bound) states")

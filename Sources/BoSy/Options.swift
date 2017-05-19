@@ -9,6 +9,7 @@ enum CommandLineOptionsError: Error, CustomStringConvertible {
     case noValue(argument: String)
     case wrongChoice(argument: String, choice: String, choices: [String])
     case invalidCombination(message: String)
+    case wrongType(message: String)
     
     var description: String {
         switch self {
@@ -21,6 +22,8 @@ enum CommandLineOptionsError: Error, CustomStringConvertible {
         case .wrongChoice(let argument, let choice, let choices):
             return "value \"\(choice)\" given for \"\(argument)\" is not valid\npossible values are \(choices)"
         case .invalidCombination(let message):
+            return message
+        case .wrongType(let message):
             return message
         }
     }
@@ -54,6 +57,8 @@ struct BoSyOptions {
     var qbfPreprocessor: QBFPreprocessorInstance? = nil
     var monolithic: Bool = true
     var syntcomp2017rules: Bool = false
+    var minBound: Int = 1
+    var maxBound: Int? = nil
     
     mutating func parseCommandLine() throws {
         var arguments: ArraySlice<String> = CommandLine.arguments[CommandLine.arguments.indices]
@@ -157,6 +162,40 @@ struct BoSyOptions {
                 monolithic = true
             case "--syntcomp2017-rules":
                 syntcomp2017rules = true
+            case "--min-bound":
+                guard let value = arguments.popFirst() else {
+                    throw CommandLineOptionsError.noValue(argument: argument)
+                }
+                guard let intValue = Int(value) else {
+                    throw CommandLineOptionsError.wrongType(message: "argument --min-bound must be a natural number")
+                }
+                if intValue < 1 {
+                    throw CommandLineOptionsError.wrongType(message: "argument --min-bound must be larger than 0")
+                }
+                minBound = intValue
+            case "--max-bound":
+                guard let value = arguments.popFirst() else {
+                    throw CommandLineOptionsError.noValue(argument: argument)
+                }
+                guard let intValue = Int(value) else {
+                    throw CommandLineOptionsError.wrongType(message: "argument --max-bound must be a natural number")
+                }
+                if intValue < 1 {
+                    throw CommandLineOptionsError.wrongType(message: "argument --max-bound must be larger than 0")
+                }
+                maxBound = intValue
+            case "--bound":
+                guard let value = arguments.popFirst() else {
+                    throw CommandLineOptionsError.noValue(argument: argument)
+                }
+                guard let intValue = Int(value) else {
+                    throw CommandLineOptionsError.wrongType(message: "argument --bound must be a natural number")
+                }
+                if intValue < 1 {
+                    throw CommandLineOptionsError.wrongType(message: "argument --bound must be larger than 0")
+                }
+                minBound = intValue
+                maxBound = intValue
             default:
                 if !argument.hasPrefix("-") {
                     specificationFile = argument
@@ -188,6 +227,19 @@ struct BoSyOptions {
             if qbfPreprocessor != nil {
                 Logger.default().info("switch --qbf-preprocessor has no effect in this configuration")
             }
+        }
+        
+        // check if bounds are valid
+        if let maxBound = maxBound {
+            if maxBound < minBound {
+                throw CommandLineOptionsError.invalidCombination(message: "min-bound must be smaller or equal to max-bound")
+            }
+            if searchStrategy == .exponential && maxBound > 1 && maxBound % 2 != 0 {
+                throw CommandLineOptionsError.invalidCombination(message: "max-bound must be a multiple of 2 if exponential search strategy is selected")
+            }
+        }
+        if searchStrategy == .exponential && minBound > 1 && minBound % 2 != 0 {
+            throw CommandLineOptionsError.invalidCombination(message: "min-bound must be a multiple of 2 if exponential search strategy is selected")
         }
     }
     
