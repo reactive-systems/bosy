@@ -137,34 +137,38 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
                 player == .system ? print("realizable") : print("unrealizable")
                 return
             }
-            guard let solution = search.getSolution() else {
-                Logger.default().error("could not construct solution")
+            if player == .environment && options.syntcomp2017rules {
+                print("unrealizable")
+            } else {
+                guard let solution = search.getSolution() else {
+                    Logger.default().error("could not construct solution")
+                    return
+                }
+                switch options.target {
+                case .aiger:
+                    guard let aiger_solution = (solution as? AigerRepresentable)?.aiger else {
+                        Logger.default().error("could not encode solution as AIGER")
+                        return
+                    }
+                    let minimized = minimizeWithABC(aiger_solution)
+                    aiger_write_to_file(minimized, aiger_ascii_mode, stdout)
+                    player == .system ? print("realizable") : print("unrealizable")
+                case .dot:
+                    guard let dot = (solution as? DotRepresentable)?.dot else {
+                        Logger.default().error("could not encode solution as dot")
+                        return
+                    }
+                    print(dot)
+                case .smv:
+                    guard let smv = (solution as? SmvRepresentable)?.smv else {
+                        Logger.default().error("could not encode solution as SMV")
+                        return
+                    }
+                    print(smv)
+                }
+
                 return
             }
-            switch options.target {
-            case .aiger:
-                guard let aiger_solution = (solution as? AigerRepresentable)?.aiger else {
-                    Logger.default().error("could not encode solution as AIGER")
-                    return
-                }
-                let minimized = minimizeWithABC(aiger_solution)
-                aiger_write_to_file(minimized, aiger_ascii_mode, stdout)
-                player == .system ? print("realizable") : print("unrealizable")
-            case .dot:
-                guard let dot = (solution as? DotRepresentable)?.dot else {
-                    Logger.default().error("could not encode solution as dot")
-                    return
-                }
-                print(dot)
-            case .smv:
-                guard let smv = (solution as? SmvRepresentable)?.smv else {
-                    Logger.default().error("could not encode solution as SMV")
-                    return
-                }
-                print(smv)
-            }
-
-            return
         }
     }
 }

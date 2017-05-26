@@ -53,6 +53,7 @@ struct BoSyOptions {
     var qbfCertifier: SolverInstance? = nil
     var qbfPreprocessor: QBFPreprocessorInstance? = nil
     var monolithic: Bool = true
+    var syntcomp2017rules: Bool = false
     
     mutating func parseCommandLine() throws {
         var arguments: ArraySlice<String> = CommandLine.arguments[CommandLine.arguments.indices]
@@ -154,6 +155,8 @@ struct BoSyOptions {
                 qbfPreprocessor = _preprocessor
             case "--monolithic":
                 monolithic = true
+            case "--syntcomp2017-rules":
+                syntcomp2017rules = true
             default:
                 if !argument.hasPrefix("-") {
                     specificationFile = argument
@@ -202,7 +205,8 @@ struct BoSyOptions {
               "  --automaton-tool \(LTL2AutomatonConverter.allValues.map({ $0.rawValue }).joined(separator: "|"))\n",
               "  --target \(Target.allValues.map({ $0.rawValue }).joined(separator: "|"))\n",
               "  --solver \(SolverInstance.allValues.map({ $0.rawValue }).joined(separator: "|"))\n",
-              "  --qbf-certifier \(SolverInstance.allValues.filter({ $0.instance as? CertifyingQbfSolver != nil }).map({ $0.rawValue }).joined(separator: "|"))\n"
+              "  --qbf-certifier \(SolverInstance.allValues.filter({ $0.instance as? CertifyingQbfSolver != nil }).map({ $0.rawValue }).joined(separator: "|"))\n",
+              "  --syntcomp2017-rules\t disable construction of environment counter-strategies\n"
         )
     }
     
