@@ -34,7 +34,7 @@ clean-source-tools:
 	rm -rf Tools/idq-1.0
 
 distclean:
-	swift build --clean=dist
+	swift package reset
 	rm -rf Tools
 
 tools: required-tools optional-tools
