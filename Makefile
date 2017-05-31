@@ -265,8 +265,7 @@ Tools/quabs-bin.tar.gz: Tools/.f
 # rareqs
 Tools/rareqs: Tools/rareqs-1.1
 	# apply patches
-	cd Tools/rareqs-1.1/minisat/core ; sed -i -e 's/friend Lit mkLit(Var var, bool sign = false);/Lit mkLit(Var var, bool sign);/g' SolverTypes.h
-	cd Tools/rareqs-1.1/minisat/core ; sed -i -e 's/inline  Lit  mkLit     (Var var, bool sign)/inline  Lit  mkLit     (Var var, bool sign = false)/g' SolverTypes.h
+	patch -p1 --directory=Tools/rareqs-1.1 -i ../../rareqs.patch
 	# build
 	make -C Tools/rareqs-1.1
 	cp Tools/rareqs-1.1/rareqs Tools/rareqs
