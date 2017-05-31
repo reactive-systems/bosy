@@ -126,7 +126,7 @@ Tools/caqe-bin.tar.gz: Tools/.f
 
 # cryptominisat
 Tools/cryptominisat5: Tools/cryptominisat-5.0.1/build
-	cp Tools/cryptominisat-5.0.1/build/cryptominisat5 Tools/cryptominisat5
+	cp Tools/cryptominisat-5.0.1/build/cryptominisat5_simple Tools/cryptominisat5
 
 Tools/cryptominisat-5.0.1/build: Tools/cryptominisat-5.0.1
 	mkdir Tools/cryptominisat-5.0.1/build
