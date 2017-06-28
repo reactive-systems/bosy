@@ -1,0 +1,12 @@
+# use the official ubuntu image
+image: swift
+
+build:
+  stage: build
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq build-essential clang cmake curl gcc git haskell-platform libantlr3c-dev libbdd-dev libboost-program-options-dev libicu-dev libreadline-dev mercurial vim-common zlib1g-dev
+    - cabal update
+    - cabal install parsec array containers directory mtl transformers generic-deriving
+  script:
+    - make
+
