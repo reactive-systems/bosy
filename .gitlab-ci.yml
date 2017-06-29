@@ -24,4 +24,5 @@ build:
 test:
   stage: test
   script:
+    - ./Samples/test_help.sh
     - ./Samples/test_simple_arbiter.sh
