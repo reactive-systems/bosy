@@ -136,7 +136,7 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
 
         if search.hasSolution(limit: options.maxBound ?? Int.max) {
             if !synthesize {
-                player == .system ? print("realizable") : print("unrealizable")
+                player == .system ? print("result: realizable") : print("result: unrealizable")
                 return
             }
             guard let solution = search.getSolution() else {
@@ -151,7 +151,7 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
                 }
                 let minimized = minimizeWithABC(aiger_solution)
                 aiger_write_to_file(minimized, aiger_ascii_mode, stdout)
-                player == .system ? print("realizable") : print("unrealizable")
+                player == .system ? print("result: realizable") : print("result: unrealizable")
             case .dot:
                 guard let dot = (solution as? DotRepresentable)?.dot else {
                     Logger.default().error("could not encode solution as dot")
