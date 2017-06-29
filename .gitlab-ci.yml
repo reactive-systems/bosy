@@ -21,8 +21,8 @@ build:
 #      - build/
 
 # run tests using the binary built before
-test:
-  stage: test
-  script:
-    - ./Samples/test_help.sh
-    - ./Samples/test_simple_arbiter.sh
+#test:
+#  stage: test
+#  script:
+#    - ./Samples/test_help.sh
+#    - ./Samples/test_simple_arbiter.sh
