@@ -277,11 +277,13 @@ Tools/rareqs-1.1.src.tgz: Tools/.f
 	cd Tools ; curl -OL http://sat.inesc-id.pt/~mikolas/sw/areqs/rareqs-1.1.src.tgz
 
 # syfco
-Tools/syfco: Tools/syfco-git/syfco
-	cp Tools/syfco-git/syfco Tools/syfco
+Tools/syfco: Tools/syfco-git/dist/build/syfco/syfco
+	cp Tools/syfco-git/dist/build/syfco/syfco Tools/syfco
 
-Tools/syfco-git/syfco: Tools/syfco-git
-	make -C Tools/syfco-git
+Tools/syfco-git/dist/build/syfco/syfco: Tools/syfco-git
+	cabal update
+	cd Tools/syfco-git ; cabal install --dependencies-only
+	cd Tools/syfco-git ; cabal build
 
 Tools/syfco-git: Tools/.f
 	cd Tools ; git clone https://github.com/reactive-systems/syfco.git syfco-git
