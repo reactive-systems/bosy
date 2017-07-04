@@ -33,8 +33,9 @@ enum Target: String {
     case aiger = "aiger"
     case dot   = "dot"
     case smv   = "smv"
+    case all   = "all"
     
-    static let allValues: [Target] = [.aiger, .dot, .smv]
+    static let allValues: [Target] = [.aiger, .dot, .smv, .all]
 }
 
 

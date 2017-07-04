@@ -164,11 +164,32 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
                     return
                 }
                 print(smv)
+            case .all:
+                var result: [String:String] = [:]
+                guard let dot = (solution as? DotRepresentable)?.dot else {
+                    Logger.default().error("could not encode solution as dot")
+                    return
+                }
+                result["dot"] = dot
+                guard let smv = (solution as? SmvRepresentable)?.smv else {
+                    Logger.default().error("could not encode solution as SMV")
+                    return
+                }
+                result["smv"] = smv
+                guard let jsonData = try? JSONSerialization.data(withJSONObject: result) else {
+                    Logger.default().error("could not encode solution JSON")
+                    return
+                }
+                guard let jsonString = String(data: jsonData, encoding: .utf8) else {
+                    Logger.default().error("could not encode solution JSON")
+                    return
+                }
+                print(jsonString)
             }
 
             return
         }
-        print("unknown")
+        print("result: unknown")
     }
 }
 
