@@ -13,6 +13,10 @@ protocol SmvRepresentable {
     var smv: String { get }
 }
 
+protocol VerilogRepresentable {
+    var verilog: String { get }
+}
+
 protocol BoSySolution {}
 
 struct ExplicitStateSolution: BoSySolution {
@@ -245,4 +249,70 @@ extension ExplicitStateSolution: SmvRepresentable {
     var smv: String {
         return _toSMV()
     }
+}
+
+extension ExplicitStateSolution: VerilogRepresentable {
+    private func _toVerilog() -> String {
+        let signature: [String] = inputs + outputs
+        var verilog: [String] = ["module fsm(\(signature.joined(separator: ", ")));"]
+        verilog += inputs.map({ "  input \($0);" })
+        verilog += outputs.map({ "  output \($0);" })
+        
+        // state definitions
+        let numBits = numBitsNeeded(states.count)
+        assert(numBits > 0)
+        verilog += ["  reg [\(numBits-1):0] state;"]
+        verilog += states.map({ "  `define S\($0) \(numBits)'b\(binaryFrom($0, bits: numBits))" })
+        
+        let verilogPrinter = VerilogPrinter()
+        
+        // output definitions
+        for output in outputs {
+            var verilogGuard: [String] = []
+            for (source, outputDefinitions) in outputGuards {
+                guard let outputGuard = outputDefinitions[output] else {
+                    continue
+                }
+                if outputGuard as? Literal != nil && outputGuard as! Literal == Literal.False {
+                    continue
+                }
+                verilogGuard.append("(state == `S\(source)) && \(outputGuard.accept(visitor: verilogPrinter))")
+            }
+            if verilogGuard.isEmpty {
+                verilogGuard.append("0")
+            }
+            verilog.append("\tassign \(output) = (\(verilogGuard.joined(separator: " || "))) ? 1 : 0;")
+        }
+        
+        verilog += ["  initial",
+                    "  begin",
+                    "    state = `S0;",
+                    "  end",
+                    "  always @($global_clock)",
+                    "  begin"]
+        
+        var nextState: [String] = []
+        for (source, outgoing) in transitions {
+            var guardes: [String] = []
+            var targets: [String] = []
+            for (target, transitionGuard) in outgoing {
+                let verilogGuard = transitionGuard.accept(visitor: verilogPrinter)
+                guardes.append("if (\(verilogGuard))\n")
+                targets.append("        state = `S\(target);\n")
+            }
+            guardes[guardes.count - 1] = "\n"
+            nextState.append("`S\(source): " + zip(guardes, targets).map({ $0 + $1 }).joined(separator: "      else "))
+        }
+        verilog.append("    case(state)\n      \(nextState.joined(separator: "\n      "))\n    endcase")
+        
+        verilog += ["  end"]
+        
+        verilog += ["endmodule"]
+        return verilog.joined(separator: "\n")
+    }
+    
+    var verilog: String {
+        return _toVerilog()
+    }
+    
 }

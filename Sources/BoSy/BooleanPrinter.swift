@@ -110,3 +110,36 @@ class SmvPrinter: ReturnConstantVisitor<String> {
         return "(\(operands.joined(separator: type)))"
     }
 }
+
+class VerilogPrinter: ReturnConstantVisitor<String> {
+    init() {
+        super.init(constant: "")
+    }
+    
+    override func visit(literal: Literal) -> T {
+        if literal == Literal.True {
+            return "1"
+        } else {
+            return "0"
+        }
+    }
+    override func visit(proposition: Proposition) -> T {
+        return proposition.name
+    }
+    override func visit(unaryOperator: UnaryOperator) -> T {
+        return "!" + unaryOperator.operand.accept(visitor: self)
+    }
+    override func visit(binaryOperator: BinaryOperator) -> T {
+        let operands = binaryOperator.operands.map({ $0.accept(visitor: self) })
+        let type: String
+        switch binaryOperator.type {
+        case .And:
+            type = " && "
+        case .Or:
+            type = " || "
+        default:
+            fatalError()
+        }
+        return "(\(operands.joined(separator: type)))"
+    }
+}

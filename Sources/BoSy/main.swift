@@ -164,6 +164,12 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
                     return
                 }
                 print(smv)
+            case .verilog:
+                guard let verilog = (solution as? VerilogRepresentable)?.verilog else {
+                    Logger.default().error("could not encode solution as Verilog")
+                    return
+                }
+                print(verilog)
             case .all:
                 var result: [String:String] = [:]
                 guard let dot = (solution as? DotRepresentable)?.dot else {
@@ -176,6 +182,11 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
                     return
                 }
                 result["smv"] = smv
+                guard let verilog = (solution as? VerilogRepresentable)?.verilog else {
+                    Logger.default().error("could not encode solution as Verilog")
+                    return
+                }
+                result["verilog"] = verilog
                 guard let jsonData = try? JSONSerialization.data(withJSONObject: result) else {
                     Logger.default().error("could not encode solution JSON")
                     return

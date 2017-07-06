@@ -30,12 +30,13 @@ enum CommandLineOptionsError: Error, CustomStringConvertible {
 }
 
 enum Target: String {
-    case aiger = "aiger"
-    case dot   = "dot"
-    case smv   = "smv"
-    case all   = "all"
+    case aiger   = "aiger"
+    case dot     = "dot"
+    case smv     = "smv"
+    case verilog = "verilog"
+    case all     = "all"
     
-    static let allValues: [Target] = [.aiger, .dot, .smv, .all]
+    static let allValues: [Target] = [.aiger, .dot, .smv, .verilog, .all]
 }
 
 
