@@ -12,7 +12,7 @@ struct SmtEncoding: BoSyEncoding {
     var assignments: BooleanAssignment?
     var instance: Logic?
     var solutionBound: Int
-    var solver: InteractiveSmtSolver?
+    var solver: SmtSolver?
     
     init(automaton: CoBüchiAutomaton, semantics: TransitionSystemType, inputs: [String], outputs: [String]) {
         self.automaton = automaton
@@ -136,7 +136,7 @@ struct SmtEncoding: BoSyEncoding {
         constraintTimer?.stop()
         //print(instance)
         
-        guard let solver = options.solver?.instance as? InteractiveSmtSolver else {
+        guard let solver = options.solver?.instance as? SmtSolver else {
             throw BoSyEncodingError.SolvingFailed("solver creation failed")
         }
         self.solver = solver
