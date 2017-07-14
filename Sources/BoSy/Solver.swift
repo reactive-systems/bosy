@@ -232,7 +232,7 @@ struct CryptoMiniSat: SatSolver {
         // start task and extract stdout and stderr
         let task = Process()
         task.launchPath = "./Tools/cryptominisat5"
-        task.arguments = ["--verb", "0", tempFile.path]
+        task.arguments = ["--verb=0", tempFile.path]
 
         guard let stdout = SolverHelper.executeAndReturnStdout(task: task) else {
             return nil
@@ -805,7 +805,8 @@ class Z3: SmtSolver {
     
     deinit {
         if task.isRunning {
-            task.terminate()
+            inputPipe.fileHandleForWriting.write("(exit)\n".data(using: .utf8)!)
+            task.waitUntilExit()
         }
     }
     
@@ -869,7 +870,8 @@ class CVC4: SmtSolver {
     
     deinit {
         if task.isRunning {
-            task.terminate()
+            inputPipe.fileHandleForWriting.write("(exit)\n".data(using: .utf8)!)
+            task.waitUntilExit()
         }
     }
     
