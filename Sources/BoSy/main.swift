@@ -21,6 +21,7 @@ let json: String
 let parseTimer = options.statistics?.startTimer(phase: .parsing)
 
 if let specificationFile = options.specificationFile {
+    Logger.default().debug("reading from file \"\(specificationFile)\"")
     guard let specficationString = try? String(contentsOfFile: specificationFile, encoding: String.Encoding.utf8) else {
         print("error: cannot read input file \(specificationFile)")
         exit(1)
@@ -29,6 +30,8 @@ if let specificationFile = options.specificationFile {
 } else {
     // Read from stdin
     let standardInput = FileHandle.standardInput
+    
+    Logger.default().debug("reading from stdin")
     
     var input = StreamHelper.readAllAvailableData(from: standardInput)
     
@@ -84,6 +87,7 @@ if let semantics = options.semantics {
 //Logger.default().info("assumptions: \(specification.assumptions), guarantees: \(specification.guarantees)")
 
 private func buildAutomaton(player: Player) -> CoBüchiAutomaton? {
+    Logger.default().debug("start building automaton for player \(player)")
     if options.monolithic || player == .environment || specification.assumptions.count > 0 {
         let assumptionString = specification.assumptions.map(String.init(describing:)).joined(separator: " && ")
         let guaranteeString = specification.guarantees.map(String.init(describing:)).joined(separator: " && ")
@@ -102,6 +106,7 @@ private func buildAutomaton(player: Player) -> CoBüchiAutomaton? {
             return nil
         }
         automatonTimer?.stop()
+        Logger.default().debug("building automaton for player \(player) succeeded")
         return automaton
     } else {
         assert(specification.assumptions.count == 0)
@@ -118,11 +123,14 @@ private func buildAutomaton(player: Player) -> CoBüchiAutomaton? {
             automata.append(automaton)
         }
         
+        Logger.default().debug("building automaton for player \(player) succeeded")
+        
         return CoBüchiAutomaton(automata: automata)
     }
 }
 
 func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -> ()) {
+    Logger.default().debug("start search strategy (strategy: \"\(strategy)\", player: \"\(player)\", synthesize: \(synthesize))")
     return {
         guard let automaton = buildAutomaton(player: player) else {
             return

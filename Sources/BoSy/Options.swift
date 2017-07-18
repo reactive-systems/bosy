@@ -75,6 +75,8 @@ struct BoSyOptions {
             case "-h", "--help":
                 printHelp()
                 exit(0)
+            case "-v", "--verbose":
+                Logger.default().verbosity = .debug
             case "--synthesize":
                 synthesize = true
             case "--strategy":
@@ -250,6 +252,7 @@ struct BoSyOptions {
         print("\(name) [options] instance\n\n",
               "options:\n",
               "  --help\t\tshow this help and exit\n",
+              "  --verbose\t\tshow verbose output\n",
               "  --synthesize\t\tconstruct AIGER solution after realizability\n",
               "  --statistics\t\tdisplay solving statistics\n",
               "  --strategy linear|exponential\n",

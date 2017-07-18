@@ -34,6 +34,7 @@ struct BoSyInputFileFormat: InputFileFormat {
     let guarantees: [LTL]
     
     static func fromJson(string: String) -> BoSyInputFileFormat? {
+        Logger.default().debug("parse JSON input file")
         guard let data = string.data(using: .utf8) else {
             Logger.default().error("could not decode JSON")
             return nil
@@ -101,6 +102,7 @@ struct BoSyInputFileFormat: InputFileFormat {
             Logger.default().error("could not parse assumptions")
             return nil
         }
+        Logger.default().debug("parsing JSON succeeded")
         return BoSyInputFileFormat(semantics: semantics, inputs: inputs, outputs: outputs, assumptions: parsedAssumptions, guarantees: parsedGuarantees)
     }
 }
