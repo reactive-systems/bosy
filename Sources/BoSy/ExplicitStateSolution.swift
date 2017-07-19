@@ -128,9 +128,9 @@ extension ExplicitStateSolution: DotRepresentable {
      * and one set of functions encoding the outputs.
      * This function combines them such that we can print edges containing both.
      */
-    private func matchOutputsAndTransitions() -> [State: [State: (transitionGuard: Logic, outputs: [String])]] {
+    private func matchOutputsAndTransitions() -> [State: [State: [(transitionGuard: Logic, outputs: [String])]]] {
         precondition(semantics == .mealy)
-        var outputTransitions: [State: [State: (transitionGuard: Logic, outputs: [String])]] = [:]
+        var outputTransitions: [State: [State: [(transitionGuard: Logic, outputs: [String])]]] = [:]
         
         for (source, outputs) in outputGuards {
             var valuations: [([String], Logic)] = [([],Literal.True)]  // maps valuations of outputs to their guards
@@ -153,8 +153,8 @@ extension ExplicitStateSolution: DotRepresentable {
                     if newGuard as? Literal != nil && newGuard as! Literal == Literal.False {
                         continue
                     }
-                    var sourceOut: [State: (transitionGuard: Logic, outputs: [String])] = outputTransitions[source] ?? [:]
-                    sourceOut[target] = (newGuard, valuation)
+                    var sourceOut: [State: [(transitionGuard: Logic, outputs: [String])]] = outputTransitions[source] ?? [:]
+                    sourceOut[target] = (sourceOut[target] ?? []) + [(newGuard, valuation)]
                     outputTransitions[source] = sourceOut
                 }
             }
@@ -176,8 +176,10 @@ extension ExplicitStateSolution: DotRepresentable {
             
             let transitionOutputs = matchOutputsAndTransitions()
             for (source, outgoing) in transitionOutputs {
-                for (target, (transitionGuard: transitionGuard, outputs: outputs)) in outgoing {
-                    dot.append("\ts\(source) -> s\(target) [label=\"\(transitionGuard) / \(outputs.joined(separator: " "))\"];")
+                for (target, iterator) in outgoing {
+                    for (transitionGuard: transitionGuard, outputs: outputs) in iterator {
+                        dot.append("\ts\(source) -> s\(target) [label=\"\(transitionGuard) / \(outputs.joined(separator: " "))\"];")
+                    }
                 }
             }
             
