@@ -123,23 +123,41 @@ extension ExplicitStateSolution: AigerRepresentable {
 
 extension ExplicitStateSolution: DotRepresentable {
     
-    private func matchOutputsAndTransitions() -> [State: [State: (String, Logic)]] {
+    /**
+     * We have one set of functions encoding the transition function
+     * and one set of functions encoding the outputs.
+     * This function combines them such that we can print edges containing both.
+     */
+    private func matchOutputsAndTransitions() -> [State: [State: (transitionGuard: Logic, outputs: [String])]] {
         precondition(semantics == .mealy)
-        var outputTransitions: [State: [State: (String, Logic)]] = [:]
+        var outputTransitions: [State: [State: (transitionGuard: Logic, outputs: [String])]] = [:]
         
         for (source, outputs) in outputGuards {
-            for (target, transitionGuard) in transitions[source]! {
-                for (output, outputGuard) in outputs {
-                    let newGuard = transitionGuard & outputGuard
+            var valuations: [([String], Logic)] = [([],Literal.True)]  // maps valuations of outputs to their guards
+            for (output, outputGuard) in outputs {
+                valuations = valuations.map({ (valuation, valuationGuard) in
+                    if outputGuard as? Literal != nil && outputGuard as! Literal == Literal.False {
+                        // output is always false, do nothing
+                        return [(valuation, valuationGuard)]
+                    }
+                    // output is not false
+                    return [ (valuation + [output], valuationGuard & outputGuard), (valuation, valuationGuard & !outputGuard) ]
+                }).reduce([], +)
+            }
+            guard let outgoing = transitions[source] else {
+                fatalError()
+            }
+            for (target, transitionGuard) in outgoing {
+                for (valuation, valuationGuard) in valuations {
+                    let newGuard = transitionGuard & valuationGuard
                     if newGuard as? Literal != nil && newGuard as! Literal == Literal.False {
                         continue
                     }
-                    var sourceOut: [State: (String, Logic)] = outputTransitions[source] ?? [:]
-                    sourceOut[target] = (output, newGuard)
+                    var sourceOut: [State: (transitionGuard: Logic, outputs: [String])] = outputTransitions[source] ?? [:]
+                    sourceOut[target] = (newGuard, valuation)
                     outputTransitions[source] = sourceOut
                 }
             }
-            
         }
         return outputTransitions
     }
@@ -158,8 +176,8 @@ extension ExplicitStateSolution: DotRepresentable {
             
             let transitionOutputs = matchOutputsAndTransitions()
             for (source, outgoing) in transitionOutputs {
-                for (target, (output, transitionGuard)) in outgoing {
-                    dot.append("\ts\(source) -> s\(target) [label=\"\(transitionGuard) / \(output)\"];")
+                for (target, (transitionGuard: transitionGuard, outputs: outputs)) in outgoing {
+                    dot.append("\ts\(source) -> s\(target) [label=\"\(transitionGuard) / \(outputs.joined(separator: " "))\"];")
                 }
             }
             
