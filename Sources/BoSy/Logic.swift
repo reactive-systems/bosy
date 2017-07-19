@@ -9,6 +9,8 @@ protocol Logic: CustomStringConvertible {
     
     func eval(assignment: BooleanAssignment) -> Logic
     
+    func simplify() -> Logic
+    
     var hashValue: Int { get }
 }
 
@@ -16,8 +18,10 @@ func ==(lhs: Logic, rhs: Logic) -> Bool {
     switch (lhs, rhs) {
     case let (lhs as Proposition, rhs as Proposition):
         return lhs == rhs
+    case let (lhs as UnaryOperator, rhs as UnaryOperator):
+        return lhs.operand == rhs.operand
     default:
-        assert(type(of: lhs) != type(of: rhs))
+        //assert(type(of: lhs) != type(of: rhs))
         return false
     }
 }
@@ -42,6 +46,10 @@ func & (lhs: Logic, rhs: Logic) -> Logic {
             return lhs
         } else if element == Literal.False {
             return Literal.False
+        }
+    case (let element_lhs as BinaryOperator, let element_rhs as BinaryOperator):
+        if element_lhs.type == .And && element_rhs.type == .And {
+            return BinaryOperator(.And, operands: element_lhs.operands + element_rhs.operands)
         }
     case (let element as BinaryOperator, _):
         if element.type == .And {
@@ -72,6 +80,10 @@ func | (lhs: Logic, rhs: Logic) -> Logic {
         } else {
             assert(element == Literal.False)
             return lhs
+        }
+    case (let element_lhs as BinaryOperator, let element_rhs as BinaryOperator):
+        if element_lhs.type == .Or && element_rhs.type == .Or {
+            return BinaryOperator(.Or, operands: element_lhs.operands + element_rhs.operands)
         }
     case (let element as BinaryOperator, _):
         if element.type == .Or {
@@ -206,6 +218,10 @@ struct UnaryOperator: Logic, Equatable {
     func eval(assignment: BooleanAssignment) -> Logic {
         return !operand.eval(assignment: assignment)
     }
+    
+    func simplify() -> Logic {
+        return self
+    }
 }
 
 func ==(_ lhs: UnaryOperator, _ rhs: UnaryOperator) -> Bool {
@@ -284,6 +300,68 @@ struct BinaryOperator: Logic, Hashable {
             return evaluatedOperands[0] ^ evaluatedOperands[1]
         }
     }
+    
+    func simplify() -> Logic {
+        let newOperands = operands.map({ $0.simplify() })
+        switch type {
+        case .And:
+            // check for duplication
+            var reducedOperands = newOperands
+            for operand in newOperands {
+                if operand as? Literal != nil && operand as! Literal == Literal.False {
+                    return Literal.False
+                }
+                reducedOperands = newOperands.filter({ !($0 == operand) })
+                if operand as? Literal == nil {
+                    reducedOperands.append(operand)
+                } else {
+                    assert(operand as! Literal == Literal.True)
+                }
+            }
+            
+            // simple conflict check
+            for operand in reducedOperands {
+                guard let op = operand as? Proposition else {
+                    continue
+                }
+                if reducedOperands.contains(where: { $0 == !op }) {
+                    return Literal.False
+                }
+            }
+            return BinaryOperator(type, operands: reducedOperands)
+        case .Or:
+            // check for duplication
+            var reducedOperands = newOperands
+            for operand in newOperands {
+                if operand as? Literal != nil && operand as! Literal == Literal.True {
+                    return Literal.True
+                }
+                reducedOperands = newOperands.filter({ !($0 == operand) })
+                if operand as? Literal == nil {
+                    reducedOperands.append(operand)
+                } else {
+                    assert(operand as! Literal == Literal.False)
+                }
+            }
+            
+            // simple conflict check
+            for operand in reducedOperands {
+                guard let op = operand as? Proposition else {
+                    continue
+                }
+                if reducedOperands.contains(where: { $0 == !op }) {
+                    return Literal.True
+                }
+            }
+            return BinaryOperator(type, operands: reducedOperands)
+        case .Xnor:
+            assert(newOperands.count == 2)
+            return BinaryOperator(type, operands: newOperands)
+        case .Xor:
+            assert(newOperands.count == 2)
+            return BinaryOperator(type, operands: newOperands)
+        }
+    }
 }
 
 func ==(_ lhs: BinaryOperator, _ rhs: BinaryOperator) -> Bool {
@@ -341,6 +419,10 @@ struct Quantifier: Logic {
         }
         return copy
     }
+    
+    func simplify() -> Logic {
+        return self
+    }
 }
 
 func ==(lhs: Quantifier, rhs: Quantifier) -> Bool {
@@ -389,6 +471,10 @@ struct Literal: Logic, Equatable {
     func eval(assignment: BooleanAssignment) -> Logic {
         return self
     }
+    
+    func simplify() -> Logic {
+        return self
+    }
 }
 
 func ==(lhs: Literal, rhs: Literal) -> Bool {
@@ -420,6 +506,10 @@ struct Proposition: Logic, Equatable, Hashable {
             return self
         }
         return value
+    }
+    
+    func simplify() -> Logic {
+        return self
     }
 }
 
@@ -469,6 +559,10 @@ struct BooleanComparator: Logic {
         //assert(assignment[rhs] == nil)
         return self
     }
+    
+    func simplify() -> Logic {
+        return self
+    }
 }
 
 struct FunctionApplication: Logic, Hashable {
@@ -495,6 +589,10 @@ struct FunctionApplication: Logic, Hashable {
     
     func eval(assignment: BooleanAssignment) -> Logic {
         assert(false)
+        return self
+    }
+    
+    func simplify() -> Logic {
         return self
     }
     

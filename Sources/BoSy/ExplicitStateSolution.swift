@@ -141,7 +141,7 @@ extension ExplicitStateSolution: DotRepresentable {
                         return [(valuation, valuationGuard)]
                     }
                     // output is not false
-                    return [ (valuation + [output], valuationGuard & outputGuard), (valuation, valuationGuard & !outputGuard) ]
+                    return [ (valuation + [output], (valuationGuard & outputGuard).simplify()), (valuation, (valuationGuard & !outputGuard).simplify()) ]
                 }).reduce([], +)
             }
             guard let outgoing = transitions[source] else {
@@ -149,7 +149,7 @@ extension ExplicitStateSolution: DotRepresentable {
             }
             for (target, transitionGuard) in outgoing {
                 for (valuation, valuationGuard) in valuations {
-                    let newGuard = transitionGuard & valuationGuard
+                    let newGuard = (transitionGuard & valuationGuard).simplify()
                     if newGuard as? Literal != nil && newGuard as! Literal == Literal.False {
                         continue
                     }
