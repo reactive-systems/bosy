@@ -130,7 +130,7 @@ Tools/cryptominisat5: Tools/cryptominisat-5.0.1/build
 
 Tools/cryptominisat-5.0.1/build: Tools/cryptominisat-5.0.1
 	mkdir Tools/cryptominisat-5.0.1/build
-	cd Tools/cryptominisat-5.0.1/build ; cmake -DSTATICCOMPILE=ON ..
+	cd Tools/cryptominisat-5.0.1/build ; cmake -DCMAKE_BUILD_TYPE=Release -DSTATICCOMPILE=ON ..
 	cd Tools/cryptominisat-5.0.1/build ; make -j4
 
 Tools/cryptominisat-5.0.1: Tools/cryptominisat-5.0.1.tar.gz
