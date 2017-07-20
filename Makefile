@@ -44,6 +44,7 @@ required-tools: \
 	Tools/bloqqer \
 	Tools/bloqqer-031 \
 	Tools/cryptominisat5 \
+	Tools/ltl2tgba \
 	Tools/ltl3ba \
 	Tools/idq \
 	Tools/quabscm \
@@ -57,7 +58,6 @@ optional-tools: \
 	Tools/cvc4 \
 	Tools/depqbf \
 	Tools/eprover \
-	Tools/ltl2tgba \
 	Tools/picosat \
 	Tools/vampire \
 	Tools/hqs

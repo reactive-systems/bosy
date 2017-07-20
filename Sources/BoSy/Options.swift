@@ -50,7 +50,7 @@ struct BoSyOptions {
     var searchStrategy: SearchStrategy = .exponential
     var player: Players = .both
     var backend: Backends = .inputSymbolic
-    var converter: LTL2AutomatonConverter = .ltl3ba
+    var converter: LTL2AutomatonConverter = .spot
     var semantics: TransitionSystemType? = nil
     var statistics: BoSyStatistics? = nil
     var target: Target = .aiger
