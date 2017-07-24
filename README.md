@@ -5,9 +5,14 @@ BoSy is a reactive synthesis tool based on constraint-solving.
 
 ## Awards
 
-* First and second place in sequential TLSF synthesis track (SYNTOMP 2016)
-* Second and third place in sequential TLSF realizability track (SYNTOMP 2016)
+* First and second place in sequential TLSF synthesis track (SYNTCOMP 2016)
+* Second and third place in sequential TLSF realizability track (SYNTCOMP 2016)
+* First place (quality ranking) in sequential TLSF synthesis track (SYNTCOMP 2017)
+* Third place in sequential TLSF realizability track (SYNTCOMP 2017)
 
+## Online Interface
+
+BoSy can be tried without installation directly in your browser in our [online interface](https://www.react.uni-saarland.de/tools/online/BoSy/).
 
 ## Installation
 
@@ -46,3 +51,4 @@ Every request from a client (signal `r_0`/`r_1`) must be eventually granted (sig
 The command `.build/release/BoSy [--synthesize] arbiter.json` checks the specification for realizability.
 If the option `--synthesize` is given, a solution is extracted after realizability check.
 Check `.build/release/BoSy --help` for more options.
+
