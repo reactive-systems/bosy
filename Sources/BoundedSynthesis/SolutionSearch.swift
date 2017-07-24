@@ -47,6 +47,7 @@ public enum Backends: String {
     case stateSymbolic = "state-symbolic"
     case symbolic      = "symbolic"
     case smt           = "smt"
+    case gameSolving   = "game-solving"
     
     public static let allValues: [Backends] = [
         .explicit,
@@ -68,10 +69,12 @@ public enum Backends: String {
             return (solver.instance as? DqbfSolver) != nil
         case .smt:
             return (solver.instance as? SmtSolver) != nil
+        case .gameSolving:
+            return false
         }
     }
     
-    var defaultSolver: SolverInstance {
+    var defaultSolver: SolverInstance? {
         switch self {
         case .explicit:
             return .cryptominisat
@@ -83,6 +86,8 @@ public enum Backends: String {
             return .idq
         case .smt:
             return .z3
+        case .gameSolving:
+            return nil
         }
     }
 }
@@ -113,6 +118,8 @@ public struct SolutionSearch {
             encoding = SymbolicEncoding(options: options, automaton: automaton, specification: specification)
         case .smt:
             encoding = SmtEncoding(options: options, automaton: automaton, specification: specification)
+        case .gameSolving:
+            encoding = SafetyGameReduction(automaton: automaton, semantics: semantics, inputs: inputs, outputs: outputs)
         }
     }
     

@@ -14,5 +14,6 @@ let package = Package(
     ],
     dependencies: [
         .Package(url: "https://github.com/ltentrup/CAiger.git", majorVersion: 0, minor: 1),
+        .Package(url: "https://github.com/ltentrup/SafetySynth.git", majorVersion: 0, minor: 2),
     ]
 )

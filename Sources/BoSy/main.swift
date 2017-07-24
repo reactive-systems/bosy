@@ -224,7 +224,7 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
     }
 }
 
-//search(strategy: .Linear, player: .system, synthesize: synthesize)()
+//search(strategy: options.searchStrategy, player: .system, synthesize: options.synthesize)()
 
 let condition = NSCondition()
 var finished = false

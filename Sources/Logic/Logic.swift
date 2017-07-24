@@ -750,7 +750,7 @@ public class BoundednessVisitor: CheckingVisitor {
     }
 }
 
-public class ReturnConstantVisitor<R>: BooleanVisitor {
+open class ReturnConstantVisitor<R>: BooleanVisitor {
     public typealias T = R
     
     let constant: R
