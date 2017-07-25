@@ -16,7 +16,7 @@ class UCWGame: SafetyGame {
     
     var compose: [CUDDNode]
     var initial: CUDDNode
-    var output: CUDDNode
+    var safetyCondition: CUDDNode
     
     var controllableNames: [String]
     var uncontrollableNames: [String]
@@ -49,7 +49,7 @@ class UCWGame: SafetyGame {
         
         self.compose = self.controllables + self.uncontrollables
         self.initial = manager.one()
-        self.output = manager.zero()
+        self.safetyCondition = manager.one()
         
         self.controllableNames = inputs
         self.uncontrollableNames = outputs
@@ -108,7 +108,7 @@ class UCWGame: SafetyGame {
                 let nextStateIndex = getStateIndex(state: next)
                 if next.counter > k {
                     // rejecting counter overflow => safety condition violation
-                    output |= encoded & transitionGuard.accept(visitor: cuddEncoder)
+                    safetyCondition &= !(encoded & transitionGuard.accept(visitor: cuddEncoder))
                     //print("\(state) --(\(transitionGuard))--> bad")
                 } else {
                     compose[offset + nextStateIndex] |= encoded & transitionGuard.accept(visitor: cuddEncoder)
@@ -116,8 +116,8 @@ class UCWGame: SafetyGame {
                     //print("\(state) --(\(transitionGuard))--> \(next)")
                 }
             }
-            if let safetyCondition = automaton.safetyConditions[state.state] {
-                output |= encoded & !safetyCondition.accept(visitor: cuddEncoder)
+            if let stateSafetyCondition = automaton.safetyConditions[state.state] {
+                safetyCondition &= !(encoded & !stateSafetyCondition.accept(visitor: cuddEncoder))
                 //print("\(state) --(\(!safetyCondition))--> bad")
             }
             processed.insert(state)
@@ -137,27 +137,6 @@ class UCWGame: SafetyGame {
             }
             initial &= ([latch] + others).reduce(manager.one(), &)
         }
-        
-        /*initial = latches.reduce(manager.one(), { x, y in x & !y })
-        
-        for initialState in automaton.initialStates {
-            guard let outgoing = automaton.transitions[initialState] else {
-                fatalError()
-            }
-            for (target, transitionGuard) in outgoing {
-                let next: SafetyState
-                if automaton.isStateInNonRejectingSCC(initialState) || automaton.isStateInNonRejectingSCC(target) || !automaton.isInSameSCC(initialState, target) {
-                    // can reset the counter
-                    next = SafetyState(state: target, counter: 0)
-                } else {
-                    next = SafetyState(state: target, counter: automaton.rejectingStates.contains(target) ? 1 : 0)
-                }
-                let nextStateIndex = getStateIndex(state: next)
-                assert(next.counter <= k)
-                compose[offset + nextStateIndex] |= initial & transitionGuard.accept(visitor: cuddEncoder)
-                print("initial --(\(transitionGuard))--> \(next)")
-            }
-        }*/
     }
 }
 
@@ -169,7 +148,6 @@ struct SafetyGameReduction: BoSyEncoding {
     let outputs: [String]
     
     init(automaton: CoBüchiAutomaton, semantics: TransitionSystemType, inputs: [String], outputs: [String]) {
-        precondition(semantics == .mealy)
         self.automaton = automaton
         self.semantics = semantics
         self.inputs = inputs
@@ -184,7 +162,7 @@ struct SafetyGameReduction: BoSyEncoding {
         
         let safetyGame: SafetyGame = UCWGame(manager: manager, automaton: automaton, inputs: inputs, outputs: outputs, bound: bound)
         
-        let solver = SafetyGameSolver(instance: safetyGame)
+        let solver = SafetyGameSolver(instance: safetyGame, mealy: semantics == .mealy)
         if let winningRegion = solver.solve() {
             return true
         } else {
@@ -237,7 +215,7 @@ class CUDDVisitor: ReturnConstantVisitor<CUDDNode> {
         case .And:
             return application.reduce(manager.one(), &)
         case .Or:
-            return application.reduce(manager.one(), |)
+            return application.reduce(manager.zero(), |)
         case .Xnor:
             return application[0] <-> application[1]
         case .Xor:
