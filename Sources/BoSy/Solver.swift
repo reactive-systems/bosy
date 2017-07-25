@@ -643,7 +643,12 @@ func minimizeWithABC(_ aig: UnsafeMutablePointer<aiger>) -> UnsafeMutablePointer
     let task = Process()
     task.launchPath = "./Tools/abc"
     task.arguments = ["-q", abcCommand]
-    task.standardOutput = FileHandle.standardError
+    #if swift(>=4) || !os(Linux)
+        task.standardOutput = FileHandle.nullDevice
+    #else
+        task.standardOutput = FileHandle.standardError
+    #endif
+    
     task.launch()
     task.waitUntilExit()
     assert(task.terminationStatus == 0)
@@ -815,6 +820,9 @@ class Z3: SmtSolver {
         task.arguments = ["-in"]
         task.standardInput = inputPipe
         task.standardOutput = outputPipe
+        #if swift(>=4) || !os(Linux)
+        task.standardError = FileHandle.nullDevice
+        #endif
         task.launch()
         
         guard let encodedFormula = (formula + "(check-sat)\n").data(using: .utf8) else {
