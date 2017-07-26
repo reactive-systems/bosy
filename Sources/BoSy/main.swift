@@ -166,6 +166,12 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
                     return
                 }
                 print(dot)
+            case .dotTopology:
+                guard let dot = (solution as? DotRepresentable)?.dotTopology else {
+                    Logger.default().error("could not encode solution as dot")
+                    return
+                }
+                print(dot)
             case .smv:
                 guard let smv = (solution as? SmvRepresentable)?.smv else {
                     Logger.default().error("could not encode solution as SMV")
@@ -180,11 +186,12 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
                 print(verilog)
             case .all:
                 var result: [String:String] = [:]
-                guard let dot = (solution as? DotRepresentable)?.dot else {
+                guard let dotSolution = solution as? DotRepresentable else {
                     Logger.default().error("could not encode solution as dot")
                     return
                 }
-                result["dot"] = dot
+                result["dot"] = dotSolution.dot
+                result["dot-topology"] = dotSolution.dotTopology
                 guard let smv = (solution as? SmvRepresentable)?.smv else {
                     Logger.default().error("could not encode solution as SMV")
                     return

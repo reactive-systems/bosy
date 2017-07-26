@@ -7,6 +7,7 @@ protocol AigerRepresentable {
 
 protocol DotRepresentable {
     var dot: String { get }
+    var dotTopology: String { get }
 }
 
 protocol SmvRepresentable {
@@ -162,7 +163,7 @@ extension ExplicitStateSolution: DotRepresentable {
         return outputTransitions
     }
     
-    private func _toDot() -> String {
+    private func _toDot(labelEdges: Bool = true) -> String {
         var dot: [String] = []
         
         // initial state
@@ -174,11 +175,22 @@ extension ExplicitStateSolution: DotRepresentable {
                 dot.append("\ts\(state)[shape=rectangle,label=\"s\(state)\"];")
             }
             
-            let transitionOutputs = matchOutputsAndTransitions()
-            for (source, outgoing) in transitionOutputs {
-                for (target, iterator) in outgoing {
-                    for (transitionGuard: transitionGuard, outputs: outputs) in iterator {
-                        dot.append("\ts\(source) -> s\(target) [label=\"\(transitionGuard) / \(outputs.joined(separator: " "))\"];")
+            if labelEdges {
+                let transitionOutputs = matchOutputsAndTransitions()
+                for (source, outgoing) in transitionOutputs {
+                    for (target, iterator) in outgoing {
+                        for (transitionGuard: transitionGuard, outputs: outputs) in iterator {
+                            dot.append("\ts\(source) -> s\(target) [label=\"\(transitionGuard) / \(outputs.joined(separator: " "))\"];")
+                        }
+                    }
+                }
+            } else {
+                for (source, outgoing) in transitions {
+                    for (target, transitionGuard) in outgoing {
+                        if transitionGuard as? Literal != nil && transitionGuard as! Literal == Literal.False {
+                            continue
+                        }
+                        dot.append("\ts\(source) -> s\(target);")
                     }
                 }
             }
@@ -198,13 +210,20 @@ extension ExplicitStateSolution: DotRepresentable {
                     }
                 }
                 
-                
-                dot.append("\ts\(state)[shape=rectangle,label=\"s\(state)\n\(outputs.joined(separator: " "))\"];")
+                if labelEdges {
+                    dot.append("\ts\(state)[shape=rectangle,label=\"s\(state)\n\(outputs.joined(separator: " "))\"];")
+                } else {
+                    dot.append("\ts\(state)[shape=rectangle,label=\"s\(state)\"];")
+                }
             }
             
             for (source, outgoing) in transitions {
                 for (target, constraint) in outgoing {
-                    dot.append("\ts\(source) -> s\(target) [label=\"\(constraint)\"];")
+                    if labelEdges {
+                        dot.append("\ts\(source) -> s\(target) [label=\"\(constraint)\"];")
+                    } else {
+                        dot.append("\ts\(source) -> s\(target);")
+                    }
                 }
             }
         }
@@ -215,6 +234,10 @@ extension ExplicitStateSolution: DotRepresentable {
     
     var dot: String {
         return _toDot()
+    }
+    
+    var dotTopology: String {
+        return _toDot(labelEdges: false)
     }
 }
 
