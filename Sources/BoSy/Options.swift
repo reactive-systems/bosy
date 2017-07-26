@@ -37,7 +37,7 @@ enum Target: String {
     case verilog     = "verilog"
     case all         = "all"
     
-    static let allValues: [Target] = [.aiger, .dot, .smv, .verilog, .all]
+    static let allValues: [Target] = [.aiger, .dot, .dotTopology, .smv, .verilog, .all]
 }
 
 
