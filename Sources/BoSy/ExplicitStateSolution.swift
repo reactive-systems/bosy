@@ -281,8 +281,7 @@ extension ExplicitStateSolution: VerilogRepresentable {
         // state definitions
         let numBits = numBitsNeeded(states.count)
         assert(numBits > 0)
-        verilog += ["  reg [\(numBits-1):0] state;"]
-        verilog += states.map({ "  `define S\($0) \(numBits)'b\(binaryFrom($0, bits: numBits))" })
+        verilog += ["  reg [\(numBits-1):0] state;\n"]
         
         let verilogPrinter = VerilogPrinter()
         
@@ -296,17 +295,18 @@ extension ExplicitStateSolution: VerilogRepresentable {
                 if outputGuard as? Literal != nil && outputGuard as! Literal == Literal.False {
                     continue
                 }
-                verilogGuard.append("(state == `S\(source)) && \(outputGuard.accept(visitor: verilogPrinter))")
+                verilogGuard.append("(state == \(source)) && \(outputGuard.accept(visitor: verilogPrinter))")
             }
             if verilogGuard.isEmpty {
                 verilogGuard.append("0")
             }
-            verilog.append("\tassign \(output) = (\(verilogGuard.joined(separator: " || "))) ? 1 : 0;")
+            verilog.append("  assign \(output) = (\(verilogGuard.joined(separator: " || "))) ? 1 : 0;")
         }
         
-        verilog += ["  initial",
+        verilog += ["",
+                    "  initial",
                     "  begin",
-                    "    state = `S0;",
+                    "    state = 0;",
                     "  end",
                     "  always @($global_clock)",
                     "  begin"]
@@ -318,10 +318,10 @@ extension ExplicitStateSolution: VerilogRepresentable {
             for (target, transitionGuard) in outgoing {
                 let verilogGuard = transitionGuard.accept(visitor: verilogPrinter)
                 guardes.append("if (\(verilogGuard))\n")
-                targets.append("        state = `S\(target);\n")
+                targets.append("           state = \(target);\n")
             }
             guardes[guardes.count - 1] = "\n"
-            nextState.append("`S\(source): " + zip(guardes, targets).map({ $0 + $1 }).joined(separator: "      else "))
+            nextState.append("\(source): " + zip(guardes, targets).map({ $0 + $1 }).joined(separator: "         else "))
         }
         verilog.append("    case(state)\n      \(nextState.joined(separator: "\n      "))\n    endcase")
         
