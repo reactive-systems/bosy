@@ -1,25 +1,12 @@
 import CAiger
 import Utils
 
-protocol AigerRepresentable {
-    var aiger: UnsafeMutablePointer<aiger>? { get }
-}
-
-protocol DotRepresentable {
-    var dot: String { get }
-    var dotTopology: String { get }
-}
-
-protocol SmvRepresentable {
-    var smv: String { get }
-}
-
-protocol VerilogRepresentable {
-    var verilog: String { get }
-}
-
-protocol BoSySolution {}
-
+/**
+ * Implementations with an explicit representation of states while the
+ * transition- and output-functions are represented symbolically.
+ *
+ * Can encode both, mealy and moore, transition systems.
+ */
 struct ExplicitStateSolution: BoSySolution {
     typealias State = Int
     
