@@ -51,8 +51,8 @@ class UCWGame: SafetyGame {
         self.initial = manager.one()
         self.safetyCondition = manager.one()
         
-        self.controllableNames = inputs
-        self.uncontrollableNames = outputs
+        self.controllableNames = outputs
+        self.uncontrollableNames = inputs
         self.latchNames = []
         
         var queue: [SafetyState] = automaton.initialStates.map({ SafetyState(state: $0, counter: 0) })
@@ -138,14 +138,33 @@ class UCWGame: SafetyGame {
             initial &= ([latch] + others).reduce(manager.one(), &)
         }
     }
+    
+    /**
+     * Given the winning strategies of the outputs, the function derives
+     * the winning strategy for the synthesis problem.
+     */
+    func getImplementation(strategies: [CUDDNode], semantics: TransitionSystemType) -> SymbolicStateSolution {
+        
+        // need to get rid of the outputs in the transition functions
+        let composeOutputs = uncontrollables + strategies + latches
+        assert(composeOutputs.count == compose.count)
+        let latchFunctions: [CUDDNode] = Array(compose.suffix(latches.count)).map({ $0.compose(vector: composeOutputs) })
+        
+        let solution = SymbolicStateSolution(manager: manager, inputs: uncontrollableNames, outputs: controllableNames, semantics: semantics, latches: latches, inputNodes: uncontrollables, outputFunctions: strategies, latchFunctions: latchFunctions)
+        return solution
+    }
 }
 
-struct SafetyGameReduction: BoSyEncoding {
+class SafetyGameReduction: BoSyEncoding {
     
     let automaton: CoBüchiAutomaton
     let semantics: TransitionSystemType
     let inputs: [String]
     let outputs: [String]
+    
+    var safetyGame: UCWGame? = nil
+    var solver: SafetyGameSolver? = nil
+    var winningRegion: CUDDNode? = nil
     
     init(automaton: CoBüchiAutomaton, semantics: TransitionSystemType, inputs: [String], outputs: [String]) {
         self.automaton = automaton
@@ -160,10 +179,13 @@ struct SafetyGameReduction: BoSyEncoding {
         let manager = CUDDManager()
         manager.AutodynEnable(reorderingAlgorithm: .GroupSift)
         
-        let safetyGame: SafetyGame = UCWGame(manager: manager, automaton: automaton, inputs: inputs, outputs: outputs, bound: bound)
+        let safetyGame = UCWGame(manager: manager, automaton: automaton, inputs: inputs, outputs: outputs, bound: bound)
         
         let solver = SafetyGameSolver(instance: safetyGame, mealy: semantics == .mealy)
         if let winningRegion = solver.solve() {
+            self.solver = solver
+            self.winningRegion = winningRegion
+            self.safetyGame = safetyGame
             return true
         } else {
             return false
@@ -171,7 +193,22 @@ struct SafetyGameReduction: BoSyEncoding {
     }
     
     func extractSolution() -> TransitionSystem? {
-        return nil
+        guard let solver = solver else {
+            fatalError()
+        }
+        guard let winningRegion = winningRegion else {
+            fatalError()
+        }
+        guard let game = self.safetyGame else {
+            fatalError()
+        }
+        let strategies = solver.getStrategiesFrom(winningRegion: winningRegion)
+        assert(strategies.count == outputs.count)
+        
+        
+        let solution = game.getImplementation(strategies: strategies, semantics: semantics)
+        
+        return solution
     }
     
 }
