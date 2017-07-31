@@ -1,6 +1,6 @@
 .PHONY: default debug release test tools required-tools optional-tools all clean distclean
-.INTERMEDIATE: Tools/ltl3ba-1.1.3.tar.gz Tools/bloqqer-037-8660cb9-151127.tar.gz Tools/bloqqer-031-7a176af-110509.tar.gz Tools/cadet-bin.tar.gz Tools/caqe-bin.tar.gz Tools/cryptominisat-5.0.1.tar.gz Tools/cvc4-1.5.tar.gz Tools/depqbf-5.01.tar.gz Tools/spot-2.3.5.tar.gz Tools/z3-4.5.0.tar.gz Tools/rareqs-1.1.src.tgz Tools/picosat-965.tar.gz Tools/idq-1.0.tar.gz Tools/quabs-bin.tar.gz Tools/vampire.zip Tools/E.tgz
-.SECONDARY: Tools/abc-hg/abc Tools/abc-hg Tools/bloqqer-031-7a176af-110509 Tools/bloqqer-031-7a176af-110509/bloqqer Tools/bloqqer-037-8660cb9-151127 Tools/bloqqer-037-8660cb9-151127/bloqqer Tools/ltl3ba Tools/ltl3ba-1.1.3 Tools/ltl3ba-1.1.3/ltl3ba Tools/cryptominisat-5.0.1 Tools/cryptominisat-5.0.1/build Tools/depqbf-version-5.01/depqbf Tools/depqbf-version-5.01 Tools/spot-2.3.5 Tools/cvc4-1.5 Tools/cvc4-1.5/builds/bin/cvc4 Tools/z3-4.5.0/build/z3 Tools/z3-4.5.0 Tools/rareqs-1.1 Tools/syfco-git Tools/syfco-git/syfco Tools/picosat-965 Tools/idq-1.0 Tools/idq-1.0/idq
+.INTERMEDIATE: Tools/ltl3ba-1.1.3.tar.gz Tools/bloqqer-037-8660cb9-151127.tar.gz Tools/bloqqer-031-7a176af-110509.tar.gz Tools/cadet-bin.tar.gz Tools/caqe-bin.tar.gz Tools/cryptominisat-5.0.1.tar.gz Tools/cvc4-1.5.tar.gz Tools/depqbf-5.01.tar.gz Tools/spot-2.3.5.tar.gz Tools/z3-4.5.0.tar.gz Tools/rareqs-1.1.src.tgz Tools/picosat-965.tar.gz Tools/idq-1.0.tar.gz Tools/quabs-bin.tar.gz Tools/vampire.zip Tools/E.tgz Tools/NuSMV-2.6.0.tar.gz
+.SECONDARY: Tools/abc-hg/abc Tools/abc-hg Tools/bloqqer-031-7a176af-110509 Tools/bloqqer-031-7a176af-110509/bloqqer Tools/bloqqer-037-8660cb9-151127 Tools/bloqqer-037-8660cb9-151127/bloqqer Tools/ltl3ba Tools/ltl3ba-1.1.3 Tools/ltl3ba-1.1.3/ltl3ba Tools/cryptominisat-5.0.1 Tools/cryptominisat-5.0.1/build Tools/depqbf-version-5.01/depqbf Tools/depqbf-version-5.01 Tools/spot-2.3.5 Tools/cvc4-1.5 Tools/cvc4-1.5/builds/bin/cvc4 Tools/z3-4.5.0/build/z3 Tools/z3-4.5.0 Tools/rareqs-1.1 Tools/syfco-git Tools/syfco-git/syfco Tools/picosat-965 Tools/idq-1.0 Tools/idq-1.0/idq Tools/NuSMV-2.6.0 Tools/NuSMV-2.6.0/nusmv/NuSMV
 
 default: release
 
@@ -32,6 +32,7 @@ clean-source-tools:
 	rm -rf Tools/syfco-git
 	rm -rf Tools/picosat-965
 	rm -rf Tools/idq-1.0
+	rm -rf Tools/NuSMV-2.6.0
 
 distclean:
 	swift package reset
@@ -58,6 +59,7 @@ optional-tools: \
 	Tools/cvc4 \
 	Tools/depqbf \
 	Tools/eprover \
+	Tools/NuSMV \
 	Tools/picosat \
 	Tools/vampire \
 	Tools/hqs
@@ -239,6 +241,20 @@ Tools/hqs-bin/hqs: Tools/hqs-bin.tar.gz
 
 Tools/hqs-bin.tar.gz: Tools/.f
 	cd Tools ; curl -OL -G -d dl=1 https://www.dropbox.com/s/cdesqq4ckh96x2i/hqs-bin.tar.gz
+
+# NuSMV
+Tools/NuSMV: Tools/NuSMV-2.6.0/NuSMV/build/bin/NuSMV
+	cp Tools/NuSMV-2.6.0/NuSMV/build/bin/NuSMV Tools/NuSMV
+
+Tools/NuSMV-2.6.0/NuSMV/build/bin/NuSMV: Tools/NuSMV-2.6.0
+	cd Tools/NuSMV-2.6.0/NuSMV ; mkdir build
+	cd Tools/NuSMV-2.6.0/NuSMV/build ; cmake .. && make
+
+Tools/NuSMV-2.6.0: Tools/NuSMV-2.6.0.tar.gz
+	cd Tools ; tar xzf NuSMV-2.6.0.tar.gz
+
+Tools/NuSMV-2.6.0.tar.gz: Tools/.f
+	cd Tools ; curl -OL http://nusmv.fbk.eu/distrib/NuSMV-2.6.0.tar.gz
 
 # picosat
 Tools/picosat: Tools/picosat-965

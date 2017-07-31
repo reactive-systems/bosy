@@ -1,7 +1,7 @@
 # use the official image for the swift programming language
 image: swift:3.1
 before_script:
-  - apt-get update -qq && apt-get install -y -qq build-essential clang cmake curl gcc git libantlr3c-dev libbdd-dev libboost-program-options-dev libicu-dev libreadline-dev mercurial unzip vim-common zlib1g-dev
+  - apt-get update -qq && apt-get install -y -qq bison build-essential clang cmake curl flex gcc git libantlr3c-dev libbdd-dev libboost-program-options-dev libicu-dev libreadline-dev mercurial unzip vim-common wget zlib1g-dev
   - curl -sSL https://get.haskellstack.org/ | sh
 
 build:
