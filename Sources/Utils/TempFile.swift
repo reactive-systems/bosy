@@ -2,20 +2,20 @@ import Foundation
 
 public class TempFile {
     
-    let fileURL: URL
+    public let url: URL
     public let path: String
     
     public init?(suffix: String = "") {
         let fileName: String = ProcessInfo.processInfo.globallyUniqueString + suffix
         let tempDirURL = URL(fileURLWithPath: NSTemporaryDirectory())
         let fileURL = tempDirURL.appendingPathComponent(fileName)
-        self.fileURL = fileURL
+        self.url = fileURL
         self.path = fileURL.path
     }
     
     deinit {
         do {
-            try FileManager.default.removeItem(at: fileURL)
+            try FileManager.default.removeItem(at: url)
         } catch let e {
             print("cleanup failed \(e)")
             // ...

@@ -272,9 +272,7 @@ extension ExplicitStateSolution: SmvRepresentable {
         }
         
         // LTL specification for model checking
-        let ltlspec = LTL.BinaryOperator(.Implies,
-                                         specification.assumptions.reduce(LTL.Literal(true), { res, ltl in .BinaryOperator(.And, res, ltl) }),
-                                         specification.guarantees.reduce(LTL.Literal(true), { res, ltl in .BinaryOperator(.And, res, ltl) })).normalized
+        let ltlspec = specification.ltl.normalized
         guard let smvLtlSpec = ltlspec.smv else {
             Logger.default().warning("could not transform LTL specification to SMV format, omit `LTLSPEC` in SMV")
             return smv.joined(separator: "\n")

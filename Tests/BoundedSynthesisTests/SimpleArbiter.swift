@@ -6,6 +6,8 @@ import LTL
 import Utils
 import TransitionSystem
 
+import CAiger
+
 @testable import BoundedSynthesis
 
 func modelCheckSMV(file: String) -> Bool {
@@ -42,6 +44,84 @@ func modelCheckSMV(file: String) -> Bool {
     }
     
     return false
+}
+
+/**
+ * Tests if AIGER implementation satisfies given specification.
+ *
+ * Transforms specification to empty SMV model with LTLSPEC, then uses the tool
+ * `smvtoaig` from the AIGER toolset to build an AIGER monitor.
+ * Then, we combine monitor and implementation and use `aigbmc` to search for
+ * bounded counterexamples.
+ *
+ * TODO: should use non-bounded model checker instead.
+ */
+func modelCheckAiger(specification: SynthesisSpecification, implementation: UnsafeMutablePointer<aiger>) throws -> Bool {
+    guard let smvSecification = specification.smv else {
+        fatalError()
+    }
+    guard let tempFile = TempFile(suffix: ".smv"),
+          let monitorFile = TempFile(suffix: ".aig"),
+          let implementationFile = TempFile(suffix: ".aig"),
+          let combinedFile = TempFile(suffix: ".aig") else {
+        fatalError()
+    }
+    guard (try? smvSecification.write(toFile: tempFile.path, atomically: true, encoding: .utf8)) != nil else {
+        fatalError()
+    }
+    
+    let buildMonitor = Process()
+    buildMonitor.launchPath = "./Tools/smvtoaig"
+    buildMonitor.arguments = ["-L", "Tools/ltl2smv", tempFile.path, monitorFile.path]
+
+    buildMonitor.launch()
+    
+    buildMonitor.waitUntilExit()
+    
+    aiger_open_and_write_to_file(implementation, implementationFile.path)
+    
+    let buildCombined = Process()
+    buildCombined.launchPath = "./Tools/combine-aiger"
+    buildCombined.arguments = [monitorFile.path, implementationFile.path]
+    
+    let stdoutPipe = Pipe()
+    buildCombined.standardOutput = stdoutPipe
+    buildCombined.launch()
+    
+    // there may be a large amount of stdout data
+    // by reading it before waiting, we avoid deadlocks
+    let stdoutHandle = stdoutPipe.fileHandleForReading
+    let stdoutData = StreamHelper.readAllAvailableData(from: stdoutHandle)
+    
+    buildCombined.waitUntilExit()
+    
+    try stdoutData.write(to: combinedFile.url)
+    
+    let modelChecker = Process()
+    modelChecker.launchPath = "./Tools/aigbmc"
+    modelChecker.arguments = [combinedFile.path]
+    
+    let mcOutPipe = Pipe()
+    modelChecker.standardOutput = mcOutPipe
+    modelChecker.launch()
+    
+    // there may be a large amount of stdout data
+    // by reading it before waiting, we avoid deadlocks
+    let mcStdoutHandle = mcOutPipe.fileHandleForReading
+    let mcStdoutData = StreamHelper.readAllAvailableData(from: mcStdoutHandle)
+
+    modelChecker.waitUntilExit()
+    
+    guard let mcStdout = String(data: mcStdoutData, encoding: .utf8) else {
+        fatalError()
+    }
+    if mcStdout.hasPrefix("1") {
+        // found counterexample
+        print(mcStdout)
+        return false
+    }
+    
+    return true
 }
 
 class SimpleArbiterTest: XCTestCase {
@@ -126,7 +206,13 @@ class SimpleArbiterTest: XCTestCase {
         }
         var encoding = InputSymbolicEncoding(options: options, automaton: automaton, specification: specification, synthesize: true)
         XCTAssertTrue(try encoding.solve(forBound: 3))
-        guard let transitionSystem = encoding.extractSolution() as? SmvRepresentable else {
+        guard let transitionSystem = encoding.extractSolution() else {
+            XCTFail()
+            fatalError()
+        }
+        
+        // Check SMV implementation
+        guard let smvRepresentation = (transitionSystem as? SmvRepresentable)?.smv else {
             XCTFail()
             fatalError()
         }
@@ -135,12 +221,19 @@ class SimpleArbiterTest: XCTestCase {
             fatalError()
         }
         do {
-            try transitionSystem.smv.write(toFile: tempFile.path, atomically: true, encoding: .utf8)
+            try smvRepresentation.write(toFile: tempFile.path, atomically: true, encoding: .utf8)
         } catch {
             XCTFail()
             fatalError()
         }
         XCTAssertTrue(modelCheckSMV(file: tempFile.path))
+        
+        // Check AIGER implementation
+        guard let aigerRepresentation = (transitionSystem as? AigerRepresentable)?.aiger else {
+            XCTFail()
+            fatalError()
+        }
+        XCTAssertTrue(try modelCheckAiger(specification: specification, implementation: aigerRepresentation))
     }
     
     func testSynthesisExplicit() {
@@ -158,7 +251,13 @@ class SimpleArbiterTest: XCTestCase {
         }
         var encoding = ExplicitEncoding(options: options, automaton: automaton, specification: specification)
         XCTAssertTrue(try encoding.solve(forBound: 3))
-        guard let transitionSystem = encoding.extractSolution() as? SmvRepresentable else {
+        guard let transitionSystem = encoding.extractSolution() else {
+            XCTFail()
+            fatalError()
+        }
+        
+        // Check SMV implementation
+        guard let smvRepresentation = (transitionSystem as? SmvRepresentable)?.smv else {
             XCTFail()
             fatalError()
         }
@@ -167,12 +266,19 @@ class SimpleArbiterTest: XCTestCase {
             fatalError()
         }
         do {
-            try transitionSystem.smv.write(toFile: tempFile.path, atomically: true, encoding: .utf8)
+            try smvRepresentation.write(toFile: tempFile.path, atomically: true, encoding: .utf8)
         } catch {
             XCTFail()
             fatalError()
         }
         XCTAssertTrue(modelCheckSMV(file: tempFile.path))
+        
+        // Check AIGER implementation
+        guard let aigerRepresentation = (transitionSystem as? AigerRepresentable)?.aiger else {
+            XCTFail()
+            fatalError()
+        }
+        XCTAssertTrue(try modelCheckAiger(specification: specification, implementation: aigerRepresentation))
     }
     
     func testSynthesisSmt() {
@@ -190,7 +296,13 @@ class SimpleArbiterTest: XCTestCase {
         }
         var encoding = SmtEncoding(options: options, automaton: automaton, specification: specification)
         XCTAssertTrue(try encoding.solve(forBound: 3))
-        guard let transitionSystem = encoding.extractSolution() as? SmvRepresentable else {
+        guard let transitionSystem = encoding.extractSolution() else {
+            XCTFail()
+            fatalError()
+        }
+        
+        // Check SMV implementation
+        guard let smvRepresentation = (transitionSystem as? SmvRepresentable)?.smv else {
             XCTFail()
             fatalError()
         }
@@ -199,12 +311,19 @@ class SimpleArbiterTest: XCTestCase {
             fatalError()
         }
         do {
-            try transitionSystem.smv.write(toFile: tempFile.path, atomically: true, encoding: .utf8)
+            try smvRepresentation.write(toFile: tempFile.path, atomically: true, encoding: .utf8)
         } catch {
             XCTFail()
             fatalError()
         }
         XCTAssertTrue(modelCheckSMV(file: tempFile.path))
+        
+        // Check AIGER implementation
+        guard let aigerRepresentation = (transitionSystem as? AigerRepresentable)?.aiger else {
+            XCTFail()
+            fatalError()
+        }
+        XCTAssertTrue(try modelCheckAiger(specification: specification, implementation: aigerRepresentation))
     }
     
     static var allTests : [(String, (SimpleArbiterTest) -> () throws -> Void)] {

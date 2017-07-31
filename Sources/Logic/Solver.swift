@@ -202,7 +202,7 @@ struct PicoSAT: SatSolver {
         
         // start task and extract stdout
         let task = Process()
-        task.launchPath = "./Tools/picosat"
+        task.launchPath = "./Tools/picosat-solver"
         task.arguments = [tempFile.path]
         
         guard let stdout = SolverHelper.executeAndReturnStdout(task: task) else {

@@ -1,6 +1,6 @@
 .PHONY: default debug release test tools required-tools optional-tools all clean distclean
-.INTERMEDIATE: Tools/ltl3ba-1.1.3.tar.gz Tools/bloqqer-037-8660cb9-151127.tar.gz Tools/bloqqer-031-7a176af-110509.tar.gz Tools/cadet-bin.tar.gz Tools/caqe-bin.tar.gz Tools/cryptominisat-5.0.1.tar.gz Tools/cvc4-1.5.tar.gz Tools/depqbf-5.01.tar.gz Tools/spot-2.3.5.tar.gz Tools/z3-4.5.0.tar.gz Tools/rareqs-1.1.src.tgz Tools/picosat-965.tar.gz Tools/idq-1.0.tar.gz Tools/quabs-bin.tar.gz Tools/vampire.zip Tools/E.tgz Tools/NuSMV-2.6.0.tar.gz
-.SECONDARY: Tools/abc-hg/abc Tools/abc-hg Tools/bloqqer-031-7a176af-110509 Tools/bloqqer-031-7a176af-110509/bloqqer Tools/bloqqer-037-8660cb9-151127 Tools/bloqqer-037-8660cb9-151127/bloqqer Tools/ltl3ba Tools/ltl3ba-1.1.3 Tools/ltl3ba-1.1.3/ltl3ba Tools/cryptominisat-5.0.1 Tools/cryptominisat-5.0.1/build Tools/depqbf-version-5.01/depqbf Tools/depqbf-version-5.01 Tools/spot-2.3.5 Tools/cvc4-1.5 Tools/cvc4-1.5/builds/bin/cvc4 Tools/z3-4.5.0/build/z3 Tools/z3-4.5.0 Tools/rareqs-1.1 Tools/syfco-git Tools/syfco-git/syfco Tools/picosat-965 Tools/idq-1.0 Tools/idq-1.0/idq Tools/NuSMV-2.6.0 Tools/NuSMV-2.6.0/nusmv/NuSMV
+.INTERMEDIATE: Tools/ltl3ba-1.1.3.tar.gz Tools/bloqqer-037-8660cb9-151127.tar.gz Tools/bloqqer-031-7a176af-110509.tar.gz Tools/cadet-bin.tar.gz Tools/caqe-bin.tar.gz Tools/cryptominisat-5.0.1.tar.gz Tools/cvc4-1.5.tar.gz Tools/depqbf-5.01.tar.gz Tools/spot-2.3.5.tar.gz Tools/z3-4.5.0.tar.gz Tools/rareqs-1.1.src.tgz Tools/picosat-965.tar.gz Tools/idq-1.0.tar.gz Tools/quabs-bin.tar.gz Tools/vampire.zip Tools/E.tgz Tools/NuSMV-2.6.0.tar.gz Tools/aiger-1.9.9.tar.gz
+.SECONDARY: Tools/abc-hg/abc Tools/abc-hg Tools/bloqqer-031-7a176af-110509 Tools/bloqqer-031-7a176af-110509/bloqqer Tools/bloqqer-037-8660cb9-151127 Tools/bloqqer-037-8660cb9-151127/bloqqer Tools/ltl3ba Tools/ltl3ba-1.1.3 Tools/ltl3ba-1.1.3/ltl3ba Tools/cryptominisat-5.0.1 Tools/cryptominisat-5.0.1/build Tools/depqbf-version-5.01/depqbf Tools/depqbf-version-5.01 Tools/spot-2.3.5 Tools/cvc4-1.5 Tools/cvc4-1.5/builds/bin/cvc4 Tools/z3-4.5.0/build/z3 Tools/z3-4.5.0 Tools/rareqs-1.1 Tools/syfco-git Tools/syfco-git/syfco Tools/picosat-965 Tools/picosat Tools/idq-1.0 Tools/idq-1.0/idq Tools/NuSMV-2.6.0 Tools/NuSMV-2.6.0/NuSMV/build/bin/NuSMV Tools/NuSMV-2.6.0/NuSMV/build/bin/ltl2smv Tools/aiger-1.9.9 Tools/aiger-1.9.9/aigbmc Tools/aiger-1.9.9/smvtoaig Tools/aiger-ltl-model-checker Tools/aiger-ltl-model-checker/combine-aiger
 
 default: release
 
@@ -19,6 +19,7 @@ clean:
 	swift package clean
 	
 clean-source-tools:
+	rm -rf Tools/aiger-1.9.9
 	rm -rf Tools/abc-hg
 	rm -rf Tools/ltl3ba-1.1.3
 	rm -rf Tools/bloqqer-037-8660cb9-151127
@@ -31,8 +32,10 @@ clean-source-tools:
 	rm -rf Tools/rareqs-1.1
 	rm -rf Tools/syfco-git
 	rm -rf Tools/picosat-965
+	rm -rf Tools/picosat
 	rm -rf Tools/idq-1.0
 	rm -rf Tools/NuSMV-2.6.0
+	rm -rf Tools/aiger-ltl-model-checker
 
 distclean:
 	swift package reset
@@ -54,13 +57,17 @@ required-tools: \
 	Tools/z3 \
 
 optional-tools: \
+	Tools/aigbmc \
+	Tools/smvtoaig \
 	Tools/cadet \
 	Tools/caqem \
+	Tools/combine-aiger \
 	Tools/cvc4 \
 	Tools/depqbf \
 	Tools/eprover \
+	Tools/ltl2smv \
 	Tools/NuSMV \
-	Tools/picosat \
+	Tools/picosat-solver \
 	Tools/vampire \
 	Tools/hqs
 
@@ -77,6 +84,27 @@ Tools/abc-hg/abc: Tools/abc-hg
 
 Tools/abc-hg: Tools/.f
 	cd Tools ; hg clone https://bitbucket.org/alanmi/abc abc-hg
+
+# aiger
+Tools/smvtoaig: Tools/aiger-1.9.9/smvtoaig
+	cp Tools/aiger-1.9.9/smvtoaig Tools/smvtoaig
+
+Tools/aiger-1.9.9/smvtoaig: Tools/aiger-1.9.9
+	cd Tools/aiger-1.9.9 ; ./configure.sh
+	make -C Tools/aiger-1.9.9 smvtoaig
+
+Tools/aigbmc: Tools/aiger-1.9.9/aigbmc
+	cp Tools/aiger-1.9.9/aigbmc Tools/aigbmc
+
+Tools/aiger-1.9.9/aigbmc: Tools/aiger-1.9.9 Tools/picosat/picosat.o
+	cd Tools/aiger-1.9.9 ; ./configure.sh
+	make -C Tools/aiger-1.9.9 aigbmc
+
+Tools/aiger-1.9.9: Tools/aiger-1.9.9.tar.gz
+	cd Tools ; tar xzf aiger-1.9.9.tar.gz
+
+Tools/aiger-1.9.9.tar.gz: Tools/.f
+	cd Tools ; curl -OL http://fmv.jku.at/aiger/aiger-1.9.9.tar.gz
 
 # bloqqer
 Tools/bloqqer: Tools/bloqqer-037-8660cb9-151127/bloqqer
@@ -125,6 +153,16 @@ Tools/caqe-bin: Tools/caqe-bin.tar.gz
 
 Tools/caqe-bin.tar.gz: Tools/.f
 	cd Tools ; curl -OL -G -d dl=1 https://www.dropbox.com/s/8a0c61ua2w6glik/caqe-bin.tar.gz
+
+# combine-aiger
+Tools/combine-aiger: Tools/aiger-ltl-model-checker/combine-aiger
+	cp Tools/aiger-ltl-model-checker/combine-aiger Tools/combine-aiger
+
+Tools/aiger-ltl-model-checker/combine-aiger: Tools/aiger-ltl-model-checker
+	make -C Tools/aiger-ltl-model-checker
+
+Tools/aiger-ltl-model-checker:
+	cd Tools ; git clone https://github.com/reactive-systems/aiger-ltl-model-checker.git
 
 # cryptominisat
 Tools/cryptominisat5: Tools/cryptominisat-5.0.1/build
@@ -250,6 +288,13 @@ Tools/NuSMV-2.6.0/NuSMV/build/bin/NuSMV: Tools/NuSMV-2.6.0
 	cd Tools/NuSMV-2.6.0/NuSMV ; mkdir build
 	cd Tools/NuSMV-2.6.0/NuSMV/build ; cmake .. && make
 
+Tools/ltl2smv: Tools/NuSMV-2.6.0/NuSMV/build/bin/ltl2smv
+	cp Tools/NuSMV-2.6.0/NuSMV/build/bin/ltl2smv Tools/ltl2smv
+
+Tools/NuSMV-2.6.0/NuSMV/build/bin/ltl2smv: Tools/NuSMV-2.6.0
+	cd Tools/NuSMV-2.6.0/NuSMV ; mkdir build
+	cd Tools/NuSMV-2.6.0/NuSMV/build ; cmake .. && make
+
 Tools/NuSMV-2.6.0: Tools/NuSMV-2.6.0.tar.gz
 	cd Tools ; tar xzf NuSMV-2.6.0.tar.gz
 
@@ -257,13 +302,20 @@ Tools/NuSMV-2.6.0.tar.gz: Tools/.f
 	cd Tools ; curl -OL http://nusmv.fbk.eu/distrib/NuSMV-2.6.0.tar.gz
 
 # picosat
-Tools/picosat: Tools/picosat-965
+Tools/picosat-solver: Tools/picosat-965
 	cd Tools/picosat-965 ; ./configure.sh
 	make -C Tools/picosat-965 picosat
-	cp Tools/picosat-965/picosat Tools/picosat
+	cp Tools/picosat-965/picosat Tools/picosat-solver
 
 Tools/picosat-965: Tools/picosat-965.tar.gz
 	cd Tools ; tar xzf picosat-965.tar.gz
+
+Tools/picosat: Tools/picosat-965
+	cd Tools ; ln -sf picosat-965 picosat
+
+Tools/picosat/picosat.o: Tools/picosat
+	cd Tools/picosat ; ./configure.sh
+	make -C Tools/picosat picosat.o
 
 Tools/picosat-965.tar.gz: Tools/.f
 	cd Tools ; curl -OL http://fmv.jku.at/picosat/picosat-965.tar.gz

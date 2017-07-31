@@ -25,12 +25,14 @@ public struct SynthesisSpecification {
     public let guarantees: [LTL]
     
     public var dualized: SynthesisSpecification {
-        let dualizedLTL = LTL.UnaryOperator(.Not,
-                                            LTL.BinaryOperator(.Implies,
-                                                               assumptions.reduce(LTL.Literal(true), { res, ltl in .BinaryOperator(.And, res, ltl) }),
-                                                               guarantees.reduce(LTL.Literal(true), { res, ltl in .BinaryOperator(.And, res, ltl) }))
-        )
+        let dualizedLTL = LTL.UnaryOperator(.Not, ltl)
         return SynthesisSpecification(semantics: semantics.swapped, inputs: outputs, outputs: inputs, assumptions: [], guarantees: [dualizedLTL])
+    }
+    
+    public var ltl: LTL {
+        return LTL.BinaryOperator(.Implies,
+                                  assumptions.reduce(LTL.Literal(true), { res, ltl in .BinaryOperator(.And, res, ltl) }),
+                                  guarantees.reduce(LTL.Literal(true), { res, ltl in .BinaryOperator(.And, res, ltl) }))
     }
     
     public static func fromJson(string: String) -> SynthesisSpecification? {
@@ -104,6 +106,16 @@ public struct SynthesisSpecification {
         }
         Logger.default().debug("parsing JSON succeeded")
         return SynthesisSpecification(semantics: semantics, inputs: inputs, outputs: outputs, assumptions: parsedAssumptions, guarantees: parsedGuarantees)
+    }
+    
+    public var smv: String? {
+        var smv: [String] =  ["MODULE main", "\tVAR"]
+        smv += (inputs + outputs).map({ proposition in "\t\t\(proposition) : boolean;" })
+        guard let smvLTLSpec = ltl.normalized.smv else {
+            return nil
+        }
+        smv.append("\tLTLSPEC \(smvLTLSpec)")
+        return smv.joined(separator: "\n")
     }
 }
 
