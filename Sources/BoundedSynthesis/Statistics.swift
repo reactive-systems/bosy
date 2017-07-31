@@ -2,7 +2,7 @@ import Foundation
 import Dispatch
 
 
-enum Phase: CustomStringConvertible {
+public enum Phase: CustomStringConvertible {
     case parsing
     case ltl2automaton
     case automatonOptimizations
@@ -10,7 +10,7 @@ enum Phase: CustomStringConvertible {
     case solving
     case solutionExtraction
     
-    static let allValues: [Phase] = [
+    public static let allValues: [Phase] = [
         .parsing,
         .ltl2automaton,
         .automatonOptimizations,
@@ -20,7 +20,7 @@ enum Phase: CustomStringConvertible {
     ]
     
     // Conformance to CustomStringConvertible
-    var description: String {
+    public var description: String {
         switch self {
         case .parsing:
             return "Parsing"
@@ -40,23 +40,23 @@ enum Phase: CustomStringConvertible {
 
 
 
-class BoSyStatistics: CustomStringConvertible {
+public class BoSyStatistics: CustomStringConvertible {
     
     var durations: [Phase:[Double]] = [:]
     
-    struct Timer {
+    public struct Timer {
         let statistics: BoSyStatistics
         let phase: Phase
         let begin: UInt64  // nanoseconds
         
-        func stop() {
+        public func stop() {
             let end = DispatchTime.now().uptimeNanoseconds
             let time = Double(end - begin) / 1_000_000_000
             statistics.add(phase: phase, duration: time)
         }
     }
     
-    func startTimer(phase: Phase) -> Timer {
+    public func startTimer(phase: Phase) -> Timer {
         return Timer(
             statistics: self,
             phase: phase,
@@ -71,7 +71,7 @@ class BoSyStatistics: CustomStringConvertible {
     }
     
     // Conformance to CustomStringConvertible
-    var description: String {
+    public var description: String {
         var stat = "\nStatistics\n"
         let maximalName = Phase.allValues.map({ $0.description.characters.count }).reduce(0, { max($0 ,$1) })
         for phase in Phase.allValues {

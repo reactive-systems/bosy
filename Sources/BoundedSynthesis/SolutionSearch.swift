@@ -7,7 +7,7 @@ import Automata
 import Specification
 import TransitionSystem
 
-enum SearchStrategy: String {
+public enum SearchStrategy: String {
     case linear      = "linear"
     case exponential = "exponential"
     
@@ -18,16 +18,16 @@ enum SearchStrategy: String {
         }
     }
     
-    static let allValues: [SearchStrategy] = [.linear, .exponential]
+    public static let allValues: [SearchStrategy] = [.linear, .exponential]
 }
 
-enum Player: Int {
+public enum Player: Int {
     case system      = 0b01
     case environment = 0b10
 }
 
-struct Players: OptionSet {
-    let rawValue: Int
+public struct Players: OptionSet {
+    public let rawValue: Int
     
     public init(rawValue: Int) {
         self.rawValue = rawValue
@@ -36,19 +36,19 @@ struct Players: OptionSet {
         rawValue = player.rawValue
     }
     
-    static let system        = Players(player: .system)
-    static let environment   = Players(player: .environment)
-    static let both: Players = [.system, .environment]
+    public static let system        = Players(player: .system)
+    public static let environment   = Players(player: .environment)
+    public static let both: Players = [.system, .environment]
 }
 
-enum Backends: String {
+public enum Backends: String {
     case explicit      = "explicit"
     case inputSymbolic = "input-symbolic"
     case stateSymbolic = "state-symbolic"
     case symbolic      = "symbolic"
     case smt           = "smt"
     
-    static let allValues: [Backends] = [
+    public static let allValues: [Backends] = [
         .explicit,
         .inputSymbolic,
         .stateSymbolic,
@@ -87,7 +87,7 @@ enum Backends: String {
     }
 }
 
-struct SolutionSearch {
+public struct SolutionSearch {
     var specification: SynthesisSpecification
     let automaton: CoBüchiAutomaton
     let searchStrategy: SearchStrategy
@@ -95,7 +95,7 @@ struct SolutionSearch {
     var bound: Int
     var encoding: BoSyEncoding
     
-    init(specification spec: SynthesisSpecification, automaton: CoBüchiAutomaton, searchStrategy: SearchStrategy = .exponential, player: Player = .system, backend: Backends = .inputSymbolic, initialBound bound: Int = 1, synthesize: Bool = true) {
+    public init(options: BoSyOptions, specification spec: SynthesisSpecification, automaton: CoBüchiAutomaton, searchStrategy: SearchStrategy = .exponential, player: Player = .system, backend: Backends = .inputSymbolic, initialBound bound: Int = 1, synthesize: Bool = true) {
         self.specification = player == .system ? spec : spec.dualized
         self.automaton = automaton
         self.searchStrategy = searchStrategy
@@ -104,19 +104,19 @@ struct SolutionSearch {
         
         switch backend {
         case .explicit:
-            encoding = ExplicitEncoding(automaton: automaton, specification: specification)
+            encoding = ExplicitEncoding(options: options, automaton: automaton, specification: specification)
         case .inputSymbolic:
-            encoding = InputSymbolicEncoding(automaton: automaton, specification: specification, synthesize: synthesize)
+            encoding = InputSymbolicEncoding(options: options, automaton: automaton, specification: specification, synthesize: synthesize)
         case .stateSymbolic:
-            encoding = StateSymbolicEncoding(automaton: automaton, specification: specification)
+            encoding = StateSymbolicEncoding(options: options, automaton: automaton, specification: specification)
         case .symbolic:
-            encoding = SymbolicEncoding(automaton: automaton, specification: specification)
+            encoding = SymbolicEncoding(options: options, automaton: automaton, specification: specification)
         case .smt:
-            encoding = SmtEncoding(automaton: automaton, specification: specification)
+            encoding = SmtEncoding(options: options, automaton: automaton, specification: specification)
         }
     }
     
-    mutating func hasSolution(limit: Int = Int.max) -> Bool {
+    public mutating func hasSolution(limit: Int = Int.max) -> Bool {
         while bound <= limit {
             Logger.default().debug("search for solution of bound \(bound) (player: \"\(player)\")")
             do {
@@ -140,7 +140,7 @@ struct SolutionSearch {
         return false
     }
     
-    func getSolution() -> TransitionSystem? {
+    public func getSolution() -> TransitionSystem? {
         return encoding.extractSolution()
     }
 }

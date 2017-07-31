@@ -5,6 +5,7 @@ import Utils
 import Automata
 import Specification
 import TransitionSystem
+import BoundedSynthesis
 
 import CAiger
 
@@ -144,7 +145,7 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
 
         let synthesize = synthesize && !(player == .environment && options.syntcomp2017rules)
         
-        var search = SolutionSearch(specification: specification, automaton: automaton, searchStrategy: strategy, player: player, backend: options.backend, initialBound: options.minBound, synthesize: synthesize)
+        var search = SolutionSearch(options: options, specification: specification, automaton: automaton, searchStrategy: strategy, player: player, backend: options.backend, initialBound: options.minBound, synthesize: synthesize)
 
         if search.hasSolution(limit: options.maxBound ?? Int.max) {
             if !synthesize {

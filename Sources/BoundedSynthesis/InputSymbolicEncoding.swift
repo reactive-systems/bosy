@@ -7,6 +7,7 @@ import TransitionSystem
 
 struct InputSymbolicEncoding: BoSyEncoding {
     
+    let options: BoSyOptions
     let automaton: CoBüchiAutomaton
     let specification: SynthesisSpecification
     let synthesize: Bool
@@ -16,7 +17,8 @@ struct InputSymbolicEncoding: BoSyEncoding {
     var instance: Logic?
     var solutionBound: Int
     
-    init(automaton: CoBüchiAutomaton, specification: SynthesisSpecification, synthesize: Bool) {
+    init(options: BoSyOptions, automaton: CoBüchiAutomaton, specification: SynthesisSpecification, synthesize: Bool) {
+        self.options = options
         self.automaton = automaton
         self.specification = specification
         self.synthesize = synthesize

@@ -7,10 +7,12 @@ import TransitionSystem
 
 struct SymbolicEncoding: BoSyEncoding {
     
+    let options: BoSyOptions
     let automaton: CoBüchiAutomaton
     let specification: SynthesisSpecification
     
-    init(automaton: CoBüchiAutomaton, specification: SynthesisSpecification) {
+    init(options: BoSyOptions, automaton: CoBüchiAutomaton, specification: SynthesisSpecification) {
+        self.options = options
         self.automaton = automaton
         self.specification = specification
     }

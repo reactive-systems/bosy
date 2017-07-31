@@ -7,6 +7,7 @@ import TransitionSystem
 
 struct ExplicitEncoding: BoSyEncoding {
     
+    let options: BoSyOptions
     let automaton: CoBüchiAutomaton
     let specification: SynthesisSpecification
     
@@ -14,7 +15,8 @@ struct ExplicitEncoding: BoSyEncoding {
     var assignments: BooleanAssignment?
     var solutionBound: Int
     
-    init(automaton: CoBüchiAutomaton, specification: SynthesisSpecification) {
+    init(options: BoSyOptions, automaton: CoBüchiAutomaton, specification: SynthesisSpecification) {
+        self.options = options
         self.automaton = automaton
         self.specification = specification
         

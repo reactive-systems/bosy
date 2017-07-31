@@ -31,7 +31,7 @@ enum CommandLineOptionsError: Error, CustomStringConvertible {
     }
 }
 
-enum Target: String {
+public enum Target: String {
     case aiger       = "aiger"
     case dot         = "dot"
     case dotTopology = "dot-topology"
@@ -39,33 +39,35 @@ enum Target: String {
     case verilog     = "verilog"
     case all         = "all"
     
-    static let allValues: [Target] = [.aiger, .dot, .dotTopology, .smv, .verilog, .all]
+    public static let allValues: [Target] = [.aiger, .dot, .dotTopology, .smv, .verilog, .all]
 }
 
 
-struct BoSyOptions {
+public struct BoSyOptions {
     
-    var name: String = "BoSy"
+    public var name: String = "BoSy"
     
     // default options
-    var specificationFile: String? = nil
-    var synthesize: Bool = false
-    var searchStrategy: SearchStrategy = .exponential
-    var player: Players = .both
-    var backend: Backends = .inputSymbolic
-    var converter: LTL2AutomatonConverter = .spot
-    var semantics: TransitionSystemType? = nil
-    var statistics: BoSyStatistics? = nil
-    var target: Target = .aiger
-    var solver: SolverInstance? = nil
-    var qbfCertifier: SolverInstance? = nil
-    var qbfPreprocessor: QBFPreprocessorInstance? = nil
-    var monolithic: Bool = true
-    var syntcomp2017rules: Bool = false
-    var minBound: Int = 1
-    var maxBound: Int? = nil
+    public var specificationFile: String? = nil
+    public var synthesize: Bool = false
+    public var searchStrategy: SearchStrategy = .exponential
+    public var player: Players = .both
+    public var backend: Backends = .inputSymbolic
+    public var converter: LTL2AutomatonConverter = .spot
+    public var semantics: TransitionSystemType? = nil
+    public var statistics: BoSyStatistics? = nil
+    public var target: Target = .aiger
+    public var solver: SolverInstance? = nil
+    public var qbfCertifier: SolverInstance? = nil
+    public var qbfPreprocessor: QBFPreprocessorInstance? = nil
+    public var monolithic: Bool = true
+    public var syntcomp2017rules: Bool = false
+    public var minBound: Int = 1
+    public var maxBound: Int? = nil
     
-    mutating func parseCommandLine() throws {
+    public init() {}
+    
+    public mutating func parseCommandLine() throws {
         var arguments: ArraySlice<String> = CommandLine.arguments[CommandLine.arguments.indices]
         name = arguments.popFirst()!
         
@@ -251,7 +253,7 @@ struct BoSyOptions {
     }
     
     
-    func printHelp() {
+    public func printHelp() {
         print("\(name) [options] instance\n\n",
               "options:\n",
               "  --help\t\tshow this help and exit\n",
