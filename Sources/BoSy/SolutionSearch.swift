@@ -3,6 +3,7 @@ import Foundation
 import Utils
 import CAiger
 import Logic
+import Automata
 
 enum SearchStrategy: String {
     case linear      = "linear"

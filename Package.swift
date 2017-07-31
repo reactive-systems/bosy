@@ -3,7 +3,8 @@ import PackageDescription
 let package = Package(
     name: "BoSy",
     targets: [
-        Target(name: "BoSy", dependencies: ["LTL", "Logic", "Utils"]),
+        Target(name: "BoSy", dependencies: ["Automata", "LTL", "Logic", "Utils"]),
+        Target(name: "Automata", dependencies: ["Logic", "Utils"]),
         Target(name: "Logic", dependencies: ["Utils"]),
         Target(name: "LTL"),
         Target(name: "Utils"),

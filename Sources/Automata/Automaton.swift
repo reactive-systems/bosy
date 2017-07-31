@@ -3,7 +3,7 @@ import Foundation
 import Logic
 import Utils
 
-protocol Automaton: GraphRepresentable {
+public protocol Automaton: GraphRepresentable {
     var initialStates: Set<State> { get set }
     var states: Set<State> { get set }
     var transitions: [State : [State : Logic]] { get set }
@@ -11,7 +11,7 @@ protocol Automaton: GraphRepresentable {
 
 extension Automaton {
     // default implementation for GraphRepresentable
-    var edges: [State: [State]] {
+    public var edges: [State: [State]] {
         var e: [State: [State]] = [:]
         for (source, outgoing) in transitions {
             e[source] = []
@@ -26,12 +26,12 @@ extension Automaton {
     }
 }
 
-protocol SafetyAcceptance {
+public protocol SafetyAcceptance {
     associatedtype State: Hashable
     var safetyConditions: [State : Logic] { get set }
 }
 
-protocol CoBüchiAcceptance {
+public protocol CoBüchiAcceptance {
     associatedtype State: Hashable
     var rejectingStates: Set<State> { get set }
 }
@@ -42,7 +42,7 @@ extension Automaton where Self: CoBüchiAcceptance, Self: SafetyAcceptance {
     /**
      * Remove rejecting sink states
      */
-    mutating func simplify() {
+    public mutating func simplify() {
         for state in rejectingStates {
             guard let outgoing = transitions[state] else {
                 assert(false)
@@ -87,19 +87,19 @@ extension Automaton where Self: CoBüchiAcceptance, Self: SafetyAcceptance {
     }
 }
 
-struct CoBüchiAutomaton: Automaton, SafetyAcceptance, CoBüchiAcceptance {
-    typealias State = String
-    var initialStates: Set<State>
-    var states: Set<State>
-    var transitions: [State : [State : Logic]]
-    var safetyConditions: [State : Logic]
-    var rejectingStates: Set<State>
+public struct CoBüchiAutomaton: Automaton, SafetyAcceptance, CoBüchiAcceptance {
+    public typealias State = String
+    public var initialStates: Set<State>
+    public var states: Set<State>
+    public var transitions: [State : [State : Logic]]
+    public var safetyConditions: [State : Logic]
+    public var rejectingStates: Set<State>
     
     // SCC optimizations
     var scc: [State: Int] = [:]
     var inRejectingScc: [State: Bool] = [:]
     
-    init(initialStates: Set<State>, states: Set<State>, transitions: [State : [State : Logic]], safetyConditions: [State : Logic], rejectingStates: Set<State>) {
+    public init(initialStates: Set<State>, states: Set<State>, transitions: [State : [State : Logic]], safetyConditions: [State : Logic], rejectingStates: Set<State>) {
         self.initialStates = initialStates
         self.states = states
         self.transitions = transitions
@@ -107,7 +107,7 @@ struct CoBüchiAutomaton: Automaton, SafetyAcceptance, CoBüchiAcceptance {
         self.rejectingStates = rejectingStates
     }
     
-    init(automata: [CoBüchiAutomaton]) {
+    public init(automata: [CoBüchiAutomaton]) {
         /// makes sure every state is unique
         func transform(state: State, index: Int) -> State {
             return "s\(index)_\(state)"
@@ -136,7 +136,7 @@ struct CoBüchiAutomaton: Automaton, SafetyAcceptance, CoBüchiAcceptance {
     }
     
     
-    mutating func claculateSCC() {
+    public mutating func claculateSCC() {
         for (i, scc) in trajan(graph: self).enumerated() {
             let isRejecting = !rejectingStates.intersection(scc).isEmpty
             for node in scc {
@@ -146,14 +146,14 @@ struct CoBüchiAutomaton: Automaton, SafetyAcceptance, CoBüchiAcceptance {
         }
     }
     
-    func isStateInNonRejectingSCC(_ state: State) -> Bool {
+    public func isStateInNonRejectingSCC(_ state: State) -> Bool {
         guard let inRejecting = inRejectingScc[state] else {
             return false
         }
         return !inRejecting
     }
 
-    func isInSameSCC(_ state1: State, _ state2: State) -> Bool {
+    public func isInSameSCC(_ state1: State, _ state2: State) -> Bool {
         guard let sccState1 = scc[state1] else {
             return true
         }
@@ -164,11 +164,11 @@ struct CoBüchiAutomaton: Automaton, SafetyAcceptance, CoBüchiAcceptance {
     }
 }
 
-enum LTL2AutomatonConverter: String {
+public enum LTL2AutomatonConverter: String {
     case ltl3ba = "ltl3ba"
     case spot   = "spot"
     
-    func convert(ltl: String) -> CoBüchiAutomaton? {
+    public func convert(ltl: String) -> CoBüchiAutomaton? {
         switch self {
         case .ltl3ba:
             return _ltl3ba(ltl: ltl)
@@ -177,7 +177,7 @@ enum LTL2AutomatonConverter: String {
         }
     }
     
-    static let allValues: [LTL2AutomatonConverter] = [.ltl3ba, .spot]
+    public static let allValues: [LTL2AutomatonConverter] = [.ltl3ba, .spot]
 }
 
 func _ltl3ba(ltl: String) -> CoBüchiAutomaton? {

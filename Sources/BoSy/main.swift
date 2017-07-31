@@ -2,8 +2,10 @@ import Foundation
 //import Dispatch
 
 import Utils
+import Automata
 
 import CAiger
+
 
 
 var options = BoSyOptions()

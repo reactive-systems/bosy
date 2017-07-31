@@ -2,7 +2,7 @@ import Foundation
 
 import Utils
 import Logic
-
+import Automata
 
 enum CommandLineOptionsError: Error, CustomStringConvertible {
     case empty

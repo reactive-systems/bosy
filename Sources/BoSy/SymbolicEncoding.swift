@@ -1,6 +1,7 @@
 import Utils
 import CAiger
 import Logic
+import Automata
 
 struct SymbolicEncoding: BoSyEncoding {
     
