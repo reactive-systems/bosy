@@ -1,7 +1,6 @@
 import Foundation
 
 import Utils
-
 import LTL
 
 enum TransitionSystemType: String {
@@ -18,15 +17,7 @@ enum TransitionSystemType: String {
     static let allValues: [TransitionSystemType] = [.mealy, .moore]
 }
 
-protocol InputFileFormat {
-    var semantics: TransitionSystemType { get set }
-    var inputs: [String] { get }
-    var outputs: [String] { get }
-    var assumptions: [LTL] { get }
-    var guarantees: [LTL] { get }
-}
-
-struct BoSySpecification: InputFileFormat {
+struct BoSySpecification {
     var semantics: TransitionSystemType
     let inputs: [String]
     let outputs: [String]
@@ -116,31 +107,3 @@ struct BoSySpecification: InputFileFormat {
     }
 }
 
-func syfco(tlsf: String, arguments: [String]) -> String {
-    let task = Process()
-
-    task.launchPath = "./Tools/syfco"
-    task.arguments = ["--stdin"] + arguments
-    
-    let stdinPipe = Pipe()
-    let stdoutPipe = Pipe()
-    let stderrPipe = Pipe()
-    task.standardInput = stdinPipe
-    task.standardOutput = stdoutPipe
-    task.standardError = stderrPipe
-    task.launch()
-    
-    let stdinHandle = stdinPipe.fileHandleForWriting
-    if let data = tlsf.data(using: String.Encoding.utf8) {
-        stdinHandle.write(data)
-        stdinHandle.closeFile()
-    }
-    
-    let stdoutHandle = stdoutPipe.fileHandleForReading
-    let outputData = StreamHelper.readAllAvailableData(from: stdoutHandle)
-    
-    task.waitUntilExit()
-    
-    //let data = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
-    return String(data: outputData, encoding: String.Encoding.utf8)!
-}
