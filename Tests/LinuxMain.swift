@@ -1,5 +1,5 @@
 import XCTest
-@testable import BoSyTests
+@testable import LogicTests
 @testable import LTLTests
 @testable import UtilsTests
 

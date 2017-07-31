@@ -1,23 +1,23 @@
 
-class TPTP3Printer: ReturnConstantVisitor<String> {
+public class TPTP3Printer: ReturnConstantVisitor<String> {
     
-    init() {
+    public init() {
         super.init(constant: "")
     }
     
-    override func visit(proposition: Proposition) -> T {
+    public override func visit(proposition: Proposition) -> T {
         return "p(\(proposition.name.uppercased()))"
     }
-    override func visit(unaryOperator: UnaryOperator) -> T {
+    public override func visit(unaryOperator: UnaryOperator) -> T {
         assert(unaryOperator.type == .Negation)
         return "~" + unaryOperator.operand.accept(visitor: self)
     }
-    override func visit(binaryOperator: BinaryOperator) -> T {
+    public override func visit(binaryOperator: BinaryOperator) -> T {
         assert(binaryOperator.type == .Or)
         let clause = binaryOperator.operands.map({ $0.accept(visitor: self) }).joined(separator: " | ")
         return "(\(clause))"
     }
-    override func visit(application: FunctionApplication) -> T {
+    public override func visit(application: FunctionApplication) -> T {
         let parameter: [Proposition] = application.application as! [Proposition]
         let parameters = parameter.map({ $0.name.uppercased() }).joined(separator: ",")
         return "\(application.function)(\(parameters))"
@@ -26,25 +26,25 @@ class TPTP3Printer: ReturnConstantVisitor<String> {
 }
 
 
-class SmtPrinter: ReturnConstantVisitor<String> {
-    init() {
+public class SmtPrinter: ReturnConstantVisitor<String> {
+    public init() {
         super.init(constant: "")
     }
     
-    override func visit(literal: Literal) -> T {
+    public override func visit(literal: Literal) -> T {
         if literal == Literal.True {
             return "true"
         } else {
             return "false"
         }
     }
-    override func visit(proposition: Proposition) -> T {
+    public override func visit(proposition: Proposition) -> T {
         return proposition.name
     }
-    override func visit(unaryOperator: UnaryOperator) -> T {
+    public override func visit(unaryOperator: UnaryOperator) -> T {
         return "(not " + unaryOperator.operand.accept(visitor: self) + ")"
     }
-    override func visit(binaryOperator: BinaryOperator) -> T {
+    public override func visit(binaryOperator: BinaryOperator) -> T {
         let operands = binaryOperator.operands.map({ $0.accept(visitor: self) }).joined(separator: " ")
         let type: String
         switch binaryOperator.type {
@@ -59,12 +59,12 @@ class SmtPrinter: ReturnConstantVisitor<String> {
         }
         return "(\(type) \(operands))"
     }
-    override func visit(application: FunctionApplication) -> T {
+    public override func visit(application: FunctionApplication) -> T {
         let parameter: [Logic] = application.application
         let parameters = parameter.map({ $0.accept(visitor: self) }).joined(separator: " ")
         return "(\(application.function) \(parameters))"
     }
-    override func visit(comparator: BooleanComparator) -> T {
+    public override func visit(comparator: BooleanComparator) -> T {
         let comp: String
         switch comparator.type {
         case .Less:
@@ -78,25 +78,25 @@ class SmtPrinter: ReturnConstantVisitor<String> {
     }
 }
 
-class SmvPrinter: ReturnConstantVisitor<String> {
-    init() {
+public class SmvPrinter: ReturnConstantVisitor<String> {
+    public init() {
         super.init(constant: "")
     }
     
-    override func visit(literal: Literal) -> T {
+    public override func visit(literal: Literal) -> T {
         if literal == Literal.True {
             return "TRUE"
         } else {
             return "FALSE"
         }
     }
-    override func visit(proposition: Proposition) -> T {
+    public override func visit(proposition: Proposition) -> T {
         return proposition.name
     }
-    override func visit(unaryOperator: UnaryOperator) -> T {
+    public override func visit(unaryOperator: UnaryOperator) -> T {
         return "!" + unaryOperator.operand.accept(visitor: self)
     }
-    override func visit(binaryOperator: BinaryOperator) -> T {
+    public override func visit(binaryOperator: BinaryOperator) -> T {
         let operands = binaryOperator.operands.map({ $0.accept(visitor: self) })
         let type: String
         switch binaryOperator.type {
@@ -111,25 +111,25 @@ class SmvPrinter: ReturnConstantVisitor<String> {
     }
 }
 
-class VerilogPrinter: ReturnConstantVisitor<String> {
-    init() {
+public class VerilogPrinter: ReturnConstantVisitor<String> {
+    public init() {
         super.init(constant: "")
     }
     
-    override func visit(literal: Literal) -> T {
+    public override func visit(literal: Literal) -> T {
         if literal == Literal.True {
             return "1"
         } else {
             return "0"
         }
     }
-    override func visit(proposition: Proposition) -> T {
+    public override func visit(proposition: Proposition) -> T {
         return proposition.name
     }
-    override func visit(unaryOperator: UnaryOperator) -> T {
+    public override func visit(unaryOperator: UnaryOperator) -> T {
         return "!" + unaryOperator.operand.accept(visitor: self)
     }
-    override func visit(binaryOperator: BinaryOperator) -> T {
+    public override func visit(binaryOperator: BinaryOperator) -> T {
         let operands = binaryOperator.operands.map({ $0.accept(visitor: self) })
         let type: String
         switch binaryOperator.type {

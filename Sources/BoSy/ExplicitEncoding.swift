@@ -1,5 +1,6 @@
 import Utils
 import CAiger
+import Logic
 
 struct ExplicitEncoding: BoSyEncoding {
     

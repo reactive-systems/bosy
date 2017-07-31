@@ -157,7 +157,7 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
                     Logger.default().error("could not encode solution as AIGER")
                     return
                 }
-                let minimized = minimizeWithABC(aiger_solution)
+                let minimized = aiger_solution.minimized
                 aiger_write_to_file(minimized, aiger_ascii_mode, stdout)
                 player == .system ? print("result: realizable") : print("result: unrealizable")
             case .dot:

@@ -1,6 +1,6 @@
 import XCTest
 
-@testable import BoSy
+@testable import Logic
 
 class BooleanTest: XCTestCase {
     

@@ -4,12 +4,12 @@ import Utils
 
 import CAiger
 
-enum SolverResult {
+public enum SolverResult {
     case sat
     case unsat
 }
 
-enum SolverInstance: String {
+public enum SolverInstance: String {
     // SAT solver
     case picosat = "picosat"
     case cryptominisat = "cryptominisat"
@@ -33,7 +33,7 @@ enum SolverInstance: String {
     case z3 = "z3"
     case cvc4 = "cvc4"
     
-    var instance: Solver {
+    public var instance: Solver {
         switch self {
         case .picosat:
             return PicoSAT()
@@ -64,7 +64,7 @@ enum SolverInstance: String {
         }
     }
     
-    static let allValues: [SolverInstance] = [
+    public static let allValues: [SolverInstance] = [
         .picosat,
         .cryptominisat,
         .rareqs,
@@ -81,51 +81,59 @@ enum SolverInstance: String {
     ]
 }
 
-enum QBFPreprocessorInstance: String {
+public enum QBFPreprocessorInstance: String {
     case bloqqer = "bloqqer"
     case hqspre = "hqspre"
     
-    static let allValues: [QBFPreprocessorInstance] = [
+    public func getInstance(preserveAssignments: Bool) -> QbfPreprocessor {
+        switch self {
+        case .bloqqer:
+            return Bloqqer(preserveAssignments: preserveAssignments)
+        case .hqspre:
+            return HQSPre()
+        }
+    }
+    
+    public static let allValues: [QBFPreprocessorInstance] = [
         .bloqqer,
         .hqspre
     ]
 }
 
-enum SatSolverResult {
+public enum SatSolverResult {
     case unsat
     case sat(assignment: BooleanAssignment)
 }
 
-enum QbfSolverResult {
+public enum QbfSolverResult {
     case unsat
     case sat(functions: [Proposition:Logic])
 }
 
-protocol Solver {
-}
+public protocol Solver {}
 
-protocol SatSolver: Solver {
+public protocol SatSolver: Solver {
     func solve(formula: Logic) -> SatSolverResult?
 }
 
-protocol QbfPreprocessor {
+public protocol QbfPreprocessor {
     func preprocess(qbf: String) -> String?
 }
 
-protocol QbfSolver: Solver {
+public protocol QbfSolver: Solver {
     func solve(formula: Logic, preprocessor: QbfPreprocessor?) -> SatSolverResult?
 }
 
-protocol CertifyingQbfSolver: Solver {
+public protocol CertifyingQbfSolver: Solver {
     func solve(formula: Logic) -> QbfSolverResult?
 }
 
-protocol SmtSolver: Solver {
+public protocol SmtSolver: Solver {
     func solve(formula: String) -> SolverResult?
     func getValue(expression: String) -> Logic?
 }
 
-protocol DqbfSolver: Solver {
+public protocol DqbfSolver: Solver {
     func solve(formula: Logic) -> SolverResult?
 }
 
@@ -489,7 +497,7 @@ struct CAQE: QbfSolver, CertifyingQbfSolver {
             return .unsat
         }
         
-        guard let minimizedCertificate = minimizeWithABC(aiger) else {
+        guard let minimizedCertificate = aiger.minimized else {
             Logger.default().error("could not minimize certificate with ABC")
             return nil
         }
@@ -547,7 +555,7 @@ struct QuAbS: CertifyingQbfSolver {
             return .unsat
         }
         
-        guard let minimizedCertificate = minimizeWithABC(aiger) else {
+        guard let minimizedCertificate = aiger.minimized else {
             Logger.default().error("could not minimize certificate with ABC")
             return nil
         }
@@ -604,7 +612,7 @@ struct CADET: CertifyingQbfSolver {
             return .unsat
         }
         
-        guard let minimizedCertificate = minimizeWithABC(aiger) else {
+        guard let minimizedCertificate = aiger.minimized else {
             Logger.default().error("could not minimize certificate with ABC")
             return nil
         }
@@ -616,47 +624,50 @@ struct CADET: CertifyingQbfSolver {
     }
 }
 
-
-func minimizeWithABC(_ aig: UnsafeMutablePointer<aiger>) -> UnsafeMutablePointer<aiger>? {
-    let minimized = aiger_init()
+extension UnsafeMutablePointer where Pointee == aiger {
     
-    guard let inputTempFile = TempFile(suffix: ".aig") else {
-        return nil
+    public var minimized: UnsafeMutablePointer<aiger>? {
+        let minimized = aiger_init()
+        
+        guard let inputTempFile = TempFile(suffix: ".aig") else {
+            return nil
+        }
+        guard let outputTempFile = TempFile(suffix: ".aig") else {
+            return nil
+        }
+        aiger_open_and_write_to_file(self, inputTempFile.path)
+        
+        var abcCommand = "read \(inputTempFile.path); strash; refactor -zl; rewrite -zl;"
+        if self.pointee.num_ands < 1_000_000 {
+            abcCommand += " strash; refactor -zl; rewrite -zl;"
+        }
+        if self.pointee.num_ands < 200_000 {
+            abcCommand += " strash; refactor -zl; rewrite -zl;"
+        }
+        if self.pointee.num_ands < 200_000 {
+            abcCommand += " dfraig; rewrite -zl; dfraig;"
+        }
+        abcCommand += " write \(outputTempFile.path);"
+        
+        let task = Process()
+        task.launchPath = "./Tools/abc"
+        task.arguments = ["-q", abcCommand]
+        #if swift(>=4) || !os(Linux)
+            task.standardOutput = FileHandle.nullDevice
+        #else
+            task.standardOutput = FileHandle.standardError
+        #endif
+        
+        task.launch()
+        task.waitUntilExit()
+        assert(task.terminationStatus == 0)
+        
+        let result = aiger_open_and_read_from_file(minimized, outputTempFile.path)
+        assert(result == nil)
+        
+        return minimized
     }
-    guard let outputTempFile = TempFile(suffix: ".aig") else {
-        return nil
-    }
-    aiger_open_and_write_to_file(aig, inputTempFile.path)
     
-    var abcCommand = "read \(inputTempFile.path); strash; refactor -zl; rewrite -zl;"
-    if aig.pointee.num_ands < 1_000_000 {
-        abcCommand += " strash; refactor -zl; rewrite -zl;"
-    }
-    if aig.pointee.num_ands < 200_000 {
-        abcCommand += " strash; refactor -zl; rewrite -zl;"
-    }
-    if aig.pointee.num_ands < 200_000 {
-        abcCommand += " dfraig; rewrite -zl; dfraig;"
-    }
-    abcCommand += " write \(outputTempFile.path);"
-    
-    let task = Process()
-    task.launchPath = "./Tools/abc"
-    task.arguments = ["-q", abcCommand]
-    #if swift(>=4) || !os(Linux)
-        task.standardOutput = FileHandle.nullDevice
-    #else
-        task.standardOutput = FileHandle.standardError
-    #endif
-    
-    task.launch()
-    task.waitUntilExit()
-    assert(task.terminationStatus == 0)
-    
-    let result = aiger_open_and_read_from_file(minimized, outputTempFile.path)
-    assert(result == nil)
-    
-    return minimized
 }
 
 struct iDQ: DqbfSolver {

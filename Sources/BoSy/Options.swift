@@ -1,6 +1,7 @@
 import Foundation
 
 import Utils
+import Logic
 
 
 enum CommandLineOptionsError: Error, CustomStringConvertible {

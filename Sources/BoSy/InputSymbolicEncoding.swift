@@ -1,5 +1,6 @@
 import Utils
 import CAiger
+import Logic
 
 struct InputSymbolicEncoding: BoSyEncoding {
     
@@ -177,13 +178,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
         guard let preprocessorName = options.qbfPreprocessor else {
             throw BoSyEncodingError.SolvingFailed("no preprocessor selected")
         }
-        let preprocessor: QbfPreprocessor
-        switch preprocessorName {
-        case .bloqqer:
-            preprocessor = Bloqqer(preserveAssignments: self.synthesize)
-        case .hqspre:
-            preprocessor = HQSPre()
-        }
+        let preprocessor: QbfPreprocessor = preprocessorName.getInstance(preserveAssignments: self.synthesize)
         guard let result = solver.solve(formula: instance, preprocessor: preprocessor) else {
             throw BoSyEncodingError.SolvingFailed("solver failed on instance")
         }

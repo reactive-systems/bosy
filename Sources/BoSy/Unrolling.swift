@@ -1,4 +1,5 @@
 import LTL
+import Logic
 
 struct Unrolling {
     let specification: BoSySpecification

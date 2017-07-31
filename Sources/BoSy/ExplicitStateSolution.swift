@@ -1,6 +1,7 @@
 import CAiger
 import Utils
 import LTL
+import Logic
 
 /**
  * Implementations with an explicit representation of states while the
