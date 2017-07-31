@@ -2,11 +2,13 @@ import Utils
 import CAiger
 import Logic
 import Automata
+import Specification
+import TransitionSystem
 
 struct SmtEncoding: BoSyEncoding {
     
     let automaton: CoBüchiAutomaton
-    let specification: BoSySpecification
+    let specification: SynthesisSpecification
     
     // intermediate results
     var assignments: BooleanAssignment?
@@ -14,7 +16,7 @@ struct SmtEncoding: BoSyEncoding {
     var solutionBound: Int
     var solver: SmtSolver?
     
-    init(automaton: CoBüchiAutomaton, specification: BoSySpecification) {
+    init(automaton: CoBüchiAutomaton, specification: SynthesisSpecification) {
         self.automaton = automaton
         self.specification = specification
         
@@ -152,7 +154,7 @@ struct SmtEncoding: BoSyEncoding {
         return result == .sat
     }
     
-    func extractSolution() -> BoSySolution? {
+    func extractSolution() -> TransitionSystem? {
         guard let solver = solver else {
             return nil
         }

@@ -3,37 +3,37 @@ import Foundation
 import Utils
 import LTL
 
-enum TransitionSystemType: String {
+public enum TransitionSystemType: String {
     case mealy = "mealy"
     case moore = "moore"
     
-    var swapped: TransitionSystemType {
+    public var swapped: TransitionSystemType {
         switch self {
             case .mealy: return .moore
             case .moore: return .mealy
         }
     }
     
-    static let allValues: [TransitionSystemType] = [.mealy, .moore]
+    public static let allValues: [TransitionSystemType] = [.mealy, .moore]
 }
 
-struct BoSySpecification {
-    var semantics: TransitionSystemType
-    let inputs: [String]
-    let outputs: [String]
-    let assumptions: [LTL]
-    let guarantees: [LTL]
+public struct SynthesisSpecification {
+    public var semantics: TransitionSystemType
+    public let inputs: [String]
+    public let outputs: [String]
+    public let assumptions: [LTL]
+    public let guarantees: [LTL]
     
-    var dualized: BoSySpecification {
+    public var dualized: SynthesisSpecification {
         let dualizedLTL = LTL.UnaryOperator(.Not,
                                             LTL.BinaryOperator(.Implies,
                                                                assumptions.reduce(LTL.Literal(true), { res, ltl in .BinaryOperator(.And, res, ltl) }),
                                                                guarantees.reduce(LTL.Literal(true), { res, ltl in .BinaryOperator(.And, res, ltl) }))
         )
-        return BoSySpecification(semantics: semantics.swapped, inputs: outputs, outputs: inputs, assumptions: [], guarantees: [dualizedLTL])
+        return SynthesisSpecification(semantics: semantics.swapped, inputs: outputs, outputs: inputs, assumptions: [], guarantees: [dualizedLTL])
     }
     
-    static func fromJson(string: String) -> BoSySpecification? {
+    public static func fromJson(string: String) -> SynthesisSpecification? {
         Logger.default().debug("parse JSON input file")
         guard let data = string.data(using: .utf8) else {
             Logger.default().error("could not decode JSON")
@@ -103,7 +103,7 @@ struct BoSySpecification {
             return nil
         }
         Logger.default().debug("parsing JSON succeeded")
-        return BoSySpecification(semantics: semantics, inputs: inputs, outputs: outputs, assumptions: parsedAssumptions, guarantees: parsedGuarantees)
+        return SynthesisSpecification(semantics: semantics, inputs: inputs, outputs: outputs, assumptions: parsedAssumptions, guarantees: parsedGuarantees)
     }
 }
 

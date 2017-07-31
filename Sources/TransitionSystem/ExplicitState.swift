@@ -2,6 +2,7 @@ import CAiger
 import Utils
 import LTL
 import Logic
+import Specification
 
 /**
  * Implementations with an explicit representation of states while the
@@ -9,17 +10,17 @@ import Logic
  *
  * Can encode both, mealy and moore, transition systems.
  */
-struct ExplicitStateSolution: BoSySolution {
-    typealias State = Int
+public struct ExplicitStateSolution: TransitionSystem {
+    public typealias State = Int
     
-    let specification: BoSySpecification
+    let specification: SynthesisSpecification
     
     var states: [State]
     var initial: State
     var outputGuards: [State: [String: Logic]]
     var transitions: [State: [State: Logic]]
     
-    init(bound: Int, specification: BoSySpecification) {
+    public init(bound: Int, specification: SynthesisSpecification) {
         self.specification = specification
         states = Array(0..<bound)
         initial = 0
@@ -27,13 +28,13 @@ struct ExplicitStateSolution: BoSySolution {
         transitions = [:]
     }
     
-    mutating func addTransition(from: State, to: State, withGuard newGuard: Logic) {
+    public mutating func addTransition(from: State, to: State, withGuard newGuard: Logic) {
         var outgoing: [State:Logic] = transitions[from] ?? [:]
         outgoing[to] = (outgoing[to] ?? Literal.False) | newGuard
         transitions[from] = outgoing
     }
     
-    mutating func add(output: String, inState: State, withGuard: Logic) {
+    public mutating func add(output: String, inState: State, withGuard: Logic) {
         assert(specification.outputs.contains(output))
         var outputInState = outputGuards[inState] ?? [:]
         outputInState[output] = (outputInState[output] ?? Literal.False) | withGuard
@@ -102,7 +103,7 @@ extension ExplicitStateSolution: AigerRepresentable {
         return bits
     }
     
-    var aiger: UnsafeMutablePointer<aiger>? {
+    public var aiger: UnsafeMutablePointer<aiger>? {
         return _toAiger()
     }
 }
@@ -217,11 +218,11 @@ extension ExplicitStateSolution: DotRepresentable {
         return "digraph graphname {\n\(dot.joined(separator: "\n"))\n}"
     }
     
-    var dot: String {
+    public var dot: String {
         return _toDot()
     }
     
-    var dotTopology: String {
+    public var dotTopology: String {
         return _toDot(labelEdges: false)
     }
 }
@@ -284,7 +285,7 @@ extension ExplicitStateSolution: SmvRepresentable {
         return smv.joined(separator: "\n")
     }
     
-    var smv: String {
+    public var smv: String {
         return _toSMV()
     }
 }
@@ -349,7 +350,7 @@ extension ExplicitStateSolution: VerilogRepresentable {
         return verilog.joined(separator: "\n")
     }
     
-    var verilog: String {
+    public var verilog: String {
         return _toVerilog()
     }
     

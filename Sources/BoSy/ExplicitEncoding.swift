@@ -2,17 +2,19 @@ import Utils
 import CAiger
 import Logic
 import Automata
+import Specification
+import TransitionSystem
 
 struct ExplicitEncoding: BoSyEncoding {
     
     let automaton: CoBüchiAutomaton
-    let specification: BoSySpecification
+    let specification: SynthesisSpecification
     
     // intermediate results
     var assignments: BooleanAssignment?
     var solutionBound: Int
     
-    init(automaton: CoBüchiAutomaton, specification: BoSySpecification) {
+    init(automaton: CoBüchiAutomaton, specification: SynthesisSpecification) {
         self.automaton = automaton
         self.specification = specification
         
@@ -208,7 +210,7 @@ struct ExplicitEncoding: BoSyEncoding {
         return false
     }
     
-    func extractSolution() -> BoSySolution? {
+    func extractSolution() -> TransitionSystem? {
         let extractionTimer = options.statistics?.startTimer(phase: .solutionExtraction)
         let inputPropositions: [Proposition] = specification.inputs.map({ Proposition($0) })
         

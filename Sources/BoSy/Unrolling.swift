@@ -1,8 +1,9 @@
 import LTL
 import Logic
+import Specification
 
 struct Unrolling {
-    let specification: BoSySpecification
+    let specification: SynthesisSpecification
     
     func getEncoding(forBound bound: Int) -> Logic? {
         var ltl: LTL = specification.guarantees.reduce(.Literal(true), { val, element in .BinaryOperator(.And, val, element) })

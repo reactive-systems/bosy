@@ -4,6 +4,8 @@ import Utils
 import CAiger
 import Logic
 import Automata
+import Specification
+import TransitionSystem
 
 enum SearchStrategy: String {
     case linear      = "linear"
@@ -86,14 +88,14 @@ enum Backends: String {
 }
 
 struct SolutionSearch {
-    var specification: BoSySpecification
+    var specification: SynthesisSpecification
     let automaton: CoBüchiAutomaton
     let searchStrategy: SearchStrategy
     let player: Player
     var bound: Int
     var encoding: BoSyEncoding
     
-    init(specification spec: BoSySpecification, automaton: CoBüchiAutomaton, searchStrategy: SearchStrategy = .exponential, player: Player = .system, backend: Backends = .inputSymbolic, initialBound bound: Int = 1, synthesize: Bool = true) {
+    init(specification spec: SynthesisSpecification, automaton: CoBüchiAutomaton, searchStrategy: SearchStrategy = .exponential, player: Player = .system, backend: Backends = .inputSymbolic, initialBound bound: Int = 1, synthesize: Bool = true) {
         self.specification = player == .system ? spec : spec.dualized
         self.automaton = automaton
         self.searchStrategy = searchStrategy
@@ -138,7 +140,7 @@ struct SolutionSearch {
         return false
     }
     
-    func getSolution() -> BoSySolution? {
+    func getSolution() -> TransitionSystem? {
         return encoding.extractSolution()
     }
 }

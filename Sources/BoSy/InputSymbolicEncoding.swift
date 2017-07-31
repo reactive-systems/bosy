@@ -2,11 +2,13 @@ import Utils
 import CAiger
 import Logic
 import Automata
+import Specification
+import TransitionSystem
 
 struct InputSymbolicEncoding: BoSyEncoding {
     
     let automaton: CoBüchiAutomaton
-    let specification: BoSySpecification
+    let specification: SynthesisSpecification
     let synthesize: Bool
     
     // intermediate results
@@ -14,7 +16,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
     var instance: Logic?
     var solutionBound: Int
     
-    init(automaton: CoBüchiAutomaton, specification: BoSySpecification, synthesize: Bool) {
+    init(automaton: CoBüchiAutomaton, specification: SynthesisSpecification, synthesize: Bool) {
         self.automaton = automaton
         self.specification = specification
         self.synthesize = synthesize
@@ -201,7 +203,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
         return false
     }
     
-    func extractSolution() -> BoSySolution? {
+    func extractSolution() -> TransitionSystem? {
         let extractionTimer = options.statistics?.startTimer(phase: .solutionExtraction)
         guard let instance = self.instance, let assignments = self.assignments else {
             Logger.default().error("hasSolution() must be true before calling this function")

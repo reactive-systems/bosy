@@ -2,13 +2,15 @@ import Utils
 import CAiger
 import Logic
 import Automata
+import Specification
+import TransitionSystem
 
 struct StateSymbolicEncoding: BoSyEncoding {
     
     let automaton: CoBüchiAutomaton
-    let specification: BoSySpecification
+    let specification: SynthesisSpecification
     
-    init(automaton: CoBüchiAutomaton, specification: BoSySpecification) {
+    init(automaton: CoBüchiAutomaton, specification: SynthesisSpecification) {
         self.automaton = automaton
         self.specification = specification
     }
@@ -171,7 +173,7 @@ struct StateSymbolicEncoding: BoSyEncoding {
         return result == .sat
     }
     
-    func extractSolution() -> BoSySolution? {
+    func extractSolution() -> TransitionSystem? {
         return nil
     }
 }

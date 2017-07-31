@@ -3,14 +3,14 @@ import CAiger
 /**
  * Solutions that implement this protocol can be represented as AIGER files
  */
-protocol AigerRepresentable {
+public protocol AigerRepresentable {
     var aiger: UnsafeMutablePointer<aiger>? { get }
 }
 
 /**
  * Solutions that implement this protocol can be represented as DOT files
  */
-protocol DotRepresentable {
+public protocol DotRepresentable {
     var dot: String { get }
     var dotTopology: String { get }
 }
@@ -18,15 +18,15 @@ protocol DotRepresentable {
 /**
  * Solutions that implement this protocol can be represented as SMV files
  */
-protocol SmvRepresentable {
+public protocol SmvRepresentable {
     var smv: String { get }
 }
 
 /**
  * Solutions that implement this protocol can be represented as Verilog files
  */
-protocol VerilogRepresentable {
+public protocol VerilogRepresentable {
     var verilog: String { get }
 }
 
-protocol BoSySolution {}
+public protocol TransitionSystem {}

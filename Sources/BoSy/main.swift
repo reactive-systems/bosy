@@ -3,6 +3,8 @@ import Foundation
 
 import Utils
 import Automata
+import Specification
+import TransitionSystem
 
 import CAiger
 
@@ -44,7 +46,7 @@ if let specificationFile = options.specificationFile {
     json = specficationString
 }
 
-guard var specification = BoSySpecification.fromJson(string: json) else {
+guard var specification = SynthesisSpecification.fromJson(string: json) else {
     print("error: cannot parse specification")
     exit(1)
 }
