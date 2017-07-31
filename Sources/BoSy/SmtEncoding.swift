@@ -4,9 +4,7 @@ import CAiger
 struct SmtEncoding: BoSyEncoding {
     
     let automaton: CoBüchiAutomaton
-    let semantics: TransitionSystemType
-    let inputs: [String]
-    let outputs: [String]
+    let specification: BoSySpecification
     
     // intermediate results
     var assignments: BooleanAssignment?
@@ -14,11 +12,9 @@ struct SmtEncoding: BoSyEncoding {
     var solutionBound: Int
     var solver: SmtSolver?
     
-    init(automaton: CoBüchiAutomaton, semantics: TransitionSystemType, inputs: [String], outputs: [String]) {
+    init(automaton: CoBüchiAutomaton, specification: BoSySpecification) {
         self.automaton = automaton
-        self.semantics = semantics
-        self.inputs = inputs
-        self.outputs = outputs
+        self.specification = specification
         
         assignments = nil
         instance = nil
@@ -45,16 +41,16 @@ struct SmtEncoding: BoSyEncoding {
         }
         
         // tau
-        smt.append("(declare-fun tau (S \(inputs.map({ name in "Bool" }).joined(separator: " "))) S)\n")
+        smt.append("(declare-fun tau (S \(specification.inputs.map({ name in "Bool" }).joined(separator: " "))) S)\n")
         
-        switch semantics {
+        switch specification.semantics {
         case .moore:
-            for o in outputs {
+            for o in specification.outputs {
                 smt.append("(declare-fun \(o) (S) Bool)\n")
             }
         case .mealy:
-            for o in outputs {
-                smt.append("(declare-fun \(o) (S \(inputs.map({ name in "Bool" }).joined(separator: " "))) Bool)\n")
+            for o in specification.outputs {
+                smt.append("(declare-fun \(o) (S \(specification.inputs.map({ name in "Bool" }).joined(separator: " "))) Bool)\n")
             }
         }
         for state in automaton.initialStates {
@@ -67,10 +63,10 @@ struct SmtEncoding: BoSyEncoding {
             
             let replacer = ReplacingPropositionVisitor(replace: {
                 proposition in
-                if self.outputs.contains(proposition.name) {
-                    switch self.semantics {
+                if self.specification.outputs.contains(proposition.name) {
+                    switch self.specification.semantics {
                     case .mealy:
-                        let inputProps = [Proposition("s")] + self.inputs.map({Proposition($0)})
+                        let inputProps = [Proposition("s")] + self.specification.inputs.map({Proposition($0)})
                         return FunctionApplication(function: proposition, application: inputProps)
                     case .moore:
                         return FunctionApplication(function: proposition, application: [Proposition("s")])
@@ -82,7 +78,7 @@ struct SmtEncoding: BoSyEncoding {
             
             if let condition = automaton.safetyConditions[q] {
                 let assertion = FunctionApplication(function: lambda(q), application: [Proposition("s")]) --> condition.accept(visitor: replacer)
-                smt.append("(assert (forall ((s S) \(inputs.map({ "(\($0) Bool)" }).joined(separator: " "))) \(assertion.accept(visitor: printer))))\n")
+                smt.append("(assert (forall ((s S) \(specification.inputs.map({ "(\($0) Bool)" }).joined(separator: " "))) \(assertion.accept(visitor: printer))))\n")
             }
             guard let outgoing = automaton.transitions[q] else {
                 continue
@@ -91,7 +87,7 @@ struct SmtEncoding: BoSyEncoding {
             for (qPrime, guardCondition) in outgoing {
                 let transitionCondition = requireTransition(q: q, qPrime: qPrime, rejectingStates: automaton.rejectingStates)
                 let assertion = (FunctionApplication(function: lambda(q), application: [Proposition("s")]) & guardCondition.accept(visitor: replacer)) --> transitionCondition
-                smt.append("(assert (forall ((s S) \(inputs.map({ "(\($0) Bool)" }).joined(separator: " "))) \(assertion.accept(visitor: printer))))\n")
+                smt.append("(assert (forall ((s S) \(specification.inputs.map({ "(\($0) Bool)" }).joined(separator: " "))) \(assertion.accept(visitor: printer))))\n")
             }
         }
         
@@ -102,7 +98,7 @@ struct SmtEncoding: BoSyEncoding {
         let lambdaNext = FunctionApplication(function: lambda(qPrime), application: [
             FunctionApplication(function: Proposition("tau"), application: [
                 Proposition("s")
-                ] + inputs.map(Proposition.init) as [Proposition])
+                ] + specification.inputs.map(Proposition.init) as [Proposition])
             ])
         if automaton.isStateInNonRejectingSCC(q) || automaton.isStateInNonRejectingSCC(qPrime) || !automaton.isInSameSCC(q, qPrime) {
             // no need for comparator constrain
@@ -112,7 +108,7 @@ struct SmtEncoding: BoSyEncoding {
                                                   lhs: FunctionApplication(function: lambdaSharp(qPrime), application: [
                                                     FunctionApplication(function: Proposition("tau"), application: [
                                                         Proposition("s")
-                                                        ] + inputs.map(Proposition.init) as [Proposition])
+                                                        ] + specification.inputs.map(Proposition.init) as [Proposition])
                                                     ]),
                                                   rhs: FunctionApplication(function: lambdaSharp(q), application: [Proposition("s")]))
         }
@@ -162,9 +158,9 @@ struct SmtEncoding: BoSyEncoding {
         let printer = SmtPrinter()
         
         let extractionTimer = options.statistics?.startTimer(phase: .solutionExtraction)
-        let inputPropositions: [Proposition] = inputs.map({ Proposition($0) })
+        let inputPropositions: [Proposition] = specification.inputs.map({ Proposition($0) })
 
-        var solution = ExplicitStateSolution(bound: solutionBound, inputs: inputs, outputs: outputs, semantics: semantics)
+        var solution = ExplicitStateSolution(bound: solutionBound, specification: specification)
         
         // extract solution: transition relation
         for source in 0..<solutionBound {
@@ -186,10 +182,10 @@ struct SmtEncoding: BoSyEncoding {
         }
         
         // extract solution: outputs
-        for output in outputs {
+        for output in specification.outputs {
             for source in 0..<solutionBound {
                 let enabled: Logic
-                switch self.semantics {
+                switch self.specification.semantics {
                 case .mealy:
                     var clauses: [Logic] = []
                     for i in allBooleanAssignments(variables: inputPropositions) {

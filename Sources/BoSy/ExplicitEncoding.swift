@@ -4,19 +4,15 @@ import CAiger
 struct ExplicitEncoding: BoSyEncoding {
     
     let automaton: CoBüchiAutomaton
-    let semantics: TransitionSystemType
-    let inputs: [String]
-    let outputs: [String]
+    let specification: BoSySpecification
     
     // intermediate results
     var assignments: BooleanAssignment?
     var solutionBound: Int
     
-    init(automaton: CoBüchiAutomaton, semantics: TransitionSystemType, inputs: [String], outputs: [String]) {
+    init(automaton: CoBüchiAutomaton, specification: BoSySpecification) {
         self.automaton = automaton
-        self.semantics = semantics
-        self.inputs = inputs
-        self.outputs = outputs
+        self.specification = specification
         
         assignments = nil
         solutionBound = 0
@@ -26,7 +22,7 @@ struct ExplicitEncoding: BoSyEncoding {
         
         let states = 0..<bound
         
-        let inputPropositions: [Proposition] = inputs.map({ Proposition($0) })
+        let inputPropositions: [Proposition] = specification.inputs.map({ Proposition($0) })
 
         // assignment that represents initial state condition
         var initialAssignment: BooleanAssignment = [:]
@@ -48,10 +44,10 @@ struct ExplicitEncoding: BoSyEncoding {
             matrix.append(conjunction.reduce(Literal.True, &))
             
             func getRenamer(i: BooleanAssignment) -> RenamingBooleanVisitor {
-                if semantics == .mealy {
-                    return RenamingBooleanVisitor(rename: { name in self.outputs.contains(name) ? self.output(name, forState: source, andInputs: i) : name })
+                if specification.semantics == .mealy {
+                    return RenamingBooleanVisitor(rename: { name in self.specification.outputs.contains(name) ? self.output(name, forState: source, andInputs: i) : name })
                 } else {
-                    return RenamingBooleanVisitor(rename: { name in self.outputs.contains(name) ? self.output(name, forState: source) : name })
+                    return RenamingBooleanVisitor(rename: { name in self.specification.outputs.contains(name) ? self.output(name, forState: source) : name })
                 }
             }
             
@@ -108,9 +104,9 @@ struct ExplicitEncoding: BoSyEncoding {
             }
         }
         var outputPropositions: [Proposition] = []
-        for o in outputs {
+        for o in specification.outputs {
             for s in 0..<bound {
-                if semantics == .mealy {
+                if specification.semantics == .mealy {
                     for i in allBooleanAssignments(variables: inputPropositions) {
                         outputPropositions.append(Proposition(output(o, forState: s, andInputs: i)))
                     }
@@ -173,10 +169,10 @@ struct ExplicitEncoding: BoSyEncoding {
     
     func output(_ name: String, forState state: Int, andInputs inputs: BooleanAssignment? = nil) -> String {
         guard let inputs = inputs else {
-            assert(semantics == .moore)
+            assert(specification.semantics == .moore)
             return "\(name)_\(state)"
         }
-        assert(semantics == .mealy)
+        assert(specification.semantics == .mealy)
         return "\(name)_\(state)_\(bitStringFromAssignment(inputs))"
     }
 
@@ -212,14 +208,14 @@ struct ExplicitEncoding: BoSyEncoding {
     
     func extractSolution() -> BoSySolution? {
         let extractionTimer = options.statistics?.startTimer(phase: .solutionExtraction)
-        let inputPropositions: [Proposition] = inputs.map({ Proposition($0) })
+        let inputPropositions: [Proposition] = specification.inputs.map({ Proposition($0) })
         
         guard let assignments = assignments else {
             Logger.default().error("hasSolution() must be true before calling this function")
             return nil
         }
         
-        var solution = ExplicitStateSolution(bound: solutionBound, inputs: inputs, outputs: outputs, semantics: semantics)
+        var solution = ExplicitStateSolution(bound: solutionBound, specification: specification)
         for source in 0..<solutionBound {
             for target in 0..<solutionBound {
                 var transitions: [Logic] = []
@@ -235,9 +231,9 @@ struct ExplicitEncoding: BoSyEncoding {
                 }
                 solution.addTransition(from: source, to: target, withGuard: transition)
             }
-            for output in outputs {
+            for output in specification.outputs {
                 let enabled: Logic
-                switch semantics {
+                switch specification.semantics {
                 case .mealy:
                     var clauses: [Logic] = []
                     for i in allBooleanAssignments(variables: inputPropositions) {

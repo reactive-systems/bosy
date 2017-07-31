@@ -10,7 +10,8 @@ extension LTLOperatorPrecedence {
     }
 }
 
-public enum LTLToken: CustomStringConvertible, Equatable {
+public enum LTLToken: CustomStringConvertible, Equatable, Hashable {
+    
     case Proposition(String)
     
     // Literals
@@ -92,6 +93,11 @@ public enum LTLToken: CustomStringConvertible, Equatable {
         default:
             return false
         }
+    }
+    
+    // Hashable
+    public var hashValue: Int {
+        return description.hashValue
     }
     
     

@@ -1,7 +1,7 @@
 import LTL
 
 struct Unrolling {
-    let specification: BoSyInputFileFormat
+    let specification: BoSySpecification
     
     func getEncoding(forBound bound: Int) -> Logic? {
         var ltl: LTL = specification.guarantees.reduce(.Literal(true), { val, element in .BinaryOperator(.And, val, element) })

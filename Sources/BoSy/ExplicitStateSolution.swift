@@ -1,5 +1,6 @@
 import CAiger
 import Utils
+import LTL
 
 /**
  * Implementations with an explicit representation of states while the
@@ -10,19 +11,15 @@ import Utils
 struct ExplicitStateSolution: BoSySolution {
     typealias State = Int
     
-    let semantics: TransitionSystemType
+    let specification: BoSySpecification
+    
     var states: [State]
     var initial: State
     var outputGuards: [State: [String: Logic]]
     var transitions: [State: [State: Logic]]
     
-    let inputs: [String]
-    let outputs: [String]
-    
-    init(bound: Int, inputs: [String], outputs: [String], semantics: TransitionSystemType) {
-        self.inputs = inputs
-        self.outputs = outputs
-        self.semantics = semantics
+    init(bound: Int, specification: BoSySpecification) {
+        self.specification = specification
         states = Array(0..<bound)
         initial = 0
         outputGuards = [:]
@@ -36,7 +33,7 @@ struct ExplicitStateSolution: BoSySolution {
     }
     
     mutating func add(output: String, inState: State, withGuard: Logic) {
-        assert(outputs.contains(output))
+        assert(specification.outputs.contains(output))
         var outputInState = outputGuards[inState] ?? [:]
         outputInState[output] = (outputInState[output] ?? Literal.False) | withGuard
         outputGuards[inState] = outputInState
@@ -46,7 +43,7 @@ struct ExplicitStateSolution: BoSySolution {
 extension ExplicitStateSolution: AigerRepresentable {
     private func _toAiger() -> UnsafeMutablePointer<aiger>? {
         let latches = (0..<numBitsNeeded(states.count)).map({ bit in Proposition("s\(bit)") })
-        let aigerVisitor = AigerVisitor(inputs: inputs.map(Proposition.init), latches: latches)
+        let aigerVisitor = AigerVisitor(inputs: specification.inputs.map(Proposition.init), latches: latches)
         
         // indicates when output must be enabled (formula over state bits and inputs)
         var outputFunction: [String:Logic] = [:]
@@ -59,7 +56,7 @@ extension ExplicitStateSolution: AigerRepresentable {
             }
         }
         // Check that all outputs are defined
-        for output in outputs {
+        for output in specification.outputs {
             assert(outputFunction[output] != nil)
         }
         for (output, condition) in outputFunction {
@@ -117,7 +114,7 @@ extension ExplicitStateSolution: DotRepresentable {
      * This function combines them such that we can print edges containing both.
      */
     private func matchOutputsAndTransitions() -> [State: [State: [(transitionGuard: Logic, outputs: [String])]]] {
-        precondition(semantics == .mealy)
+        precondition(specification.semantics == .mealy)
         var outputTransitions: [State: [State: [(transitionGuard: Logic, outputs: [String])]]] = [:]
         
         for (source, outputs) in outputGuards {
@@ -156,7 +153,7 @@ extension ExplicitStateSolution: DotRepresentable {
         // initial state
         dot += ["\t_init [style=\"invis\"];", "\t_init -> s\(initial)[label=\"\"];"]
         
-        switch semantics {
+        switch specification.semantics {
         case .mealy:
             for state in states {
                 dot.append("\ts\(state)[shape=rectangle,label=\"s\(state)\"];")
@@ -235,7 +232,7 @@ extension ExplicitStateSolution: SmvRepresentable {
         // variable: states and inputs
         smv.append("\tVAR")
         smv.append("\t\tstate: {\(states.map({ "s\($0)" }).joined(separator: ", "))};")
-        for input in inputs {
+        for input in specification.inputs {
             smv.append("\t\t\(input) : boolean;")
         }
         
@@ -255,7 +252,7 @@ extension ExplicitStateSolution: SmvRepresentable {
         
         // outputs
         smv.append("\tDEFINE")
-        for output in outputs {
+        for output in specification.outputs {
             var smvGuard: [String] = []
             for (source, outputDefinitions) in outputGuards {
                 guard let outputGuard = outputDefinitions[output] else {
@@ -272,6 +269,16 @@ extension ExplicitStateSolution: SmvRepresentable {
             smv.append("\t\t\(output) := (\(smvGuard.joined(separator: " | ")));")
         }
         
+        // LTL specification for model checking
+        let ltlspec = LTL.BinaryOperator(.Implies,
+                                         specification.assumptions.reduce(LTL.Literal(true), { res, ltl in .BinaryOperator(.And, res, ltl) }),
+                                         specification.guarantees.reduce(LTL.Literal(true), { res, ltl in .BinaryOperator(.And, res, ltl) })).normalized
+        guard let smvLtlSpec = ltlspec.smv else {
+            Logger.default().warning("could not transform LTL specification to SMV format, omit `LTLSPEC` in SMV")
+            return smv.joined(separator: "\n")
+        }
+        smv.append("\tLTLSPEC \(smvLtlSpec)")
+        
         
         return smv.joined(separator: "\n")
     }
@@ -283,10 +290,10 @@ extension ExplicitStateSolution: SmvRepresentable {
 
 extension ExplicitStateSolution: VerilogRepresentable {
     private func _toVerilog() -> String {
-        let signature: [String] = inputs + outputs
+        let signature: [String] = specification.inputs + specification.outputs
         var verilog: [String] = ["module fsm(\(signature.joined(separator: ", ")));"]
-        verilog += inputs.map({ "  input \($0);" })
-        verilog += outputs.map({ "  output \($0);" })
+        verilog += specification.inputs.map({ "  input \($0);" })
+        verilog += specification.outputs.map({ "  output \($0);" })
         
         // state definitions
         let numBits = numBitsNeeded(states.count)
@@ -296,7 +303,7 @@ extension ExplicitStateSolution: VerilogRepresentable {
         let verilogPrinter = VerilogPrinter()
         
         // output definitions
-        for output in outputs {
+        for output in specification.outputs {
             var verilogGuard: [String] = []
             for (source, outputDefinitions) in outputGuards {
                 guard let outputGuard = outputDefinitions[output] else {

@@ -4,15 +4,11 @@ import CAiger
 struct StateSymbolicEncoding: BoSyEncoding {
     
     let automaton: CoBüchiAutomaton
-    let semantics: TransitionSystemType
-    let inputs: [String]
-    let outputs: [String]
+    let specification: BoSySpecification
     
-    init(automaton: CoBüchiAutomaton, semantics: TransitionSystemType, inputs: [String], outputs: [String]) {
+    init(automaton: CoBüchiAutomaton, specification: BoSySpecification) {
         self.automaton = automaton
-        self.semantics = semantics
-        self.inputs = inputs
-        self.outputs = outputs
+        self.specification = specification
     }
     
     func getEncoding(forBound bound: Int) -> Logic? {
@@ -25,8 +21,8 @@ struct StateSymbolicEncoding: BoSyEncoding {
         let statePropositions: [Proposition] = (0..<numBitsNeeded(states.count)).map({ bit in Proposition("s\(bit)") })
         let nextStatePropositions: [Proposition] = (0..<numBitsNeeded(states.count)).map({ bit in Proposition("sp\(bit)") })
         let tauPropositions: [Proposition] = (0..<numBitsNeeded(states.count)).map({ bit in tau(bit: bit) })
-        let inputPropositions: [Proposition] = self.inputs.map(Proposition.init)
-        let outputPropositions: [Proposition] = self.outputs.map(Proposition.init)
+        let inputPropositions: [Proposition] = self.specification.inputs.map(Proposition.init)
+        let outputPropositions: [Proposition] = self.specification.outputs.map(Proposition.init)
         let tauApplications: [FunctionApplication] = tauPropositions.map({ FunctionApplication(function: $0, application: statePropositions + inputPropositions) })
         
         let numBits = numBitsNeeded(bound)
@@ -47,8 +43,8 @@ struct StateSymbolicEncoding: BoSyEncoding {
             
             let replacer = ReplacingPropositionVisitor(replace: {
                 proposition in
-                if self.outputs.contains(proposition.name) {
-                    let dependencies = self.semantics == .mealy ? statePropositions + inputPropositions : statePropositions
+                if self.specification.outputs.contains(proposition.name) {
+                    let dependencies = self.specification.semantics == .mealy ? statePropositions + inputPropositions : statePropositions
                     return FunctionApplication(function: proposition, application: dependencies)
                 } else {
                     return nil
@@ -80,8 +76,8 @@ struct StateSymbolicEncoding: BoSyEncoding {
         let lambdaSharpPropositions: [Proposition] = self.automaton.states.map({ lambdaSharpProposition($0) })
         
         let universalQuantified: Logic = Quantifier(.Forall, variables: statePropositions + nextStatePropositions + inputPropositions, scope: formula)
-        let outputQuantification: Logic = Quantifier(.Exists, variables: outputPropositions, scope: universalQuantified, arity: semantics == .mealy ? numBitsNeeded(states.count) + self.inputs.count : numBitsNeeded(states.count))
-        let tauQuantification: Logic = Quantifier(.Exists, variables: tauPropositions, scope: outputQuantification, arity: numBitsNeeded(states.count) + self.inputs.count)
+        let outputQuantification: Logic = Quantifier(.Exists, variables: outputPropositions, scope: universalQuantified, arity: specification.semantics == .mealy ? numBitsNeeded(states.count) + self.specification.inputs.count : numBitsNeeded(states.count))
+        let tauQuantification: Logic = Quantifier(.Exists, variables: tauPropositions, scope: outputQuantification, arity: numBitsNeeded(states.count) + self.specification.inputs.count)
         let lambdaQuantification: Logic = Quantifier(.Exists, variables: lambdaPropositions + lambdaSharpPropositions, scope: tauQuantification, arity: numBitsNeeded(states.count))
         
         let boundednessCheck = BoundednessVisitor()

@@ -8,7 +8,7 @@ enum TransitionSystemType: String {
     case mealy = "mealy"
     case moore = "moore"
     
-    func swap() -> TransitionSystemType {
+    var swapped: TransitionSystemType {
         switch self {
             case .mealy: return .moore
             case .moore: return .mealy
@@ -26,14 +26,23 @@ protocol InputFileFormat {
     var guarantees: [LTL] { get }
 }
 
-struct BoSyInputFileFormat: InputFileFormat {
+struct BoSySpecification: InputFileFormat {
     var semantics: TransitionSystemType
     let inputs: [String]
     let outputs: [String]
     let assumptions: [LTL]
     let guarantees: [LTL]
     
-    static func fromJson(string: String) -> BoSyInputFileFormat? {
+    var dualized: BoSySpecification {
+        let dualizedLTL = LTL.UnaryOperator(.Not,
+                                            LTL.BinaryOperator(.Implies,
+                                                               assumptions.reduce(LTL.Literal(true), { res, ltl in .BinaryOperator(.And, res, ltl) }),
+                                                               guarantees.reduce(LTL.Literal(true), { res, ltl in .BinaryOperator(.And, res, ltl) }))
+        )
+        return BoSySpecification(semantics: semantics.swapped, inputs: outputs, outputs: inputs, assumptions: [], guarantees: [dualizedLTL])
+    }
+    
+    static func fromJson(string: String) -> BoSySpecification? {
         Logger.default().debug("parse JSON input file")
         guard let data = string.data(using: .utf8) else {
             Logger.default().error("could not decode JSON")
@@ -103,7 +112,7 @@ struct BoSyInputFileFormat: InputFileFormat {
             return nil
         }
         Logger.default().debug("parsing JSON succeeded")
-        return BoSyInputFileFormat(semantics: semantics, inputs: inputs, outputs: outputs, assumptions: parsedAssumptions, guarantees: parsedGuarantees)
+        return BoSySpecification(semantics: semantics, inputs: inputs, outputs: outputs, assumptions: parsedAssumptions, guarantees: parsedGuarantees)
     }
 }
 

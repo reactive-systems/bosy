@@ -33,7 +33,7 @@ if let specificationFile = options.specificationFile {
     
     Logger.default().debug("reading from stdin")
     
-    var input = StreamHelper.readAllAvailableData(from: standardInput)
+    let input = StreamHelper.readAllAvailableData(from: standardInput)
     
     guard let specficationString = String(data: input, encoding: String.Encoding.utf8) else {
         print("error: cannot read input from stdin")
@@ -42,7 +42,7 @@ if let specificationFile = options.specificationFile {
     json = specficationString
 }
 
-guard var specification = BoSyInputFileFormat.fromJson(string: json) else {
+guard var specification = BoSySpecification.fromJson(string: json) else {
     print("error: cannot parse specification")
     exit(1)
 }

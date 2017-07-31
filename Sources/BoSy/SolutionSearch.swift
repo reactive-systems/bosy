@@ -84,45 +84,31 @@ enum Backends: String {
 }
 
 struct SolutionSearch {
-    let specification: InputFileFormat
+    var specification: BoSySpecification
     let automaton: CoBüchiAutomaton
     let searchStrategy: SearchStrategy
     let player: Player
     var bound: Int
     var encoding: BoSyEncoding
-    let inputs: [String]
-    let outputs: [String]
     
-    init(specification: InputFileFormat, automaton: CoBüchiAutomaton, searchStrategy: SearchStrategy = .exponential, player: Player = .system, backend: Backends = .inputSymbolic, initialBound bound: Int = 1, synthesize: Bool = true) {
-        self.specification = specification
+    init(specification spec: BoSySpecification, automaton: CoBüchiAutomaton, searchStrategy: SearchStrategy = .exponential, player: Player = .system, backend: Backends = .inputSymbolic, initialBound bound: Int = 1, synthesize: Bool = true) {
+        self.specification = player == .system ? spec : spec.dualized
         self.automaton = automaton
         self.searchStrategy = searchStrategy
         self.player = player
         self.bound = bound
         
-        let semantics: TransitionSystemType
-        switch player {
-        case .system:
-            semantics = specification.semantics
-            inputs = specification.inputs
-            outputs = specification.outputs
-        case .environment:
-            semantics = specification.semantics.swap()
-            inputs = specification.outputs
-            outputs = specification.inputs
-        }
-        
         switch backend {
         case .explicit:
-            encoding = ExplicitEncoding(automaton: automaton, semantics: semantics, inputs: inputs, outputs: outputs)
+            encoding = ExplicitEncoding(automaton: automaton, specification: specification)
         case .inputSymbolic:
-            encoding = InputSymbolicEncoding(automaton: automaton, semantics: semantics, inputs: inputs, outputs: outputs, synthesize: synthesize)
+            encoding = InputSymbolicEncoding(automaton: automaton, specification: specification, synthesize: synthesize)
         case .stateSymbolic:
-            encoding = StateSymbolicEncoding(automaton: automaton, semantics: semantics, inputs: inputs, outputs: outputs)
+            encoding = StateSymbolicEncoding(automaton: automaton, specification: specification)
         case .symbolic:
-            encoding = SymbolicEncoding(automaton: automaton, semantics: semantics, inputs: inputs, outputs: outputs)
+            encoding = SymbolicEncoding(automaton: automaton, specification: specification)
         case .smt:
-            encoding = SmtEncoding(automaton: automaton, semantics: semantics, inputs: inputs, outputs: outputs)
+            encoding = SmtEncoding(automaton: automaton, specification: specification)
         }
     }
     

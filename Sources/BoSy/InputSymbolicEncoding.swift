@@ -4,9 +4,7 @@ import CAiger
 struct InputSymbolicEncoding: BoSyEncoding {
     
     let automaton: CoBüchiAutomaton
-    let semantics: TransitionSystemType
-    let inputs: [String]
-    let outputs: [String]
+    let specification: BoSySpecification
     let synthesize: Bool
     
     // intermediate results
@@ -14,11 +12,9 @@ struct InputSymbolicEncoding: BoSyEncoding {
     var instance: Logic?
     var solutionBound: Int
     
-    init(automaton: CoBüchiAutomaton, semantics: TransitionSystemType, inputs: [String], outputs: [String], synthesize: Bool) {
+    init(automaton: CoBüchiAutomaton, specification: BoSySpecification, synthesize: Bool) {
         self.automaton = automaton
-        self.semantics = semantics
-        self.inputs = inputs
-        self.outputs = outputs
+        self.specification = specification
         self.synthesize = synthesize
         
         assignments = nil
@@ -44,7 +40,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
                                .reduce(Literal.False, |)
             matrix.append(exists)
             
-            let renamer = RenamingBooleanVisitor(rename: { name in self.outputs.contains(name) ? self.output(name, forState: source) : name })
+            let renamer = RenamingBooleanVisitor(rename: { name in self.specification.outputs.contains(name) ? self.output(name, forState: source) : name })
             
             for q in automaton.states {
                 var conjunct: [Logic] = []
@@ -89,17 +85,17 @@ struct InputSymbolicEncoding: BoSyEncoding {
             taus += (0..<bound).map({ sPrime in tau(s, sPrime) })
         }
         var outputPropositions: [Proposition] = []
-        for o in outputs {
+        for o in specification.outputs {
             for s in 0..<bound {
                 outputPropositions.append(Proposition(output(o, forState: s)))
             }
         }
-        let inputPropositions: [Proposition] = inputs.map({ input in Proposition(input) })
+        let inputPropositions: [Proposition] = specification.inputs.map({ input in Proposition(input) })
         
         let innerExistentials: [Proposition]
         let outerExistentials: [Proposition]
         
-        switch semantics {
+        switch specification.semantics {
         case .mealy:
             innerExistentials = taus + outputPropositions
             outerExistentials = lambdas + lambdaSharps
@@ -285,7 +281,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
             functions[proposition] = literal
         }
         
-        var solution = ExplicitStateSolution(bound: solutionBound, inputs: inputs, outputs: outputs, semantics: semantics)
+        var solution = ExplicitStateSolution(bound: solutionBound, specification: specification)
         for source in 0..<solutionBound {
             for target in 0..<solutionBound {
                 let transition = functions[tau(source, target)]!
@@ -294,7 +290,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
                 }
                 solution.addTransition(from: source, to: target, withGuard: transition)
             }
-            for output in outputs {
+            for output in specification.outputs {
                 let proposition = Proposition(self.output(output, forState: source))
                 let enabled = functions[proposition]!
                 solution.add(output: output, inState: source, withGuard: enabled)
