@@ -157,20 +157,18 @@ class UCWGame: SafetyGame {
 
 class SafetyGameReduction: BoSyEncoding {
     
+    let options: BoSyOptions
     let automaton: CoBüchiAutomaton
-    let semantics: TransitionSystemType
-    let inputs: [String]
-    let outputs: [String]
+    let specification: SynthesisSpecification
     
     var safetyGame: UCWGame? = nil
     var solver: SafetyGameSolver? = nil
     var winningRegion: CUDDNode? = nil
     
-    init(automaton: CoBüchiAutomaton, semantics: TransitionSystemType, inputs: [String], outputs: [String]) {
+    init(options: BoSyOptions, automaton: CoBüchiAutomaton, specification: SynthesisSpecification) {
+        self.options = options
         self.automaton = automaton
-        self.semantics = semantics
-        self.inputs = inputs
-        self.outputs = outputs
+        self.specification = specification
     }
     
     func solve(forBound bound: Int) throws -> Bool {
@@ -179,9 +177,9 @@ class SafetyGameReduction: BoSyEncoding {
         let manager = CUDDManager()
         manager.AutodynEnable(reorderingAlgorithm: .GroupSift)
         
-        let safetyGame = UCWGame(manager: manager, automaton: automaton, inputs: inputs, outputs: outputs, bound: bound)
+        let safetyGame = UCWGame(manager: manager, automaton: automaton, inputs: specification.inputs, outputs: specification.outputs, bound: bound)
         
-        let solver = SafetyGameSolver(instance: safetyGame, mealy: semantics == .mealy)
+        let solver = SafetyGameSolver(instance: safetyGame, mealy: specification.semantics == .mealy)
         if let winningRegion = solver.solve() {
             self.solver = solver
             self.winningRegion = winningRegion
@@ -203,60 +201,13 @@ class SafetyGameReduction: BoSyEncoding {
             fatalError()
         }
         let strategies = solver.getStrategiesFrom(winningRegion: winningRegion)
-        assert(strategies.count == outputs.count)
+        assert(strategies.count == specification.outputs.count)
         
         
-        let solution = game.getImplementation(strategies: strategies, semantics: semantics)
+        let solution = game.getImplementation(strategies: strategies, semantics: specification.semantics)
         
         return solution
     }
     
 }
 
-class CUDDVisitor: ReturnConstantVisitor<CUDDNode> {
-    
-    let manager: CUDDManager
-    
-    // lookup propositions
-    let lookupTable: [String:CUDDNode]
-    
-    init(manager: CUDDManager, lookupTable: [String:CUDDNode]) {
-        self.manager = manager
-        self.lookupTable = lookupTable
-        super.init(constant: manager.zero())
-    }
-    
-    override func visit(literal: Literal) -> CUDDNode {
-        if literal == .False {
-            return manager.zero()
-        } else {
-            return manager.one()
-        }
-    }
-    
-    override func visit(proposition: Proposition) -> CUDDNode {
-        guard let node = lookupTable[proposition.name] else {
-            fatalError()
-        }
-        return node
-    }
-    
-    override func visit(unaryOperator: UnaryOperator) -> CUDDNode {
-        assert(unaryOperator.type == .Negation)
-        return !unaryOperator.operand.accept(visitor: self)
-    }
-    
-    override func visit(binaryOperator: BinaryOperator) -> CUDDNode {
-        let application = binaryOperator.operands.map({ $0.accept(visitor: self) })
-        switch binaryOperator.type {
-        case .And:
-            return application.reduce(manager.one(), &)
-        case .Or:
-            return application.reduce(manager.zero(), |)
-        case .Xnor:
-            return application[0] <-> application[1]
-        case .Xor:
-            return application[0] ^ application[1]
-        }
-    }
-}

@@ -1,6 +1,7 @@
 import Utils
 import CAiger
 import CAigerHelper
+import CUDD
 
 public class RemoveComparableVisitor: TransformingVisitor {
     
@@ -649,3 +650,50 @@ public class TPTP3Visitor: TransformingVisitor, CustomStringConvertible {
     }
 }
 
+public class CUDDVisitor: ReturnConstantVisitor<CUDDNode> {
+    
+    let manager: CUDDManager
+    
+    // lookup propositions
+    let lookupTable: [String:CUDDNode]
+    
+    public init(manager: CUDDManager, lookupTable: [String:CUDDNode]) {
+        self.manager = manager
+        self.lookupTable = lookupTable
+        super.init(constant: manager.zero())
+    }
+    
+    public override func visit(literal: Literal) -> CUDDNode {
+        if literal == .False {
+            return manager.zero()
+        } else {
+            return manager.one()
+        }
+    }
+    
+    public override func visit(proposition: Proposition) -> CUDDNode {
+        guard let node = lookupTable[proposition.name] else {
+            fatalError()
+        }
+        return node
+    }
+    
+    public override func visit(unaryOperator: UnaryOperator) -> CUDDNode {
+        assert(unaryOperator.type == .Negation)
+        return !unaryOperator.operand.accept(visitor: self)
+    }
+    
+    public override func visit(binaryOperator: BinaryOperator) -> CUDDNode {
+        let application = binaryOperator.operands.map({ $0.accept(visitor: self) })
+        switch binaryOperator.type {
+        case .And:
+            return application.reduce(manager.one(), &)
+        case .Or:
+            return application.reduce(manager.zero(), |)
+        case .Xnor:
+            return application[0] <-> application[1]
+        case .Xor:
+            return application[0] ^ application[1]
+        }
+    }
+}

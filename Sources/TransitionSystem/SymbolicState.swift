@@ -2,13 +2,15 @@ import CUDD
 import CAiger
 import SafetyGameSolver
 
+import Specification
+
 /**
  * Symbolic representation of transition systems.
  * The boolean functions are represented by BDDs using the CUDD library.
  *
  * Can encode both, mealy and moore, transition systems.
  */
-class SymbolicStateSolution: BoSySolution {
+public class SymbolicStateSolution: TransitionSystem {
     let manager: CUDDManager
     
     let inputs: [String]
@@ -20,7 +22,7 @@ class SymbolicStateSolution: BoSySolution {
     let outputFunctions: [CUDDNode]
     let latchFunctions: [CUDDNode]
     
-    init(manager: CUDDManager, inputs: [String], outputs: [String], semantics: TransitionSystemType, latches: [CUDDNode], inputNodes: [CUDDNode], outputFunctions: [CUDDNode], latchFunctions: [CUDDNode]) {
+    public init(manager: CUDDManager, inputs: [String], outputs: [String], semantics: TransitionSystemType, latches: [CUDDNode], inputNodes: [CUDDNode], outputFunctions: [CUDDNode], latchFunctions: [CUDDNode]) {
         self.manager = manager
         
         self.inputs = inputs
@@ -58,7 +60,7 @@ extension SymbolicStateSolution: AigerRepresentable {
         return encoder.aiger
     }
     
-    var aiger: UnsafeMutablePointer<aiger>? {
+    public var aiger: UnsafeMutablePointer<aiger>? {
         return _toAiger()
     }
     

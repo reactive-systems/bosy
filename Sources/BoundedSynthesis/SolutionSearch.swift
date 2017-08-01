@@ -119,7 +119,7 @@ public struct SolutionSearch {
         case .smt:
             encoding = SmtEncoding(options: options, automaton: automaton, specification: specification)
         case .gameSolving:
-            encoding = SafetyGameReduction(automaton: automaton, semantics: semantics, inputs: inputs, outputs: outputs)
+            encoding = SafetyGameReduction(options: options, automaton: automaton, specification: specification)
         }
     }
     
