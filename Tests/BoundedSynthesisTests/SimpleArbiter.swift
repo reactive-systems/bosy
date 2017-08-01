@@ -138,9 +138,7 @@ class SimpleArbiterTest: XCTestCase {
             XCTFail()
             fatalError()
         }
-        let ltlSpec = LTL.UnaryOperator(.Not, LTL.BinaryOperator(.Implies,
-                                         specification.assumptions.reduce(LTL.Literal(true), { res, ltl in .BinaryOperator(.And, res, ltl) }),
-                                         specification.guarantees.reduce(LTL.Literal(true), { res, ltl in .BinaryOperator(.And, res, ltl) })))
+        let ltlSpec = LTL.UnaryOperator(.Not, specification.ltl)
         guard let automaton = options.converter.convert(ltl: ltlSpec.description) else {
             XCTFail()
             fatalError()
@@ -157,9 +155,7 @@ class SimpleArbiterTest: XCTestCase {
             XCTFail()
             fatalError()
         }
-        let ltlSpec = LTL.UnaryOperator(.Not, LTL.BinaryOperator(.Implies,
-                                                                 specification.assumptions.reduce(LTL.Literal(true), { res, ltl in .BinaryOperator(.And, res, ltl) }),
-                                                                 specification.guarantees.reduce(LTL.Literal(true), { res, ltl in .BinaryOperator(.And, res, ltl) })))
+        let ltlSpec = LTL.UnaryOperator(.Not, specification.ltl)
         guard let automaton = options.converter.convert(ltl: ltlSpec.description) else {
             XCTFail()
             fatalError()
@@ -176,9 +172,7 @@ class SimpleArbiterTest: XCTestCase {
             XCTFail()
             fatalError()
         }
-        let ltlSpec = LTL.UnaryOperator(.Not, LTL.BinaryOperator(.Implies,
-                                                                 specification.assumptions.reduce(LTL.Literal(true), { res, ltl in .BinaryOperator(.And, res, ltl) }),
-                                                                 specification.guarantees.reduce(LTL.Literal(true), { res, ltl in .BinaryOperator(.And, res, ltl) })))
+        let ltlSpec = LTL.UnaryOperator(.Not, specification.ltl)
         guard let automaton = options.converter.convert(ltl: ltlSpec.description) else {
             XCTFail()
             fatalError()
@@ -189,6 +183,20 @@ class SimpleArbiterTest: XCTestCase {
         XCTAssertTrue(try encoding.solve(forBound: 4))
     }
     
+    func testRealizabilityGameSolver() {
+        guard let specification = SynthesisSpecification.fromJson(string: jsonSpec) else {
+            XCTFail()
+            fatalError()
+        }
+        let ltlSpec = LTL.UnaryOperator(.Not, specification.ltl)
+        guard let automaton = options.converter.convert(ltl: ltlSpec.description) else {
+            XCTFail()
+            fatalError()
+        }
+        let encoding = SafetyGameReduction(options: options, automaton: automaton, specification: specification)
+        XCTAssertTrue(try encoding.solve(forBound: 1))
+    }
+    
     func testSynthesisInputSymbolic() {
         options.solver = .rareqs
         options.qbfPreprocessor = .bloqqer
@@ -197,9 +205,7 @@ class SimpleArbiterTest: XCTestCase {
             XCTFail()
             fatalError()
         }
-        let ltlSpec = LTL.UnaryOperator(.Not, LTL.BinaryOperator(.Implies,
-                                                                 specification.assumptions.reduce(LTL.Literal(true), { res, ltl in .BinaryOperator(.And, res, ltl) }),
-                                                                 specification.guarantees.reduce(LTL.Literal(true), { res, ltl in .BinaryOperator(.And, res, ltl) })))
+        let ltlSpec = LTL.UnaryOperator(.Not, specification.ltl)
         guard let automaton = options.converter.convert(ltl: ltlSpec.description) else {
             XCTFail()
             fatalError()
@@ -242,9 +248,7 @@ class SimpleArbiterTest: XCTestCase {
             XCTFail()
             fatalError()
         }
-        let ltlSpec = LTL.UnaryOperator(.Not, LTL.BinaryOperator(.Implies,
-                                                                 specification.assumptions.reduce(LTL.Literal(true), { res, ltl in .BinaryOperator(.And, res, ltl) }),
-                                                                 specification.guarantees.reduce(LTL.Literal(true), { res, ltl in .BinaryOperator(.And, res, ltl) })))
+        let ltlSpec = LTL.UnaryOperator(.Not, specification.ltl)
         guard let automaton = options.converter.convert(ltl: ltlSpec.description) else {
             XCTFail()
             fatalError()
@@ -287,9 +291,7 @@ class SimpleArbiterTest: XCTestCase {
             XCTFail()
             fatalError()
         }
-        let ltlSpec = LTL.UnaryOperator(.Not, LTL.BinaryOperator(.Implies,
-                                                                 specification.assumptions.reduce(LTL.Literal(true), { res, ltl in .BinaryOperator(.And, res, ltl) }),
-                                                                 specification.guarantees.reduce(LTL.Literal(true), { res, ltl in .BinaryOperator(.And, res, ltl) })))
+        let ltlSpec = LTL.UnaryOperator(.Not, specification.ltl)
         guard let automaton = options.converter.convert(ltl: ltlSpec.description) else {
             XCTFail()
             fatalError()
@@ -326,14 +328,40 @@ class SimpleArbiterTest: XCTestCase {
         XCTAssertTrue(try modelCheckAiger(specification: specification, implementation: aigerRepresentation))
     }
     
+    func testSynthesisGameSolver() {
+        guard let specification = SynthesisSpecification.fromJson(string: jsonSpec) else {
+            XCTFail()
+            fatalError()
+        }
+        let ltlSpec = LTL.UnaryOperator(.Not, specification.ltl)
+        guard let automaton = options.converter.convert(ltl: ltlSpec.description) else {
+            XCTFail()
+            fatalError()
+        }
+        let encoding = SafetyGameReduction(options: options, automaton: automaton, specification: specification)
+        XCTAssertTrue(try encoding.solve(forBound: 1))
+        guard let transitionSystem = encoding.extractSolution() else {
+            XCTFail()
+            fatalError()
+        }
+        // Check AIGER implementation
+        guard let aigerRepresentation = (transitionSystem as? AigerRepresentable)?.aiger else {
+            XCTFail()
+            fatalError()
+        }
+        XCTAssertTrue(try modelCheckAiger(specification: specification, implementation: aigerRepresentation), "model checkig AIGER implementation failed")
+    }
+    
     static var allTests : [(String, (SimpleArbiterTest) -> () throws -> Void)] {
         return [
             ("testRealizabilityInputSymbolic", testRealizabilityInputSymbolic),
             ("testRealizabilityExplicit", testRealizabilityExplicit),
             ("testRealizabilitySmt", testRealizabilitySmt),
+            ("testRealizabilityGameSolver", testRealizabilityGameSolver),
             ("testSynthesisInputSymbolic", testSynthesisInputSymbolic),
             ("testSynthesisExplicit", testSynthesisExplicit),
             ("testSynthesisSmt", testSynthesisSmt),
+            ("testSynthesisGameSolver", testSynthesisGameSolver),
         ]
     }
 }

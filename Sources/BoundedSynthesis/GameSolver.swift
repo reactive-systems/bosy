@@ -107,6 +107,7 @@ class UCWGame: SafetyGame {
                 }
                 let nextStateIndex = getStateIndex(state: next)
                 if next.counter > k {
+                    assert(next.counter == k + 1)
                     // rejecting counter overflow => safety condition violation
                     safetyCondition &= !(encoded & transitionGuard.accept(visitor: cuddEncoder))
                     //print("\(state) --(\(transitionGuard))--> bad")
@@ -125,7 +126,7 @@ class UCWGame: SafetyGame {
         
         assert(compose.count == controllables.count + uncontrollables.count + latches.count)
         
-        for initialState in automaton.initialStates {
+        /*for initialState in automaton.initialStates {
             let state = SafetyState(state: initialState, counter: 0)
             let index = getStateIndex(state: state)
             let latch = latches[index]
@@ -136,7 +137,34 @@ class UCWGame: SafetyGame {
                 }
             }
             initial &= ([latch] + others).reduce(manager.one(), &)
+        }*/
+        
+        initial = latches.reduce(manager.one(), { x, y in x & !y })
+         
+        for initialState in automaton.initialStates {
+            guard let outgoing = automaton.transitions[initialState] else {
+                fatalError()
+            }
+            for (target, transitionGuard) in outgoing {
+                let next: SafetyState
+                if automaton.isStateInNonRejectingSCC(initialState) || automaton.isStateInNonRejectingSCC(target) || !automaton.isInSameSCC(initialState, target) {
+                    // can reset the counter
+                    next = SafetyState(state: target, counter: 0)
+                } else {
+                    next = SafetyState(state: target, counter: automaton.rejectingStates.contains(target) ? 1 : 0)
+                }
+                let nextStateIndex = getStateIndex(state: next)
+                assert(next.counter <= k)
+                compose[offset + nextStateIndex] |= initial & transitionGuard.accept(visitor: cuddEncoder)
+                assert(processed.contains(next))
+                //print("initial --(\(transitionGuard))--> \(next)")
+            }
+            if let stateSafetyCondition = automaton.safetyConditions[initialState] {
+                safetyCondition &= !(initial & !stateSafetyCondition.accept(visitor: cuddEncoder))
+                //print("\(state) --(\(!safetyCondition))--> bad")
+            }
         }
+
     }
     
     /**
@@ -146,7 +174,7 @@ class UCWGame: SafetyGame {
     func getImplementation(strategies: [CUDDNode], semantics: TransitionSystemType) -> SymbolicStateSolution {
         
         // need to get rid of the outputs in the transition functions
-        let composeOutputs = uncontrollables + strategies + latches
+        let composeOutputs = strategies + uncontrollables + latches
         assert(composeOutputs.count == compose.count)
         let latchFunctions: [CUDDNode] = Array(compose.suffix(latches.count)).map({ $0.compose(vector: composeOutputs) })
         
