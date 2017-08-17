@@ -807,84 +807,26 @@ struct Vampire: DqbfSolver {
     }
 }
 
-class Z3: SmtSolver {
+class GenericSmtSolver: SmtSolver {
     
     let task: Process
     let inputPipe: Pipe
     let outputPipe: Pipe
     
-    init() {
-        task = Process()
+    init(lauchPath: String, arguments: [String]) {
         inputPipe = Pipe()
         outputPipe = Pipe()
-    }
-    
-    deinit {
-        if task.isRunning {
-            inputPipe.fileHandleForWriting.write("(exit)\n".data(using: .utf8)!)
-            task.waitUntilExit()
-        }
-    }
-    
-    func solve(formula: String) -> SolverResult? {
-        task.launchPath = "./Tools/z3"
-        task.arguments = ["-in"]
+        
+        task = Process()
+        task.launchPath = lauchPath
+        task.arguments = arguments
         task.standardInput = inputPipe
         task.standardOutput = outputPipe
         #if swift(>=4) || !os(Linux)
-        task.standardError = FileHandle.nullDevice
+            // TODO: remove once Swift 4 is released
+            task.standardError = FileHandle.nullDevice
         #endif
         task.launch()
-        
-        guard let encodedFormula = (formula + "(check-sat)\n").data(using: .utf8) else {
-            return nil
-        }
-        inputPipe.fileHandleForWriting.write(encodedFormula)
-        
-        //inputPipe.fileHandleForWriting.write("(check-sat)\n".data(using: .utf8)!)
-        var result: SolverResult? = nil
-        repeat {
-            let data = outputPipe.fileHandleForReading.availableData
-            guard let output = String(data: data, encoding: .utf8) else {
-                return nil
-            }
-            if output.contains("unsat") {
-                result = .unsat
-                return .unsat
-            } else if output.contains("sat") {
-                result = .sat
-                return .sat
-            }
-        } while (result == nil)
-        return nil
-    }
-    
-    func getValue(expression: String) -> Logic? {
-        guard let encoded = "(get-value (\(expression)))\n".data(using: .utf8) else {
-            return nil
-        }
-        inputPipe.fileHandleForWriting.write(encoded)
-        let data = outputPipe.fileHandleForReading.availableData
-        guard let resultString = String(data: data, encoding: .utf8) else {
-            return nil
-        }
-        guard let result = BooleanUtils.parse(string: resultString.replacingOccurrences(of: "\(expression)", with: "")) else {
-            return nil
-        }
-        return result
-    }
-}
-
-class CVC4: SmtSolver {
-    
-    let task: Process
-    let inputPipe: Pipe
-    let outputPipe: Pipe
-    
-    init() {
-        task = Process()
-        inputPipe = Pipe()
-        outputPipe = Pipe()
     }
     
     deinit {
@@ -895,11 +837,7 @@ class CVC4: SmtSolver {
     }
     
     func solve(formula: String) -> SolverResult? {
-        task.launchPath = "./Tools/cvc4"
-        task.arguments = ["--lang", "smt", "--finite-model-find", "--produce-models"]
-        task.standardInput = inputPipe
-        task.standardOutput = outputPipe
-        task.launch()
+        precondition(task.isRunning)
         
         guard let encodedFormula = (formula + "(check-sat)\n").data(using: .utf8) else {
             return nil
@@ -925,6 +863,8 @@ class CVC4: SmtSolver {
     }
     
     func getValue(expression: String) -> Logic? {
+        precondition(task.isRunning)
+        
         guard let encoded = "(get-value (\(expression)))\n".data(using: .utf8) else {
             return nil
         }
@@ -937,6 +877,19 @@ class CVC4: SmtSolver {
             return nil
         }
         return result
+    }
+    
+}
+
+final class Z3: GenericSmtSolver {
+    init() {
+        super.init(lauchPath: "./Tools/z3", arguments: ["-in"])
+    }
+}
+
+final class CVC4: GenericSmtSolver {
+    init() {
+        super.init(lauchPath: "./Tools/cvc4", arguments: ["--lang", "smt", "--finite-model-find", "--produce-models"])
     }
 }
 
