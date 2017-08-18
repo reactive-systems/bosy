@@ -54,7 +54,7 @@ required-tools: \
 	Tools/quabscm \
 	Tools/rareqs \
 	Tools/syfco \
-	Tools/z3 \
+	Tools/z3
 
 optional-tools: \
 	Tools/aigbmc \

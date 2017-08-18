@@ -136,7 +136,7 @@ public struct CoBüchiAutomaton: Automaton, SafetyAcceptance, CoBüchiAcceptance
     }
     
     
-    public mutating func claculateSCC() {
+    public mutating func calculateSCC() {
         for (i, scc) in trajan(graph: self).enumerated() {
             let isRejecting = !rejectingStates.intersection(scc).isEmpty
             for node in scc {
@@ -313,7 +313,7 @@ func parseSpinNeverClaim(neverClaim: String) -> CoBüchiAutomaton? {
                             safetyConditions: [:],
                             rejectingStates: rejectingStates)
     automaton.simplify()
-    automaton.claculateSCC()
+    automaton.calculateSCC()
     return automaton
 }
 
@@ -460,7 +460,7 @@ private func parse(hoaf: String) -> CoBüchiAutomaton? {
                                       safetyConditions: [:],
                                       rejectingStates: rejectingStates)
     automaton.simplify()
-    automaton.claculateSCC()
+    automaton.calculateSCC()
     return automaton
 }
 
