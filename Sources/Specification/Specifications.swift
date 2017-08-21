@@ -17,6 +17,11 @@ public enum TransitionSystemType: String {
     public static let allValues: [TransitionSystemType] = [.mealy, .moore]
 }
 
+public enum SupportedFileFormats {
+    case bosy
+    case tlsf
+}
+
 public struct SynthesisSpecification {
     public var semantics: TransitionSystemType
     public let inputs: [String]
@@ -106,6 +111,33 @@ public struct SynthesisSpecification {
         }
         Logger.default().debug("parsing JSON succeeded")
         return SynthesisSpecification(semantics: semantics, inputs: inputs, outputs: outputs, assumptions: parsedAssumptions, guarantees: parsedGuarantees)
+    }
+
+    public static func from(tlsf: String) -> SynthesisSpecification? {
+
+        guard let tempFile = TempFile(suffix: "tlsf") else {
+            return nil
+        }
+        guard (try? tlsf.write(to: tempFile.url, atomically: true, encoding: .utf8)) != nil else {
+            return nil
+        }
+
+        let outputPipe = Pipe()
+
+        let syfco = Process()
+        syfco.launchPath = "./Tools/syfco"
+        syfco.arguments = ["--format", "bosy", tempFile.path]
+        syfco.standardOutput = outputPipe
+        syfco.launch()
+
+        let result = StreamHelper.readAllAvailableData(from: outputPipe.fileHandleForReading)
+        syfco.waitUntilExit()
+
+        guard let bosyJson = String(data: result, encoding: .utf8) else {
+            return nil
+        }
+
+        return .fromJson(string: bosyJson)
     }
     
     public var smv: String? {

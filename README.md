@@ -5,10 +5,10 @@ BoSy is a reactive synthesis tool based on constraint-solving.
 
 ## Awards
 
-* First and second place in sequential TLSF synthesis track (SYNTCOMP 2016)
-* Second and third place in sequential TLSF realizability track (SYNTCOMP 2016)
-* First place (quality ranking) in sequential TLSF synthesis track (SYNTCOMP 2017)
-* Third place in sequential TLSF realizability track (SYNTCOMP 2017)
+* First and second place in sequential LTL synthesis track (SYNTCOMP 2016)
+* Second and third place in sequential LTL realizability track (SYNTCOMP 2016)
+* First place (quality ranking) in sequential LTL synthesis track (SYNTCOMP 2017)
+* Third place in sequential LTL realizability track (SYNTCOMP 2017)
 
 ## Online Interface
 
@@ -48,7 +48,7 @@ Every request from a client (signal `r_0`/`r_1`) must be eventually granted (sig
 }
 ```
 
-The command `.build/release/BoSy [--synthesize] arbiter.json` checks the specification for realizability.
+The command `swift run -c release BoSy [--synthesize] arbiter.json` checks the specification for realizability.
 If the option `--synthesize` is given, a solution is extracted after realizability check.
-Check `.build/release/BoSy --help` for more options.
+Check `swift run -c release BoSy --help` for more options.
 
