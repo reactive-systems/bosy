@@ -22,60 +22,29 @@ class UCWGame: SafetyGame {
     var uncontrollableNames: [String]
     var latchNames: [String]
     
-    struct SafetyState: Hashable, CustomStringConvertible {
-        let state: CoBüchiAutomaton.State
-        let counter: Int
-        
-        static func ==(lhs: UCWGame.SafetyState, rhs: UCWGame.SafetyState) -> Bool {
-            return lhs.state == rhs.state && lhs.counter == rhs.counter
-        }
-        
-        var hashValue: Int {
-            return state.hashValue ^ counter.hashValue
-        }
-        
-        var description: String {
-            return "[\(state),\(counter)]"
-        }
-        
-    }
-    
     init(manager: CUDDManager, automaton: CoBüchiAutomaton, inputs: [String], outputs: [String], bound k: Int) {
         self.manager = manager
+
+        let safetyAutomaton = automaton.reduceToSafety(bound: k)
+        let safetyAutomatonStates = safetyAutomaton.states.map({ $0 })
         
         self.controllables = outputs.map({ _ in manager.newVar() });
         self.uncontrollables = inputs.map({ _ in manager.newVar() });
-        self.latches = []
+        self.latches = safetyAutomatonStates.map({ _ in manager.newVar() })
         
-        self.compose = self.controllables + self.uncontrollables
-        self.initial = manager.one()
+        self.compose = self.controllables + self.uncontrollables + (0..<self.latches.count).map({ _ in manager.zero() })
+        self.initial = latches.reduce(manager.one(), { states, state in states & !state })
         self.safetyCondition = manager.one()
+
+        let composeOffset = controllables.count + uncontrollables.count
         
         self.controllableNames = outputs
         self.uncontrollableNames = inputs
-        self.latchNames = []
-        
-        var queue: [SafetyState] = automaton.initialStates.map({ SafetyState(state: $0, counter: 0) })
-        
-        var latchMapping: [SafetyState : Int] = [:]
-        
-        func getStateIndex(state: SafetyState) -> Int {
-            if let index = latchMapping[state] {
-                return index
-            } else {
-                // create new variable if not exists
-                let encoded = manager.newVar()
-                let index = latches.count
-                latchMapping[state] = index
-                latches.append(encoded)
-                compose.append(manager.zero())
-                latchNames.append(state.state)
-                return index
-            }
-        }
-        
-        let offset = controllables.count + uncontrollables.count
-        
+        self.latchNames = safetyAutomatonStates.map({ $0.description })
+
+        assert(compose.count == controllables.count + uncontrollables.count + latches.count)
+
+        // build lookup table for propositions
         var lookupTable: [String:CUDDNode] = [:]
         for (proposition, node) in zip(inputs, uncontrollables) {
             lookupTable[proposition] = node
@@ -84,47 +53,23 @@ class UCWGame: SafetyGame {
             lookupTable[proposition] = node
         }
         let cuddEncoder = CUDDVisitor(manager: manager, lookupTable: lookupTable)
-        
-        var processed = Set<SafetyState>()
-        while let state = queue.popLast() {
-            guard !processed.contains(state) else {
-                // already processed
-                continue
+
+        for (state, encoded) in zip(safetyAutomatonStates, latches) {
+            if let localSafetyCondition = safetyAutomaton.safetyConditions[state] {
+                self.safetyCondition &= !(encoded & !localSafetyCondition.accept(visitor: cuddEncoder))
+                //print("\(state): \(localSafetyCondition)")
             }
-            let index = getStateIndex(state: state)
-            let encoded: CUDDNode = latches[index]
-            
-            guard let outgoing = automaton.transitions[state.state] else {
-                fatalError()
-            }
-            for (target, transitionGuard) in outgoing {
-                let next: SafetyState
-                if automaton.isStateInNonRejectingSCC(state.state) || automaton.isStateInNonRejectingSCC(target) || !automaton.isInSameSCC(state.state, target) {
-                    // can reset the counter
-                    next = SafetyState(state: target, counter: 0)
-                } else {
-                    next = SafetyState(state: target, counter: automaton.rejectingStates.contains(target) ? state.counter + 1 : state.counter)
+
+            if let outgoing = safetyAutomaton.transitions[state] {
+                for (target, transitionGuard) in outgoing {
+                    let index = safetyAutomatonStates.index(of: target)!
+                    compose[composeOffset + index] |= encoded & transitionGuard.accept(visitor: cuddEncoder)
+                    //print("\(state) -\(transitionGuard)-> \(target)")
                 }
-                let nextStateIndex = getStateIndex(state: next)
-                if next.counter > k {
-                    assert(next.counter == k + 1)
-                    // rejecting counter overflow => safety condition violation
-                    safetyCondition &= !(encoded & transitionGuard.accept(visitor: cuddEncoder))
-                    //print("\(state) --(\(transitionGuard))--> bad")
-                } else {
-                    compose[offset + nextStateIndex] |= encoded & transitionGuard.accept(visitor: cuddEncoder)
-                    queue.append(next)
-                    //print("\(state) --(\(transitionGuard))--> \(next)")
-                }
+            } else {
+                assert(safetyAutomaton.safetyConditions[state] != nil)
             }
-            if let stateSafetyCondition = automaton.safetyConditions[state.state] {
-                safetyCondition &= !(encoded & !stateSafetyCondition.accept(visitor: cuddEncoder))
-                //print("\(state) --(\(!safetyCondition))--> bad")
-            }
-            processed.insert(state)
         }
-        
-        assert(compose.count == controllables.count + uncontrollables.count + latches.count)
         
         /*for initialState in automaton.initialStates {
             let state = SafetyState(state: initialState, counter: 0)
@@ -138,30 +83,21 @@ class UCWGame: SafetyGame {
             }
             initial &= ([latch] + others).reduce(manager.one(), &)
         }*/
-        
-        initial = latches.reduce(manager.one(), { x, y in x & !y })
-         
-        for initialState in automaton.initialStates {
-            guard let outgoing = automaton.transitions[initialState] else {
+
+        // simulate fake initial state in safety game
+        for initialState in safetyAutomaton.initialStates {
+            if let localSafetyCondition = safetyAutomaton.safetyConditions[initialState] {
+                self.safetyCondition &= !(initial & !localSafetyCondition.accept(visitor: cuddEncoder))
+                //print("initial: \(localSafetyCondition)")
+            }
+
+            guard let outgoing = safetyAutomaton.transitions[initialState] else {
                 fatalError()
             }
             for (target, transitionGuard) in outgoing {
-                let next: SafetyState
-                if automaton.isStateInNonRejectingSCC(initialState) || automaton.isStateInNonRejectingSCC(target) || !automaton.isInSameSCC(initialState, target) {
-                    // can reset the counter
-                    next = SafetyState(state: target, counter: 0)
-                } else {
-                    next = SafetyState(state: target, counter: automaton.rejectingStates.contains(target) ? 1 : 0)
-                }
-                let nextStateIndex = getStateIndex(state: next)
-                assert(next.counter <= k)
-                compose[offset + nextStateIndex] |= initial & transitionGuard.accept(visitor: cuddEncoder)
-                assert(processed.contains(next))
-                //print("initial --(\(transitionGuard))--> \(next)")
-            }
-            if let stateSafetyCondition = automaton.safetyConditions[initialState] {
-                safetyCondition &= !(initial & !stateSafetyCondition.accept(visitor: cuddEncoder))
-                //print("\(state) --(\(!safetyCondition))--> bad")
+                let index = safetyAutomatonStates.index(of: target)!
+                compose[composeOffset + index] |= initial & transitionGuard.accept(visitor: cuddEncoder)
+                //print("initial -\(transitionGuard)-> \(target)")
             }
         }
 
