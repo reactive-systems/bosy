@@ -36,8 +36,7 @@ public protocol CoBüchiAcceptance {
     var rejectingStates: Set<State> { get set }
 }
 
-extension Automaton where Self: CoBüchiAcceptance, Self: SafetyAcceptance {
-    // FIXME: where Self: CoBüchiAcceptance & SafetyAcceptance is nicer but crashes compiler
+extension Automaton where Self: CoBüchiAcceptance & SafetyAcceptance {
     
     /**
      * Remove rejecting sink states
@@ -75,13 +74,8 @@ extension Automaton where Self: CoBüchiAcceptance, Self: SafetyAcceptance {
                 var condition = safetyConditions[source] ?? Literal.True
                 condition = condition & !guardExpression
                 safetyConditions[source] = condition
-                
-                var newOutgoing: [State : Logic] = [:]
-                for (target, outgoingGuard) in outgoing {
-                    newOutgoing[target] = outgoingGuard | guardExpression
-                    // TODO: check if condition becomes valid
-                }
-                transitions[source] = newOutgoing
+
+                transitions[source] = outgoing
             }
         }
     }
