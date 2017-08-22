@@ -48,7 +48,7 @@ Every request from a client (signal `r_0`/`r_1`) must be eventually granted (sig
 }
 ```
 
-The command `swift run -c release BoSy [--synthesize] arbiter.json` checks the specification for realizability.
+The command `./bosy.sh BoSy [--synthesize] arbiter.json` checks the specification for realizability.
 If the option `--synthesize` is given, a solution is extracted after realizability check.
-Check `swift run -c release BoSy --help` for more options.
+Check `./bosy.sh --help` for more options.
 
