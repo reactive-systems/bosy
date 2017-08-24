@@ -3,6 +3,7 @@ import XCTest
 @testable import LTLTests
 @testable import UtilsTests
 @testable import BoundedSynthesisTests
+@testable import AutomataTests
 
 XCTMain([
      testCase(BooleanTest.allTests),
@@ -10,4 +11,5 @@ XCTMain([
      testCase(GraphTest.allTests),
      testCase(LTLTests.allTests),
      testCase(SimpleArbiterTest.allTests),
+     testCase(AutomatonTest.allTests),
 ])

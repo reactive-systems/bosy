@@ -81,8 +81,26 @@ extension Automaton where Self: CoBüchiAcceptance & SafetyAcceptance {
     }
 }
 
-public struct CoBüchiAutomaton: Automaton, SafetyAcceptance, CoBüchiAcceptance {
+public class SafetyAutomaton<S: Hashable>: Automaton, SafetyAcceptance {
+    public typealias State = S
+
+    public var initialStates: Set<State>
+    public var states: Set<State>
+    public var transitions: [State : [State : Logic]]
+    public var safetyConditions: [State : Logic]
+
+    public init(initialStates: Set<State>, states: Set<State>, transitions: [State : [State : Logic]], safetyConditions: [State : Logic]) {
+        self.initialStates = initialStates
+        self.states = states
+        self.transitions = transitions
+        self.safetyConditions = safetyConditions
+    }
+
+}
+
+public class CoBüchiAutomaton: Automaton, SafetyAcceptance, CoBüchiAcceptance {
     public typealias State = String
+
     public var initialStates: Set<State>
     public var states: Set<State>
     public var transitions: [State : [State : Logic]]
@@ -130,7 +148,7 @@ public struct CoBüchiAutomaton: Automaton, SafetyAcceptance, CoBüchiAcceptance
     }
     
     
-    public mutating func calculateSCC() {
+    public func calculateSCC() {
         for (i, scc) in trajan(graph: self).enumerated() {
             let isRejecting = !rejectingStates.intersection(scc).isEmpty
             for node in scc {
@@ -155,6 +173,79 @@ public struct CoBüchiAutomaton: Automaton, SafetyAcceptance, CoBüchiAcceptance
             return true
         }
         return sccState1 == sccState2
+    }
+
+
+    public struct CounterState: Hashable, CustomStringConvertible {
+        let state: State
+        let counter: Int
+
+        public static func ==(lhs: CounterState, rhs: CounterState) -> Bool {
+            return lhs.state == rhs.state && lhs.counter == rhs.counter
+        }
+
+        public var hashValue: Int {
+            return state.hashValue ^ counter.hashValue
+        }
+
+        public var description: String {
+            return "[\(state),\(counter)]"
+        }
+
+    }
+
+    public func reduceToSafety(bound k: Int) -> SafetyAutomaton<CounterState> {
+
+        var queue: [CounterState] = self.initialStates.map({ CounterState(state: $0, counter: 0) })
+        let initialStates = Set<CounterState>(queue)
+
+        var transitions: [CounterState : [CounterState : Logic]] = [:]
+        var safetyConditions: [CounterState : Logic] = [:]
+
+
+        var processed = Set<CounterState>()
+        while let state = queue.popLast() {
+            guard !processed.contains(state) else {
+                // already processed
+                continue
+            }
+
+            if let localSafetyCondition = self.safetyConditions[state.state] {
+                assert(safetyConditions[state] == nil)
+                safetyConditions[state] = localSafetyCondition
+            }
+
+            guard let outgoing = self.transitions[state.state] else {
+                fatalError()
+            }
+            for (target, transitionGuard) in outgoing {
+                let next: CounterState
+                if self.isStateInNonRejectingSCC(state.state) || self.isStateInNonRejectingSCC(target) || !self.isInSameSCC(state.state, target) {
+                    // can reset the counter
+                    next = CounterState(state: target, counter: 0)
+                } else {
+                    next = CounterState(state: target, counter: self.rejectingStates.contains(target) ? state.counter + 1 : state.counter)
+                }
+                if next.counter > k {
+                    assert(next.counter == k + 1)
+                    // rejecting counter overflow => safety condition violation
+                    var localSafetyCondition = safetyConditions[state] ?? Literal.True
+                    localSafetyCondition = localSafetyCondition & !transitionGuard
+                    safetyConditions[state] = localSafetyCondition
+                } else {
+                    queue.append(next)
+
+                    // add transition in safety automaton
+                    var stateTransition = transitions[state] ?? [:]
+                    assert(stateTransition[next] == nil)
+                    stateTransition[next] = transitionGuard
+                    transitions[state] = stateTransition
+                }
+            }
+            processed.insert(state)
+        }
+
+        return SafetyAutomaton(initialStates: initialStates, states: processed, transitions: transitions, safetyConditions: safetyConditions)
     }
 }
 
