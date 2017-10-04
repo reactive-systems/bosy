@@ -144,7 +144,7 @@ private enum SolverHelper {
             if !line.hasPrefix("v") && !line.hasPrefix("V") {
                 continue
             }
-            assignments += line[line.index(after: line.startIndex)..<line.endIndex]
+            assignments += String(line[line.index(after: line.startIndex)..<line.endIndex])
                 .trimmingCharacters(in: NSCharacterSet.whitespacesAndNewlines)
                 .components(separatedBy: " ")
                 .flatMap({ Int($0) })
