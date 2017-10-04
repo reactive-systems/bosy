@@ -652,7 +652,9 @@ extension UnsafeMutablePointer where Pointee == aiger {
         let task = Process()
         task.launchPath = "./Tools/abc"
         task.arguments = ["-q", abcCommand]
+        #if !os(Linux)
         task.standardOutput = FileHandle.nullDevice
+        #endif
         
         task.launch()
         task.waitUntilExit()
@@ -818,7 +820,9 @@ class GenericSmtSolver: SmtSolver {
         task.arguments = arguments
         task.standardInput = inputPipe
         task.standardOutput = outputPipe
+        #if !os(Linux)
         task.standardError = FileHandle.nullDevice
+        #endif
         task.launch()
     }
     
