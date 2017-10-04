@@ -419,7 +419,7 @@ func parseSpinNeverClaim(neverClaim: String) -> CoBüchiAutomaton? {
         } else if line.hasSuffix(":") {
             // state
             let origName = line[line.startIndex..<line.index(before: line.endIndex)]
-            let name = normalizeStateName(origName)
+            let name = normalizeStateName(String(origName))
             transitions[name] = [:]
             lastState = name
             if origName.hasPrefix("accept_") {

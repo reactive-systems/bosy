@@ -652,11 +652,7 @@ extension UnsafeMutablePointer where Pointee == aiger {
         let task = Process()
         task.launchPath = "./Tools/abc"
         task.arguments = ["-q", abcCommand]
-        #if swift(>=4) || !os(Linux)
-            task.standardOutput = FileHandle.nullDevice
-        #else
-            task.standardOutput = FileHandle.standardError
-        #endif
+        task.standardOutput = FileHandle.nullDevice
         
         task.launch()
         task.waitUntilExit()
@@ -822,10 +818,7 @@ class GenericSmtSolver: SmtSolver {
         task.arguments = arguments
         task.standardInput = inputPipe
         task.standardOutput = outputPipe
-        #if swift(>=4) || !os(Linux)
-            // TODO: remove once Swift 4 is released
-            task.standardError = FileHandle.nullDevice
-        #endif
+        task.standardError = FileHandle.nullDevice
         task.launch()
     }
     
