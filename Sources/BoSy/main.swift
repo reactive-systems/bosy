@@ -76,35 +76,6 @@ if let semantics = options.semantics {
     specification.semantics = semantics
 }
 
-/*if paths {
-    let unrolling = Unrolling(specification: specification)
-    var i = 1
-    while true {
-        guard let instance = unrolling.getEncoding(forBound: i) else {
-            exit(0)
-        }
-        print("Path length = \(i)")
-        
-        let qcirVisitor = QCIRVisitor(formula: instance)
-        guard let (result, certificate) = quabs(qcir: "\(qcirVisitor)") else {
-            throw BoSyEncodingError.SolvingFailed("solver failed on instance")
-        }
-        //try? "\(qcirVisitor)".write(toFile: "/Users/leander/Desktop/bounded-tree-models/arbiter_15_\(i).qcir", atomically: false, encoding: .ascii)
-        
-        
-        /*let qdimacsVisitor = QDIMACSVisitor(formula: instance)
-        guard let (result, assignments) = rareqs(qdimacs: bloqqer(qdimacs: "\(qdimacsVisitor)")) else {
-            throw BoSyEncodingError.SolvingFailed("solver failed on instance")
-        }*/
-        if result == .SAT {
-            print("realizable")
-            exit(0)
-        }
-        
-        i += 1
-    }
-}*/
-
 //Logger.default().info("inputs: \(specification.inputs), outputs: \(specification.outputs)")
 //Logger.default().info("assumptions: \(specification.assumptions), guarantees: \(specification.guarantees)")
 

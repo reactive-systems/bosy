@@ -1,38 +1,103 @@
-public enum LTL: CustomStringConvertible, Equatable {
-    case Proposition(String)
-    case Literal(Bool)
-    indirect case UnaryOperator(LTLToken, LTL)
-    indirect case BinaryOperator(LTLToken, LTL, LTL)
-    
-    // CustomStringConvertible
-    public var description: String {
+
+public struct LTLFunction {
+    let symbol: String
+    let arity: Int
+
+    // boolean
+    public static let tt = LTLFunction(symbol: "⊤", arity: 0)
+    public static let ff = LTLFunction(symbol: "⊥", arity: 0)
+    public static let negation = LTLFunction(symbol: "¬", arity: 1)
+    public static let and = LTLFunction(symbol: "∧", arity: 2)
+    public static let or = LTLFunction(symbol: "∨", arity: 2)
+    public static let implies = LTLFunction(symbol: "->", arity: 2)
+    public static let equivalent = LTLFunction(symbol: "<->", arity: 2)
+
+    // temporal
+    public static let next = LTLFunction(symbol: "X", arity: 1)
+    public static let until = LTLFunction(symbol: "U", arity: 2)
+    public static let weakUntil = LTLFunction(symbol: "W", arity: 2)
+    public static let release = LTLFunction(symbol: "R", arity: 2)
+    public static let finally = LTLFunction(symbol: "F", arity: 1)
+    public static let globally = LTLFunction(symbol: "G", arity: 1)
+
+    var negated: LTLFunction {
         switch self {
-        case .Proposition(let name):
-            return name
-        case .Literal(let val):
-            return val ? "true" : "false"
-        case .UnaryOperator(let op, let operand):
-            return "\(op) \(operand)"
-        case .BinaryOperator(let op, let lhs, let rhs):
-            return "(\(lhs) \(op) \(rhs))"
-        }
-    }
-    
-    // Equatable
-    public static func == (lhs: LTL, rhs: LTL) -> Bool {
-        switch (lhs, rhs) {
-        case (.Proposition(let lhsName), .Proposition(let rhsName)):
-            return lhsName == rhsName
-        case (.Literal(let lhsVal), .Literal(let rhsVal)):
-            return lhsVal == rhsVal
-        case (.UnaryOperator(let lhsOp, let lhsOperand), .UnaryOperator(let rhsOp, let rhsOperand)):
-            return lhsOp == rhsOp && lhsOperand == rhsOperand
-        case (.BinaryOperator(let lhsOp, let lhsLhs, let lhsRhs), .BinaryOperator(let rhsOp, let rhsLhs, let rhsRhs)):
-            return lhsOp == rhsOp && lhsLhs == rhsLhs && lhsRhs == rhsRhs
+        case .tt:
+            return .ff
+        case .ff:
+            return .tt
+        case .or:
+            return .and
+        case .and:
+            return .or
+        case .next:
+            return .next
+        case .until:
+            return .release
+        case .release:
+            return .until
+        case .finally:
+            return .globally
+        case .globally:
+            return .finally
         default:
-            return false
+            fatalError("negation of \(self) is not defined")
         }
     }
+}
+
+public struct LTLAtomicProposition {
+    let name: String
+}
+
+public struct LTLPathVariable {
+    let name: String
+}
+
+public enum LTLQuantifier {
+    case forall
+    case exists
+
+    var negated: LTLQuantifier {
+        switch self {
+        case .exists:
+            return .forall
+        case .forall:
+            return .exists
+        }
+    }
+}
+
+public enum LTL {
+    case atomicProposition(LTLAtomicProposition)
+    case pathProposition(LTLAtomicProposition, LTLPathVariable)
+    indirect case application(LTLFunction, parameters: [LTL])
+    indirect case pathQuantifier(LTLQuantifier, parameters: [LTLPathVariable], body: LTL)
+
+    public static let tt: LTL = .application(.tt, parameters: [])
+    public static let ff: LTL = .application(.ff, parameters: [])
+
+    /**
+     * Checks if the number of parameters matches the arity of function
+     */
+    var isWellFormed: Bool {
+        switch self {
+        case .atomicProposition(_):
+            return true
+        case .pathProposition(_, _):
+            return true
+        case .application(let function, parameters: let parameters):
+            guard parameters.reduce(true, { val, parameter in val && parameter.isWellFormed }) else {
+                return false
+            }
+            return function.arity == parameters.count
+        case .pathQuantifier(_, parameters: _, body: let body):
+            return body.isWellFormed
+        }
+    }
+}
+
+extension LTL {
     
     public static func parse(fromString string: String) throws -> LTL {
         let scanner = ScalarScanner(scalars: string.unicodeScalars)
@@ -40,55 +105,66 @@ public enum LTL: CustomStringConvertible, Equatable {
         var parser = LTLParser(lexer: lexer)
         return try parser.parse()
     }
-    
-    fileprivate func _toNegationNormalForm(negated: Bool) -> LTL {
+
+    private func toNegationNormalForm(negated: Bool) -> LTL {
         switch self {
-        case .Proposition(_):
-            return negated ? .UnaryOperator(.Not, self) : self
-        case .Literal(let val):
-            return negated ? .Literal(!val) : self
-        case .UnaryOperator(.Not, let scope):
-            return scope._toNegationNormalForm(negated: !negated)
-        case .UnaryOperator(let op, let scope):
-            return .UnaryOperator(negated ? op.negated : op, scope._toNegationNormalForm(negated: negated))
-        case .BinaryOperator(let op, let lhs, let rhs):
-            return .BinaryOperator(negated ? op.negated : op, lhs._toNegationNormalForm(negated: negated), rhs._toNegationNormalForm(negated: negated))
-        }
-    }
-    
-    public var nnf: LTL {
-        return self._toNegationNormalForm(negated: false)
-    }
-    
-    fileprivate func _normalize() -> LTL {
-        switch self {
-        case .BinaryOperator(.Implies, let lhs, let rhs):
-            return .BinaryOperator(.Or,
-                                   .UnaryOperator(.Not, lhs._normalize()),
-                                   rhs._normalize())
-        case .BinaryOperator(.Equivalent, let lhs, let rhs):
-            let normalizedLhs = lhs._normalize()
-            let normalizedRhs = rhs._normalize()
-            return .BinaryOperator(.Or,
-                                   .BinaryOperator(.And, normalizedLhs, normalizedRhs),
-                                   .BinaryOperator(.And, .UnaryOperator(.Not, normalizedLhs), .UnaryOperator(.Not, normalizedRhs) )
+        case .atomicProposition(_):
+            return negated ? !self : self
+        case .pathProposition(_, _):
+            return negated ? !self : self
+        case .application(let function, parameters: let parameters):
+            if function == .negation {
+                return parameters[0].toNegationNormalForm(negated: !negated)
+            }
+            return .application(
+                negated ? function.negated : function,
+                parameters: parameters.map({ $0.toNegationNormalForm(negated: negated) })
             )
-        case .UnaryOperator(.Eventually, let scope):
-            return .BinaryOperator(.Until, .Literal(true), scope._normalize())
-        case .UnaryOperator(.Globally, let scope):
-            return .BinaryOperator(.Release, .Literal(false), scope._normalize())
-        case .Proposition(_):
-            return self
-        case .Literal(_):
-            return self
-        case .UnaryOperator(let token, let scope):
-            return .UnaryOperator(token, scope._normalize())
-        case .BinaryOperator(let token, let lhs, let rhs):
-            return .BinaryOperator(token, lhs._normalize(), rhs._normalize())
+        case .pathQuantifier(let quantifier, parameters: let parameters, body: let body):
+            return .pathQuantifier(
+                negated ? quantifier.negated : quantifier,
+                parameters: parameters,
+                body: body.toNegationNormalForm(negated: negated)
+            )
         }
     }
-    
+
+    /**
+     * Returns an equivalent LTL formula in negation normal form.
+     */
+    public var nnf: LTL {
+        return toNegationNormalForm(negated: false)
+    }
+
+    /**
+     * Returns an equivalent LTL formula without derived operators such as
+     * implication, equivalence, finally, and globally
+     */
     public var normalized: LTL {
-        return self._normalize()
+        switch self {
+        case .atomicProposition(_):
+            return self
+        case .pathProposition(_, _):
+            return self
+        case .pathQuantifier(let quantifier, parameters: let parameters, body: let body):
+            return .pathQuantifier(quantifier, parameters: parameters, body: body.normalized)
+        case .application(let function, parameters: var parameters):
+            parameters = parameters.map({ $0.normalized })
+            switch function {
+            case .implies:
+                return !parameters[0] || parameters[1]
+            case .equivalent:
+                return (parameters[0] && parameters[1]) || (!parameters[0] && !parameters[1])
+            case .finally:
+                return .application(.until, parameters: [LTL.tt, parameters[0]])
+            case .globally:
+                return .application(.release, parameters: [LTL.ff, parameters[0]])
+            case .weakUntil:
+                // 𝞅 W 𝞇  = 𝞅 U 𝞇 ∨ G 𝞅
+                return .application(.until, parameters: parameters) || .application(.release, parameters: [LTL.ff, parameters[0]])
+            default:
+                return .application(function, parameters: parameters)
+            }
+        }
     }
 }

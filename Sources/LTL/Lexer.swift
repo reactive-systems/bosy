@@ -22,9 +22,18 @@ public enum LTLToken: CustomStringConvertible, Equatable, Hashable {
     
     // Temporal Operators
     case Next, Until, WeakUntil, Release, Eventually, Globally
+
+    // Quantifier
+    case exists, forall
     
     // Parenthesis
     case LParen, RParen
+
+    // Brackets
+    case LBracket, RBracket
+
+    // dots
+    case dot, comma
     
     // End of Input
     case EOI
@@ -60,10 +69,22 @@ public enum LTLToken: CustomStringConvertible, Equatable, Hashable {
             return "F"
         case .Globally:
             return "G"
+        case .exists:
+            return "∃"
+        case .forall:
+            return "∀"
         case .LParen:
             return "("
         case .RParen:
             return ")"
+        case .LBracket:
+            return "["
+        case .RBracket:
+            return "]"
+        case .dot:
+            return "."
+        case .comma:
+            return ","
         case .EOI:
             return "eof"
         }
@@ -87,8 +108,14 @@ public enum LTLToken: CustomStringConvertible, Equatable, Hashable {
         case (.Release, .Release): return true
         case (.Eventually, .Eventually): return true
         case (.Globally, .Globally): return true
+        case (.exists, .exists): return true
+        case (.forall, .forall): return true
         case (.LParen, .LParen): return true
         case (.RParen, .RParen): return true
+        case (.LBracket, .LBracket): return true
+        case (.RBracket, .RBracket): return true
+        case (.dot, .dot): return true
+        case (.comma, .comma): return true
         case (.EOI, .EOI): return true
         default:
             return false
@@ -157,30 +184,55 @@ public enum LTLToken: CustomStringConvertible, Equatable, Hashable {
             return false
         }
     }
-    
-    var negated: LTLToken {
+
+    var isQuantifier: Bool {
         switch self {
-        case .True:
-            return .False
-        case .False:
-            return .True
-        case .Or:
-            return .And
-        case .And:
-            return .Or
-        case .Next:
-            return .Next
-        case .Until:
-            return .Release
-        case .Release:
-            return .Until
-        case .Eventually:
-            return .Globally
-        case .Globally:
-            return .Eventually
+        case .exists:
+            return true
+        case .forall:
+            return true
         default:
-            assert(false)
-            return .EOI
+            return false
+        }
+    }
+
+    var ltlFunc: LTLFunction? {
+        switch self {
+        case .Next:
+            return LTLFunction.next
+        case .Eventually:
+            return LTLFunction.finally
+        case .Globally:
+            return LTLFunction.globally
+        case .Not:
+            return LTLFunction.negation
+        case .Until:
+            return LTLFunction.until
+        case .WeakUntil:
+            return LTLFunction.weakUntil
+        case .Release:
+            return LTLFunction.release
+        case .Or:
+            return LTLFunction.or
+        case .And:
+            return LTLFunction.and
+        case .Implies:
+            return LTLFunction.implies
+        case .Equivalent:
+            return LTLFunction.equivalent
+        default:
+            return nil
+        }
+    }
+
+    var ltlQuant: LTLQuantifier? {
+        switch self {
+        case .exists:
+            return LTLQuantifier.exists
+        case .forall:
+            return LTLQuantifier.forall
+        default:
+            return nil
         }
     }
 }
@@ -305,10 +357,6 @@ struct LTLLexer {
         case "G":
             scanner.next()
             return .Globally
-        case "[":
-            scanner.next()
-            try expect("]")
-            return .Globally
         
         // Eventually
         case "F":
@@ -333,7 +381,17 @@ struct LTLLexer {
         case "W":
             scanner.next()
             return .WeakUntil
-        
+
+        // exists
+        case "∃":
+            scanner.next()
+            return .exists
+
+        // forall
+        case "∀":
+            scanner.next()
+            return .forall
+
         // Paranthesis
         case "(":
             scanner.next()
@@ -345,7 +403,29 @@ struct LTLLexer {
         case ")":
             scanner.next()
             return .RParen
-        
+
+        // Brackets
+        case "[":
+            scanner.next()
+            if scanner.current() == "]" {
+                scanner.next()
+                return .Globally
+            }
+            return .LBracket
+        case "]":
+            scanner.next()
+            return .RBracket
+
+        // Dot
+        case ".":
+            scanner.next()
+            return .dot
+
+        // Comma
+        case ",":
+            scanner.next()
+            return .comma
+
         // Propositions
         case CharacterSet.lowercaseLetters:
             var proposition: String = String(scanner.current())
@@ -360,6 +440,10 @@ struct LTLLexer {
                 return .True
             } else if proposition == "false" {
                 return .False
+            } else if proposition == "exists" {
+                return .exists
+            } else if proposition == "forall" {
+                return .forall
             } else {
                 return .Proposition(proposition)
             }

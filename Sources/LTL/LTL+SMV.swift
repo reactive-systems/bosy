@@ -5,54 +5,61 @@ extension LTL {
      * Allows printing of LTL formula in SMV compatible format
      */
     public var smv: String? {
-        return toSMV()
-    }
-    
-    private func toSMV() -> String? {
-        
-        var smvOperatorMapping: [LTLToken:String] = [:]
-        smvOperatorMapping[.Or] = "|"
-        smvOperatorMapping[.And] = "&"
-        smvOperatorMapping[.Implies] = "->"
-        smvOperatorMapping[.Equivalent] = "<->"
-        smvOperatorMapping[.Next] = "X"
-        smvOperatorMapping[.Until] = "U"
-        smvOperatorMapping[.Release] = "V"
-        smvOperatorMapping[.Eventually] = "F"
-        smvOperatorMapping[.Globally] = "G"
-        
+
+        var smvOperatorMapping: [LTLFunction:String] = [:]
+        smvOperatorMapping[.tt] = "TRUE"
+        smvOperatorMapping[.ff] = "FALSE"
+        smvOperatorMapping[.negation] = "!"
+        smvOperatorMapping[.or] = "|"
+        smvOperatorMapping[.and] = "&"
+        smvOperatorMapping[.implies] = "->"
+        smvOperatorMapping[.equivalent] = "<->"
+        smvOperatorMapping[.next] = "X"
+        smvOperatorMapping[.until] = "U"
+        smvOperatorMapping[.release] = "V"
+        smvOperatorMapping[.finally] = "F"
+        smvOperatorMapping[.globally] = "G"
+
         switch self {
-        case .Proposition(let name):
-            return name
-        case .Literal(let val):
-            return val ? "TRUE" : "FALSE"
-        case .UnaryOperator(.Not, let scope):
-            guard let smvScope = scope.toSMV() else {
+        case .atomicProposition(let ap):
+            return ap.name
+        case .application(let function, parameters: let parameters):
+            switch (function.arity) {
+            case 0:
+                // true and false
+                guard let smvName = smvOperatorMapping[function] else {
+                    return nil
+                }
+                return smvName
+            case 1:
+                // unary operators
+                assert(parameters.count == 1)
+                guard let smvOp = smvOperatorMapping[function] else {
+                    return nil
+                }
+                guard let smvScope = parameters[0].smv else {
+                    return nil
+                }
+                return "\(smvOp) (\(smvScope))"
+            case 2:
+                assert(parameters.count == 2)
+                guard let smvOp = smvOperatorMapping[function] else {
+                    return nil
+                }
+                guard let smvLhs = parameters[0].smv else {
+                    return nil
+                }
+                guard let smvRhs = parameters[1].smv else {
+                    return nil
+                }
+
+                return "(\(smvLhs) \(smvOp) \(smvRhs))"
+            default:
                 return nil
             }
-            return "!(\(smvScope))"
-        case .UnaryOperator(let op, let scope):
-            guard let smvOp = smvOperatorMapping[op] else {
-                return nil
-            }
-            guard let smvScope = scope.toSMV() else {
-                return nil
-            }
-            return "\(smvOp) (\(smvScope))"
-        case .BinaryOperator(let op, let lhs, let rhs):
-            guard let smvOp = smvOperatorMapping[op] else {
-                fatalError()
-            }
-            guard let smvLhs = lhs.toSMV() else {
-                return nil
-            }
-            guard let smvRhs = rhs.toSMV() else {
-                return nil
-            }
-            
-            return "(\(smvLhs) \(smvOp) \(smvRhs))"
+        default:
+            return nil
         }
     }
-    
 }
 

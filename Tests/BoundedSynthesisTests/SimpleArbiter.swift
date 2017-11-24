@@ -136,12 +136,15 @@ class SimpleArbiterTest: XCTestCase {
         options.qbfPreprocessor = .bloqqer
         guard let specification = SynthesisSpecification.fromJson(string: jsonSpec) else {
             XCTFail()
-            fatalError()
+            return
         }
-        let ltlSpec = LTL.UnaryOperator(.Not, specification.ltl)
-        guard let automaton = options.converter.convert(ltl: ltlSpec.description) else {
+        guard let ltlSpec = (!specification.ltl).ltl3ba else {
             XCTFail()
-            fatalError()
+            return
+        }
+        guard let automaton = options.converter.convert(ltl: ltlSpec) else {
+            XCTFail()
+            return
         }
         var encoding = InputSymbolicEncoding(options: options, automaton: automaton, specification: specification, synthesize: false)
         XCTAssertFalse(try encoding.solve(forBound: 2))
@@ -153,12 +156,15 @@ class SimpleArbiterTest: XCTestCase {
         options.solver = .picosat
         guard let specification = SynthesisSpecification.fromJson(string: jsonSpec) else {
             XCTFail()
-            fatalError()
+            return
         }
-        let ltlSpec = LTL.UnaryOperator(.Not, specification.ltl)
-        guard let automaton = options.converter.convert(ltl: ltlSpec.description) else {
+        guard let ltlSpec = (!specification.ltl).ltl3ba else {
             XCTFail()
-            fatalError()
+            return
+        }
+        guard let automaton = options.converter.convert(ltl: ltlSpec) else {
+            XCTFail()
+            return
         }
         var encoding = ExplicitEncoding(options: options, automaton: automaton, specification: specification)
         XCTAssertFalse(try encoding.solve(forBound: 2))
@@ -170,12 +176,15 @@ class SimpleArbiterTest: XCTestCase {
         options.solver = .z3
         guard let specification = SynthesisSpecification.fromJson(string: jsonSpec) else {
             XCTFail()
-            fatalError()
+            return
         }
-        let ltlSpec = LTL.UnaryOperator(.Not, specification.ltl)
-        guard let automaton = options.converter.convert(ltl: ltlSpec.description) else {
+        guard let ltlSpec = (!specification.ltl).ltl3ba else {
             XCTFail()
-            fatalError()
+            return
+        }
+        guard let automaton = options.converter.convert(ltl: ltlSpec) else {
+            XCTFail()
+            return
         }
         var encoding = SmtEncoding(options: options, automaton: automaton, specification: specification)
         XCTAssertFalse(try encoding.solve(forBound: 2))
@@ -186,12 +195,15 @@ class SimpleArbiterTest: XCTestCase {
     func testRealizabilityGameSolver() {
         guard let specification = SynthesisSpecification.fromJson(string: jsonSpec) else {
             XCTFail()
-            fatalError()
+            return
         }
-        let ltlSpec = LTL.UnaryOperator(.Not, specification.ltl)
-        guard let automaton = options.converter.convert(ltl: ltlSpec.description) else {
+        guard let ltlSpec = (!specification.ltl).ltl3ba else {
             XCTFail()
-            fatalError()
+            return
+        }
+        guard let automaton = options.converter.convert(ltl: ltlSpec) else {
+            XCTFail()
+            return
         }
         let encoding = SafetyGameReduction(options: options, automaton: automaton, specification: specification)
         XCTAssertTrue(try encoding.solve(forBound: 1))
@@ -203,12 +215,15 @@ class SimpleArbiterTest: XCTestCase {
         options.qbfCertifier = .quabs
         guard let specification = SynthesisSpecification.fromJson(string: jsonSpec) else {
             XCTFail()
-            fatalError()
+            return
         }
-        let ltlSpec = LTL.UnaryOperator(.Not, specification.ltl)
-        guard let automaton = options.converter.convert(ltl: ltlSpec.description) else {
+        guard let ltlSpec = (!specification.ltl).ltl3ba else {
             XCTFail()
-            fatalError()
+            return
+        }
+        guard let automaton = options.converter.convert(ltl: ltlSpec) else {
+            XCTFail()
+            return
         }
         var encoding = InputSymbolicEncoding(options: options, automaton: automaton, specification: specification, synthesize: true)
         XCTAssertTrue(try encoding.solve(forBound: 3))
@@ -246,12 +261,15 @@ class SimpleArbiterTest: XCTestCase {
         options.solver = .picosat
         guard let specification = SynthesisSpecification.fromJson(string: jsonSpec) else {
             XCTFail()
-            fatalError()
+            return
         }
-        let ltlSpec = LTL.UnaryOperator(.Not, specification.ltl)
-        guard let automaton = options.converter.convert(ltl: ltlSpec.description) else {
+        guard let ltlSpec = (!specification.ltl).ltl3ba else {
             XCTFail()
-            fatalError()
+            return
+        }
+        guard let automaton = options.converter.convert(ltl: ltlSpec) else {
+            XCTFail()
+            return
         }
         var encoding = ExplicitEncoding(options: options, automaton: automaton, specification: specification)
         XCTAssertTrue(try encoding.solve(forBound: 3))
@@ -289,12 +307,15 @@ class SimpleArbiterTest: XCTestCase {
         options.solver = .z3
         guard let specification = SynthesisSpecification.fromJson(string: jsonSpec) else {
             XCTFail()
-            fatalError()
+            return
         }
-        let ltlSpec = LTL.UnaryOperator(.Not, specification.ltl)
-        guard let automaton = options.converter.convert(ltl: ltlSpec.description) else {
+        guard let ltlSpec = (!specification.ltl).ltl3ba else {
             XCTFail()
-            fatalError()
+            return
+        }
+        guard let automaton = options.converter.convert(ltl: ltlSpec) else {
+            XCTFail()
+            return
         }
         var encoding = SmtEncoding(options: options, automaton: automaton, specification: specification)
         XCTAssertTrue(try encoding.solve(forBound: 3))
@@ -331,12 +352,15 @@ class SimpleArbiterTest: XCTestCase {
     func testSynthesisGameSolver() {
         guard let specification = SynthesisSpecification.fromJson(string: jsonSpec) else {
             XCTFail()
-            fatalError()
+            return
         }
-        let ltlSpec = LTL.UnaryOperator(.Not, specification.ltl)
-        guard let automaton = options.converter.convert(ltl: ltlSpec.description) else {
+        guard let ltlSpec = (!specification.ltl).ltl3ba else {
             XCTFail()
-            fatalError()
+            return
+        }
+        guard let automaton = options.converter.convert(ltl: ltlSpec) else {
+            XCTFail()
+            return
         }
         let encoding = SafetyGameReduction(options: options, automaton: automaton, specification: specification)
         XCTAssertTrue(try encoding.solve(forBound: 1))

@@ -2,39 +2,58 @@ import XCTest
 @testable import LTL
 
 class LTLTests: XCTestCase {
-    func testSimple() {
+
+    let a = LTLAtomicProposition(name: "a")
+    let b = LTLAtomicProposition(name: "b")
+
+    func testSimple() throws {
         let ltlString = "GFa"
-        let parsed = try! LTL.parse(fromString: ltlString)
-        let expected = LTL.UnaryOperator(.Globally, LTL.UnaryOperator(.Eventually, .Proposition("a")))
+        let parsed = try LTL.parse(fromString: ltlString)
+
+        let expected = LTL.application(.globally, parameters: [.application(.finally, parameters: [.atomicProposition(a)])])
         XCTAssertEqual(parsed, expected)
     }
     
-    func testSimpleParenthesis() {
-        let parsed = try! LTL.parse(fromString: "(a)")
-        let expected = LTL.Proposition("a")
+    func testSimpleParenthesis() throws {
+        let parsed = try LTL.parse(fromString: "(a)")
+        let expected = LTL.atomicProposition(a)
         XCTAssertEqual(parsed, expected)
     }
     
-    func testBinaryOperator() {
-        let parsed = try! LTL.parse(fromString: "(a && b)")
-        let expected = LTL.BinaryOperator(.And, .Proposition("a"), .Proposition("b"))
+    func testBinaryOperator() throws {
+        let parsed = try LTL.parse(fromString: "(a && b)")
+        let expected = LTL.application(.and, parameters: [.atomicProposition(a), .atomicProposition(b)])
         XCTAssertEqual(parsed, expected)
         
-        let alternative1 = try! LTL.parse(fromString: "(a & b)")
+        let alternative1 = try LTL.parse(fromString: "(a & b)")
         XCTAssertEqual(parsed, alternative1)
-        let alternative2 = try! LTL.parse(fromString: "(a /\\ b)")
+        let alternative2 = try LTL.parse(fromString: "(a /\\ b)")
         XCTAssertEqual(parsed, alternative2)
         
         XCTAssertThrowsError(try LTL.parse(fromString: "(a &&& b)"))
     }
     
-    func testMissingParenthesis() {
+    func testMissingParenthesis() throws {
         XCTAssertThrowsError(try LTL.parse(fromString: "(a"))
     }
     
-    func testPropositionsWithUnderscore() {
-        let parsed = try! LTL.parse(fromString: "(a_1)")
-        let expected = LTL.Proposition("a_1")
+    func testPropositionsWithUnderscore() throws {
+        let parsed = try LTL.parse(fromString: "(a_1)")
+        let expected = LTL.atomicProposition(LTLAtomicProposition(name: "a_1"))
+        XCTAssertEqual(parsed, expected)
+    }
+
+    func testQuantified() throws {
+        let parsed = try LTL.parse(fromString: "exists pi1 pi2. a[pi1] && a[pi2]")
+        let a = LTLAtomicProposition(name: "a")
+        let pi1 = LTLPathVariable(name: "pi1")
+        let pi2 = LTLPathVariable(name: "pi2")
+        let expected = LTL.pathQuantifier(.exists,
+                                          parameters: [pi1, pi2],
+                                          body: .application(.and, parameters: [
+                                            .pathProposition(a, pi1),
+                                            .pathProposition(a, pi2)
+                                          ]))
         XCTAssertEqual(parsed, expected)
     }
     

@@ -30,14 +30,12 @@ public struct SynthesisSpecification {
     public let guarantees: [LTL]
     
     public var dualized: SynthesisSpecification {
-        let dualizedLTL = LTL.UnaryOperator(.Not, ltl)
+        let dualizedLTL = !ltl
         return SynthesisSpecification(semantics: semantics.swapped, inputs: outputs, outputs: inputs, assumptions: [], guarantees: [dualizedLTL])
     }
     
     public var ltl: LTL {
-        return LTL.BinaryOperator(.Implies,
-                                  assumptions.reduce(LTL.Literal(true), { res, ltl in .BinaryOperator(.And, res, ltl) }),
-                                  guarantees.reduce(LTL.Literal(true), { res, ltl in .BinaryOperator(.And, res, ltl) }))
+        return assumptions.reduce(LTL.tt, &&) => guarantees.reduce(LTL.tt, &&)
     }
     
     public static func fromJson(string: String) -> SynthesisSpecification? {
