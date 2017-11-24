@@ -252,33 +252,33 @@ public class CoBüchiAutomaton: Automaton, SafetyAcceptance, CoBüchiAcceptance 
 extension CoBüchiAutomaton {
     public var dot: String {
         var dot: [String] = []
-
+        
         // initial state
         for state in initialStates {
-            dot += ["\t_init [style=\"invis\"];", "\t_init -> s\(state)[label=\"\"];"]
+            dot += ["\t_init [style=\"invis\"];", "\t_init -> \"s\(state)\"[label=\"\"];"]
         }
-
+        
         for state in states {
-            dot.append("\ts\(state)[shape=rectangle,label=\"\(state)\"];")
+            dot.append("\t\"s\(state)\"[shape=rectangle,label=\"\(state)\"];")
         }
-
+        
         for state in rejectingStates {
-            dot.append("\ts\(state)[shape=rectangle,label=\"rejecting:\(state)\"];")
+            dot.append("\t\"s\(state)\"[shape=rectangle,label=\"rejecting:\(state)\"];")
         }
-
+        
         for (source, outgoing) in transitions {
             for (target, transitionGuard) in outgoing {
-                dot.append("\ts\(source) -> s\(target) [label=\"\(transitionGuard)\"];")
+                dot.append("\t\"s\(source)\" -> \"s\(target)\" [label=\"\(transitionGuard)\"];")
             }
         }
-
+        
         if !safetyConditions.isEmpty {
             dot.append("\tbad[shape=rectangle,label=\"bad\"];")
             for (source, localSafetyCondition) in safetyConditions {
-                dot.append("\ts\(source) -> bad [label=\"\(!localSafetyCondition)\"];")
+                dot.append("\t\"s\(source)\" -> bad [label=\"\(!localSafetyCondition)\"];")
             }
         }
-
+        
         return "digraph graphname {\n\(dot.joined(separator: "\n"))\n}"
     }
 }
@@ -289,23 +289,23 @@ extension SafetyAutomaton {
 
         // initial state
         for state in initialStates {
-            dot += ["\t_init [style=\"invis\"];", "\t_init -> s\(state.hashValue)[label=\"\"];"]
+            dot += ["\t_init [style=\"invis\"];", "\t_init -> \"s\(state)\"[label=\"\"];"]
         }
 
         for state in states {
-            dot.append("\ts\(state.hashValue)[shape=rectangle,label=\"\(state)\"];")
+            dot.append("\t\"s\(state)\"[shape=rectangle,label=\"\(state)\"];")
         }
 
         for (source, outgoing) in transitions {
             for (target, transitionGuard) in outgoing {
-                dot.append("\ts\(source.hashValue) -> s\(target.hashValue) [label=\"\(transitionGuard)\"];")
+                dot.append("\t\"s\(source)\" -> \"s\(target)\" [label=\"\(transitionGuard)\"];")
             }
         }
 
         if !safetyConditions.isEmpty {
             dot.append("\tbad[shape=rectangle,label=\"bad\"];")
             for (source, localSafetyCondition) in safetyConditions {
-                dot.append("\ts\(source.hashValue) -> bad [label=\"\(!localSafetyCondition)\"];")
+                dot.append("\t\"s\(source)\" -> bad [label=\"\(!localSafetyCondition)\"];")
             }
         }
 
