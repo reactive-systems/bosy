@@ -52,6 +52,7 @@ required-tools: \
 	Tools/ltl3ba \
 	Tools/idq \
 	Tools/quabscm \
+	Tools/quabscm-mac \
 	Tools/rareqs \
 	Tools/syfco \
 	Tools/z3
@@ -323,6 +324,9 @@ Tools/picosat-965.tar.gz: Tools/.f
 # QuAbS
 Tools/quabscm: Tools/quabs-bin
 	cp Tools/quabs-bin/quabscm Tools/quabscm
+
+Tools/quabscm-mac: Tools/quabs-bin
+	cp Tools/quabs-bin/quabscm-mac Tools/quabscm-mac
 
 Tools/quabs-bin: Tools/quabs-bin.tar.gz
 	cd Tools ; tar xzf quabs-bin.tar.gz

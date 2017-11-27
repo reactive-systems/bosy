@@ -524,8 +524,12 @@ struct QuAbS: CertifyingQbfSolver {
         }
         
         let task = Process()
-        
+
+        #if os(macOS)
+        task.launchPath = "./Tools/quabscm-mac"
+        #else
         task.launchPath = "./Tools/quabscm"
+        #endif
         task.arguments = ["-c", tempFile.path]
         
         let stdoutPipe = Pipe()
