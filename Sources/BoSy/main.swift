@@ -82,8 +82,8 @@ if let semantics = options.semantics {
 private func buildAutomaton(player: Player) -> CoBüchiAutomaton? {
     Logger.default().debug("start building automaton for player \(player)")
     if options.monolithic || player == .environment || specification.assumptions.count > 0 {
-        let assumptionString = specification.assumptions.map(String.init(describing:)).joined(separator: " && ")
-        let guaranteeString = specification.guarantees.map(String.init(describing:)).joined(separator: " && ")
+        let assumptionString = specification.assumptions.flatMap( { $0.ltl3ba } ).joined(separator: " & ")
+        let guaranteeString = specification.guarantees.flatMap( { $0.ltl3ba } ).joined(separator: " & ")
         
         let ltlSpec: String
         if player == .system {
@@ -108,7 +108,11 @@ private func buildAutomaton(player: Player) -> CoBüchiAutomaton? {
         var automata: [CoBüchiAutomaton] = []
         for guarantee in specification.guarantees {
             let automatonTimer = options.statistics?.startTimer(phase: .ltl2automaton)
-            guard let automaton = options.converter.convert(ltl: "!(\(guarantee))") else {
+            guard let ltl3baDescription = guarantee.ltl3ba else {
+                Logger.default().error("could not convert guarantees to ltl3ba format")
+                return nil
+            }
+            guard let automaton = options.converter.convert(ltl: "!(\(ltl3baDescription))") else {
                 Logger.default().error("could not construct automaton")
                 return nil
             }
