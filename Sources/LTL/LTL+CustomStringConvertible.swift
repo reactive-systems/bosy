@@ -12,9 +12,9 @@ extension LTL: CustomStringConvertible {
             case 0:
                 return "\(function)"
             case 1:
-                return "\(function) \(parameters[0])"
+                return "\(function) (\(parameters[0]))"
             case 2:
-                return "\(parameters[0]) \(function) \(parameters[1])"
+                return "(\(parameters[0])) \(function) (\(parameters[1]))"
             default:
                 fatalError()
             }
