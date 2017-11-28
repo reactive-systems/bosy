@@ -55,7 +55,7 @@ extension LTL {
                     return nil
                 }
 
-                return "(\(translatedLhs) \(translatedOp) \(translatedRhs))"
+                return "(\(translatedLhs)) \(translatedOp) (\(translatedRhs))"
             default:
                 return nil
             }
