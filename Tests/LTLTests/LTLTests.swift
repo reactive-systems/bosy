@@ -95,3 +95,50 @@ class LTLTests: XCTestCase {
         ]
     }
 }
+
+class LTL3BATests : XCTestCase {
+    let trueLit = LTL.application(LTLFunction.tt, parameters: [])
+    let falseLit = LTL.application(LTLFunction.ff, parameters: [])
+    
+    func testLiteralTrue() {
+        let expected = "true"
+        let actual = trueLit.ltl3ba!
+        
+        XCTAssertEqual(expected, actual)
+    }
+    
+    func testLiteralFalse() {
+        let expected = "false"
+        let actual = falseLit.ltl3ba!
+        
+        XCTAssertEqual(expected, actual)
+    }
+    
+    func testUnaryFunction() {
+        let expected = "G (true)"
+        let actual = LTL.application(LTLFunction.globally, parameters: [trueLit]).ltl3ba!
+        
+        XCTAssertEqual(expected, actual)
+    }
+    
+    func testBinaryFunction() {
+        let expected = "(true) & (false)"
+        let actual = (trueLit && falseLit).ltl3ba!
+        
+        XCTAssertEqual(expected, actual)
+    }
+    
+    func testLhsNested() {
+        let expected = "((true) | (false)) & (true)"
+        let actual = ((trueLit || falseLit) && trueLit).ltl3ba!
+        
+        XCTAssertEqual(expected, actual)
+    }
+    
+    func testRhsNested() {
+        let expected = "(true) | ((false) & (true))"
+        let actual = (trueLit || (falseLit && trueLit)).ltl3ba!
+        
+        XCTAssertEqual(expected, actual)
+    }
+}
