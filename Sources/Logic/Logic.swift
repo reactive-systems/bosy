@@ -222,7 +222,21 @@ public struct UnaryOperator: Logic, Equatable {
     }
     
     public func simplify() -> Logic {
-        return self
+        let newOperand = operand.simplify()
+        if let lit = newOperand as? Literal {
+            switch lit {
+            case Literal.True:
+                return Literal.False
+            case Literal.False:
+                return Literal.True
+            default:
+                return self
+            }
+        }
+        if newOperand == operand {
+            return self
+        }
+        return UnaryOperator(type, operand: newOperand)
     }
 }
 
@@ -304,7 +318,21 @@ public struct BinaryOperator: Logic, Hashable {
     }
     
     public func simplify() -> Logic {
-        let newOperands = operands.map({ $0.simplify() })
+        var newOperands = operands.map({ $0.simplify() })
+
+        // merge operands
+        switch type {
+        case .And, .Or:
+            newOperands = newOperands.reduce([], {(ops, op) in
+                if let binop = op as? BinaryOperator, binop.type == type {
+                    return ops + binop.operands
+                }
+                return ops + [op]
+            })
+        default:
+            break
+        }
+
         switch type {
         case .And:
             // check for duplication
@@ -313,7 +341,7 @@ public struct BinaryOperator: Logic, Hashable {
                 if operand as? Literal != nil && operand as! Literal == Literal.False {
                     return Literal.False
                 }
-                reducedOperands = newOperands.filter({ !($0 == operand) })
+                reducedOperands = reducedOperands.filter({ !($0 == operand) })
                 if operand as? Literal == nil {
                     reducedOperands.append(operand)
                 } else {
@@ -338,7 +366,7 @@ public struct BinaryOperator: Logic, Hashable {
                 if operand as? Literal != nil && operand as! Literal == Literal.True {
                     return Literal.True
                 }
-                reducedOperands = newOperands.filter({ !($0 == operand) })
+                reducedOperands = reducedOperands.filter({ !($0 == operand) })
                 if operand as? Literal == nil {
                     reducedOperands.append(operand)
                 } else {
