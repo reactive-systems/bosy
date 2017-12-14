@@ -184,6 +184,15 @@ private enum SolverHelper {
             return nil
         }
     }
+
+    static func result(from exitStatus: ProcessResult.ExitStatus) -> SolverResult? {
+        switch exitStatus {
+        case .terminated(code: let code):
+            return result(from: code)
+        default:
+            return nil
+        }
+    }
 }
 
 struct PicoSAT: SatSolver {
@@ -199,23 +208,24 @@ struct PicoSAT: SatSolver {
         tempFile.fileHandle.write(Data(encodedFormula.utf8))
         
         // start task and extract stdout
-        let task = Process()
-        task.launchPath = "./Tools/picosat-solver"
-        task.arguments = [tempFile.path.asString]
-        
-        guard let stdout = SolverHelper.executeAndReturnStdout(task: task) else {
+        do {
+            let result = try Basic.Process.popen(arguments: ["./Tools/picosat-solver", tempFile.path.asString])
+            let stdout = try result.utf8Output()
+
+            guard let solverResult = SolverHelper.result(from: result.exitStatus) else {
+                return nil
+            }
+
+            if solverResult == .unsat {
+                return .unsat
+            }
+            let assignments = SolverHelper.getDimacsAssignments(stdout: stdout)
+            return .sat(assignment: dimacsVisitor.getAssignment(fromAssignment: assignments))
+
+        } catch {
+            Logger.default().error("execution of picosat failed")
             return nil
         }
-        
-        guard let result = SolverHelper.result(from: task.terminationStatus) else {
-            return nil
-        }
-        
-        if result == .unsat {
-            return .unsat
-        }
-        let assignments = SolverHelper.getDimacsAssignments(stdout: stdout)
-        return .sat(assignment: dimacsVisitor.getAssignment(fromAssignment: assignments))
     }
 }
 
@@ -231,24 +241,25 @@ struct CryptoMiniSat: SatSolver {
         }
         tempFile.fileHandle.write(Data(encodedFormula.utf8))
         
-        // start task and extract stdout and stderr
-        let task = Process()
-        task.launchPath = "./Tools/cryptominisat5"
-        task.arguments = ["--verb=0", tempFile.path.asString]
+        // start task and extract stdout
+        do {
+            let result = try Basic.Process.popen(arguments: ["./Tools/cryptominisat5", "--verb=0", tempFile.path.asString])
+            let stdout = try result.utf8Output()
 
-        guard let stdout = SolverHelper.executeAndReturnStdout(task: task) else {
+            guard let solverResult = SolverHelper.result(from: result.exitStatus) else {
+                return nil
+            }
+
+            if solverResult == .unsat {
+                return .unsat
+            }
+            let assignments = SolverHelper.getDimacsAssignments(stdout: stdout)
+            return .sat(assignment: dimacsVisitor.getAssignment(fromAssignment: assignments))
+
+        } catch {
+            Logger.default().error("execution of cryptominisat failed")
             return nil
         }
-        
-        guard let result = SolverHelper.result(from: task.terminationStatus) else {
-            return nil
-        }
-        
-        if result == .unsat {
-            return .unsat
-        }
-        let assignments = SolverHelper.getDimacsAssignments(stdout: stdout)
-        return .sat(assignment: dimacsVisitor.getAssignment(fromAssignment: assignments))
     }
 }
 
@@ -271,24 +282,25 @@ struct RAReQS: QbfSolver {
         }
         tempFile.fileHandle.write(Data(encodedFormula.utf8))
         
-        // start task and extract stdout and stderr
-        let task = Process()
-        task.launchPath = "./Tools/rareqs"
-        task.arguments = [tempFile.path.asString]
+        // start task and extract stdout
+        do {
+            let result = try Basic.Process.popen(arguments: ["./Tools/rareqs", tempFile.path.asString])
+            let stdout = try result.utf8Output()
 
-        guard let stdout = SolverHelper.executeAndReturnStdout(task: task) else {
+            guard let solverResult = SolverHelper.result(from: result.exitStatus) else {
+                return nil
+            }
+
+            if solverResult == .unsat {
+                return .unsat
+            }
+            let assignments = SolverHelper.getDimacsAssignments(stdout: stdout)
+            return .sat(assignment: qdimacsVisitor.getAssignment(fromAssignment: assignments))
+
+        } catch {
+            Logger.default().error("execution of rareqs failed")
             return nil
         }
-        
-        guard let result = SolverHelper.result(from: task.terminationStatus) else {
-            return nil
-        }
-        
-        if result == .unsat {
-            return .unsat
-        }
-        let assignments = SolverHelper.getDimacsAssignments(stdout: stdout)
-        return .sat(assignment: qdimacsVisitor.getAssignment(fromAssignment: assignments))
     }
 }
 
@@ -311,24 +323,25 @@ struct DepQBF: QbfSolver {
         }
         tempFile.fileHandle.write(Data(encodedFormula.utf8))
         
-        // start task and extract stdout and stderr
-        let task = Process()
-        task.launchPath = "./Tools/depqbf"
-        task.arguments = ["--qdo", tempFile.path.asString]
-        
-        guard let stdout = SolverHelper.executeAndReturnStdout(task: task) else {
+        // start task and extract stdout
+        do {
+            let result = try Basic.Process.popen(arguments: ["./Tools/depqbf", "--qdo", tempFile.path.asString])
+            let stdout = try result.utf8Output()
+
+            guard let solverResult = SolverHelper.result(from: result.exitStatus) else {
+                return nil
+            }
+
+            if solverResult == .unsat {
+                return .unsat
+            }
+            let assignments = SolverHelper.getDimacsAssignments(stdout: stdout)
+            return .sat(assignment: qdimacsVisitor.getAssignment(fromAssignment: assignments))
+
+        } catch {
+            Logger.default().error("execution of depqbf failed")
             return nil
         }
-        
-        guard let result = SolverHelper.result(from: task.terminationStatus) else {
-            return nil
-        }
-        
-        if result == .unsat {
-            return .unsat
-        }
-        let assignments = SolverHelper.getDimacsAssignments(stdout: stdout)
-        return .sat(assignment: qdimacsVisitor.getAssignment(fromAssignment: assignments))
     }
 }
 
@@ -344,20 +357,18 @@ struct Bloqqer: QbfPreprocessor {
             return nil
         }
         tempFile.fileHandle.write(Data(qbf.utf8))
-        
-        let task = Process()
-        if !preserveAssignments {
-            task.launchPath = "./Tools/bloqqer-031"
-            task.arguments = ["--keep=1", tempFile.path.asString]
-        } else {
-            task.launchPath = "./Tools/bloqqer"
-            task.arguments = ["--keep=1", "--partial-assignment=1", tempFile.path.asString]
-        }
-        
-        guard let stdout = SolverHelper.executeAndReturnStdout(task: task) else {
+
+        let arguments = preserveAssignments ?
+                        ["./Tools/bloqqer", "--partial-assignment=1", "--keep=1", tempFile.path.asString] :
+                        ["./Tools/bloqqer-031", "--keep=1", tempFile.path.asString]
+
+        do {
+            let result = try Basic.Process.popen(arguments: arguments)
+            return try result.utf8Output()
+        } catch {
+            Logger.default().error("execution of bloqqer failed")
             return nil
         }
-        return stdout
     }
 }
 
@@ -371,20 +382,15 @@ struct HQSPre: QbfPreprocessor {
         guard let outFile = try? TemporaryFile(suffix: ".qdimacs") else {
             return nil
         }
-        
-        let task = Process()
-        task.launchPath = "./Tools/hqspre-linux"
-        task.arguments = ["-o", outFile.path.asString, tempFile.path.asString]
-        
-        guard let _ = SolverHelper.executeAndReturnStdout(task: task) else {
+
+        do {
+            try Basic.Process.popen(arguments: ["./Tools/hqspre-linux", "-o", outFile.path.asString, tempFile.path.asString])
+            return try? String(contentsOfFile: outFile.path.asString, encoding: String.Encoding.utf8)
+
+        } catch {
+            Logger.default().error("execution of hqspre failed")
             return nil
         }
-        
-        guard let qdimacs = try? String(contentsOfFile: outFile.path.asString, encoding: String.Encoding.utf8) else {
-            return nil
-        }
-        
-        return qdimacs
     }
 }
 
@@ -407,24 +413,25 @@ struct CAQE: QbfSolver, CertifyingQbfSolver {
         }
         tempFile.fileHandle.write(Data(encodedFormula.utf8))
         
-        // start task and extract stdout and stderr
-        let task = Process()
-        task.launchPath = "./Tools/caqem"
-        task.arguments = ["--partial-assignments", "--expansion-refinement=1", tempFile.path.asString]
-        
-        guard let stdout = SolverHelper.executeAndReturnStdout(task: task) else {
+        // start task and extract stdout
+        do {
+            let result = try Basic.Process.popen(arguments: ["./Tools/caqem", "--partial-assignments", "--expansion-refinement=1", tempFile.path.asString])
+            let stdout = try result.utf8Output()
+
+            guard let solverResult = SolverHelper.result(from: result.exitStatus) else {
+                return nil
+            }
+
+            if solverResult == .unsat {
+                return .unsat
+            }
+            let assignments = SolverHelper.getDimacsAssignments(stdout: stdout)
+            return .sat(assignment: qdimacsVisitor.getAssignment(fromAssignment: assignments))
+
+        } catch {
+            Logger.default().error("execution of caqe failed")
             return nil
         }
-        
-        guard let result = SolverHelper.result(from: task.terminationStatus) else {
-            return nil
-        }
-        
-        if result == .unsat {
-            return .unsat
-        }
-        let assignments = SolverHelper.getDimacsAssignments(stdout: stdout)
-        return .sat(assignment: qdimacsVisitor.getAssignment(fromAssignment: assignments))
     }
     
     func solve(formula: Logic) -> QbfSolverResult? {
@@ -435,7 +442,7 @@ struct CAQE: QbfSolver, CertifyingQbfSolver {
             return nil
         }
         tempFile.fileHandle.write(Data(encodedFormula.utf8))
-        
+
         let task = Process()
         task.launchPath = "./Tools/caqem"
         task.arguments = ["-c", tempFile.path.asString]
@@ -614,17 +621,13 @@ extension UnsafeMutablePointer where Pointee == aiger {
             abcCommand += " dfraig; rewrite -zl; dfraig;"
         }
         abcCommand += " write \(outputTempFile.path.asString);"
-        
-        let task = Process()
-        task.launchPath = "./Tools/abc"
-        task.arguments = ["-q", abcCommand]
-        #if !os(Linux)
-        task.standardOutput = FileHandle.nullDevice
-        #endif
-        
-        task.launch()
-        task.waitUntilExit()
-        assert(task.terminationStatus == 0)
+
+        do {
+            try Basic.Process.checkNonZeroExit(arguments: ["./Tools/abc", "-q", abcCommand])
+        } catch {
+            Logger.default().error("minimization of aiger using abc failed")
+            return nil
+        }
         
         let result = aiger_open_and_read_from_file(minimized, outputTempFile.path.asString)
         assert(result == nil)
@@ -646,21 +649,22 @@ struct iDQ: DqbfSolver {
         }
         tempFile.fileHandle.write(Data(encodedFormula.utf8))
         
-        // start task and extract stdout and stderr
-        let task = Process()
-        task.launchPath = "./Tools/idq"
-        task.arguments = [tempFile.path.asString]
-        
-        guard let output = SolverHelper.executeAndReturnStdout(task: task) else {
+        // start task and extract stdout
+        do {
+            let result = try Basic.Process.popen(arguments: ["./Tools/idq", tempFile.path.asString])
+            let stdout = try result.utf8Output()
+
+            if stdout.contains("UNSAT") {
+                return .unsat
+            } else if stdout.contains("SAT") {
+                return .sat
+            }
+            return nil
+
+        } catch {
+            Logger.default().error("execution of idq failed")
             return nil
         }
-        //print(output)
-        if output.contains("UNSAT") {
-            return .unsat
-        } else if output.contains("SAT") {
-            return .sat
-        }
-        return nil
     }
 }
 
@@ -676,21 +680,22 @@ struct HQS: DqbfSolver {
         }
         tempFile.fileHandle.write(Data(encodedFormula.utf8))
         
-        // start task and extract stdout and stderr
-        let task = Process()
-        task.launchPath = "./Tools/hqs-linux"
-        task.arguments = [tempFile.path.asString]
-        
-        guard let output = SolverHelper.executeAndReturnStdout(task: task) else {
+        // start task and extract stdout
+        do {
+            let result = try Basic.Process.popen(arguments: ["./Tools/hqs-linux", tempFile.path.asString])
+            let stdout = try result.utf8Output()
+
+            if stdout.contains("UNSAT") {
+                return .unsat
+            } else if stdout.contains("SAT") {
+                return .sat
+            }
+            return nil
+
+        } catch {
+            Logger.default().error("execution of hqs failed")
             return nil
         }
-        //print(output)
-        if output.contains("UNSAT") {
-            return .unsat
-        } else if output.contains("SAT") {
-            return .sat
-        }
-        return nil
     }
 }
 
@@ -706,21 +711,22 @@ struct Eprover: DqbfSolver {
         }
         tempFile.fileHandle.write(Data(encodedFormula.utf8))
         
-        // start task and extract stdout and stderr
-        let task = Process()
-        task.launchPath = "./Tools/eprover"
-        task.arguments = ["--auto", "--tptp3-format", tempFile.path.asString]
-        
-        guard let output = SolverHelper.executeAndReturnStdout(task: task) else {
+        // start task and extract stdout
+        do {
+            let result = try Basic.Process.popen(arguments: ["./Tools/eprover", "--auto", "--tptp3-format", tempFile.path.asString])
+            let stdout = try result.utf8Output()
+
+            if stdout.contains("SZS status Satisfiable") {
+                return .sat
+            } else if stdout.contains("SZS status Unsatisfiable") {
+                return .unsat
+            }
+            return nil
+
+        } catch {
+            Logger.default().error("execution of eprover failed")
             return nil
         }
-        //print(output)
-        if output.contains("SZS status Satisfiable") {
-            return .sat
-        } else if output.contains("SZS status Unsatisfiable") {
-            return .unsat
-        }
-        return nil
     }
 }
 
@@ -736,22 +742,22 @@ struct Vampire: DqbfSolver {
         }
         tempFile.fileHandle.write(Data(encodedFormula.utf8))
         
-        // start task and extract stdout and stderr
-        let task = Process()
-        task.launchPath = "./Tools/vampire"
-        task.arguments = ["--mode", "casc", "-t","1200", tempFile.path.asString]
-        
-        guard let output = SolverHelper.executeAndReturnStdout(task: task) else {
+        // start task and extract stdout
+        do {
+            let result = try Basic.Process.popen(arguments: ["./Tools/vampire", "--mode", "casc", "-t","1200", tempFile.path.asString])
+            let stdout = try result.utf8Output()
+
+            if stdout.contains("SZS status Satisfiable") || stdout.contains("Termination reason: Satisfiable") {
+                return .sat
+            } else if stdout.contains("SZS status Unsatisfiable") || stdout.contains("Termination reason: Refutation") {
+                return .unsat
+            }
+            return nil
+
+        } catch {
+            Logger.default().error("execution of vampire failed")
             return nil
         }
-        //print(output)
-        if output.contains("SZS status Satisfiable") || output.contains("Termination reason: Satisfiable") {
-            return .sat
-        } else if output.contains("SZS status Unsatisfiable") || output.contains("Termination reason: Refutation") {
-            return .unsat
-        }
-
-        return nil
     }
 }
 

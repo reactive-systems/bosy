@@ -17,7 +17,7 @@ let package = Package(
         .target(name: "BoundedSynthesis", dependencies: ["Automata", "LTL", "Logic", "Utils", "TransitionSystem", "Specification"]),
         .testTarget(name: "BoundedSynthesisTests", dependencies: ["BoundedSynthesis"]),
         .target(name: "TransitionSystem", dependencies: ["Logic", "Utils", "Specification", "SafetySynth"]),
-        .target(name: "Automata", dependencies: ["Logic", "Utils"]),
+        .target(name: "Automata", dependencies: ["Logic", "Utils", "Utility"]),
         .testTarget(name: "AutomataTests", dependencies: ["Automata"]),
         .target(name: "Specification", dependencies: ["Logic", "Utils", "Utility"]),
         .target(name: "Logic", dependencies: ["Utils", "CAiger", "CUDD", "Utility"]),

@@ -1,4 +1,6 @@
 import Foundation
+import Basic
+import Utility
 
 import Logic
 import Utils
@@ -330,70 +332,34 @@ public enum LTL2AutomatonConverter: String {
 }
 
 func _ltl3ba(ltl: String) -> CoBüchiAutomaton? {
-    let task = Process()
-
-    task.launchPath = "./Tools/ltl3ba"
-    task.arguments = ["-f", "\"(\(ltl))\""]
-    //print(ltl)
-    
-    //let stdinPipe = NSPipe()
-    let stdoutPipe = Pipe()
-    let stderrPipe = Pipe()
-    //task.standardInput = stdinPipe
-    task.standardOutput = stdoutPipe
-    task.standardError = stderrPipe
-    task.launch()
-    
-    /*let stdinHandle = stdinPipe.fileHandleForWriting
-    if let data = ltl.data(using: NSUTF8StringEncoding) {
-        #if os(Linux)
-        stdinHandle.writeData(data)
-        #else
-        stdinHandle.write(data)
-        #endif
-        stdinHandle.closeFile()
-    }*/
-    
-    let stdoutHandle = stdoutPipe.fileHandleForReading
-    let outputData = StreamHelper.readAllAvailableData(from: stdoutHandle)
-    
-    task.waitUntilExit()
-    //let stdoutData = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
-    guard let neverClaim = String(data: outputData, encoding: String.Encoding.utf8) else {
+    do {
+        let neverClaim = try Basic.Process.checkNonZeroExit(arguments: ["./Tools/ltl3ba", "-f", "(\(ltl))"])
+        print(neverClaim)
+        return parseSpinNeverClaim(neverClaim: neverClaim)
+    } catch {
+        print(error)
+        Logger.default().error("LTL to automaton conversion using ltl3ba failed")
         return nil
     }
-    return parseSpinNeverClaim(neverClaim: neverClaim)
 }
 
 func _spot(ltl: String, hoaf: Bool = false) -> CoBüchiAutomaton? {
-    let task = Process()
-
-    task.launchPath = "./Tools/ltl2tgba"
-    task.arguments = ["-f", "(\(ltl))"]
-    if hoaf {
-        task.arguments? += ["-H", "-B"]
-    } else {
-        task.arguments?.append("--spin")
-    }
-    
-    let stdoutPipe = Pipe()
-    let stderrPipe = Pipe()
-    task.standardOutput = stdoutPipe
-    task.standardError = stderrPipe
-    task.launch()
-    
-    let stdoutHandle = stdoutPipe.fileHandleForReading
-    let outputData = StreamHelper.readAllAvailableData(from: stdoutHandle)
-    
-    task.waitUntilExit()
-    //let stdoutData = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
-    guard let output = String(data: outputData, encoding: String.Encoding.utf8) else {
+    do {
+        var arguments = ["./Tools/ltl2tgba", "-f", "(\(ltl))"]
+        if hoaf {
+            arguments += ["-H", "-B"]
+        } else {
+            arguments.append("--spin")
+        }
+        let output = try Basic.Process.checkNonZeroExit(arguments: arguments)
+        if hoaf {
+            return parse(hoaf: output)
+        } else {
+            return parseSpinNeverClaim(neverClaim: output)
+        }
+    } catch {
+        Logger.default().error("LTL to automaton conversion using spot failed")
         return nil
-    }
-    if hoaf {
-        return parse(hoaf: output)
-    } else {
-        return parseSpinNeverClaim(neverClaim: output)
     }
 }
 

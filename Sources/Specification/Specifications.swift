@@ -120,22 +120,13 @@ public struct SynthesisSpecification {
         }
         tempFile.fileHandle.write(Data(tlsf.utf8))
 
-        let outputPipe = Pipe()
-
-        let syfco = Process()
-        syfco.launchPath = "./Tools/syfco"
-        syfco.arguments = ["--format", "bosy", tempFile.path.asString]
-        syfco.standardOutput = outputPipe
-        syfco.launch()
-
-        let result = StreamHelper.readAllAvailableData(from: outputPipe.fileHandleForReading)
-        syfco.waitUntilExit()
-
-        guard let bosyJson = String(data: result, encoding: .utf8) else {
+        do {
+            let result = try Basic.Process.popen(arguments: ["./Tools/syfco", "--format", "bosy", tempFile.path.asString])
+            return .fromJson(string: try result.utf8Output())
+        } catch {
+            Logger.default().error("could not transform TLSF to BoSy format using syfco")
             return nil
         }
-
-        return .fromJson(string: bosyJson)
     }
     
     public var smv: String? {
