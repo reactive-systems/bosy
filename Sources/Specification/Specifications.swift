@@ -1,4 +1,6 @@
 import Foundation
+import Basic
+import Utility
 
 import Utils
 import LTL
@@ -113,18 +115,16 @@ public struct SynthesisSpecification {
 
     public static func from(tlsf: String) -> SynthesisSpecification? {
 
-        guard let tempFile = TempFile(suffix: "tlsf") else {
+        guard let tempFile = try? TemporaryFile(suffix: "tlsf") else {
             return nil
         }
-        guard (try? tlsf.write(to: tempFile.url, atomically: true, encoding: .utf8)) != nil else {
-            return nil
-        }
+        tempFile.fileHandle.write(Data(tlsf.utf8))
 
         let outputPipe = Pipe()
 
         let syfco = Process()
         syfco.launchPath = "./Tools/syfco"
-        syfco.arguments = ["--format", "bosy", tempFile.path]
+        syfco.arguments = ["--format", "bosy", tempFile.path.asString]
         syfco.standardOutput = outputPipe
         syfco.launch()
 

@@ -1,4 +1,6 @@
 import Foundation
+import Basic
+import Utility
 
 import Utils
 
@@ -152,7 +154,7 @@ private enum SolverHelper {
         return assignments
     }
     
-    static func executeAndReturnStdout(task: Process) -> String? {
+    static func executeAndReturnStdout(task: Foundation.Process) -> String? {
         let stdoutPipe = Pipe()
         let stderrPipe = Pipe()
         task.standardOutput = stdoutPipe
@@ -191,19 +193,15 @@ struct PicoSAT: SatSolver {
         let encodedFormula = dimacsVisitor.description
         
         // write to disk
-        guard let tempFile = TempFile(suffix: ".dimacs") else {
+        guard let tempFile = try? TemporaryFile(suffix: ".dimacs") else {
             return nil
         }
-        do {
-            try encodedFormula.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
-        } catch {
-            return nil
-        }
+        tempFile.fileHandle.write(Data(encodedFormula.utf8))
         
         // start task and extract stdout
         let task = Process()
         task.launchPath = "./Tools/picosat-solver"
-        task.arguments = [tempFile.path]
+        task.arguments = [tempFile.path.asString]
         
         guard let stdout = SolverHelper.executeAndReturnStdout(task: task) else {
             return nil
@@ -228,19 +226,15 @@ struct CryptoMiniSat: SatSolver {
         let encodedFormula = dimacsVisitor.description
         
         // write to disk
-        guard let tempFile = TempFile(suffix: ".dimacs") else {
+        guard let tempFile = try? TemporaryFile(suffix: ".dimacs") else {
             return nil
         }
-        do {
-            try encodedFormula.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
-        } catch {
-            return nil
-        }
+        tempFile.fileHandle.write(Data(encodedFormula.utf8))
         
         // start task and extract stdout and stderr
         let task = Process()
         task.launchPath = "./Tools/cryptominisat5"
-        task.arguments = ["--verb=0", tempFile.path]
+        task.arguments = ["--verb=0", tempFile.path.asString]
 
         guard let stdout = SolverHelper.executeAndReturnStdout(task: task) else {
             return nil
@@ -272,19 +266,15 @@ struct RAReQS: QbfSolver {
         }
         
         // write to disk
-        guard let tempFile = TempFile(suffix: ".qdimacs") else {
+        guard let tempFile = try? TemporaryFile(suffix: ".qdimacs") else {
             return nil
         }
-        do {
-            try encodedFormula.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
-        } catch {
-            return nil
-        }
+        tempFile.fileHandle.write(Data(encodedFormula.utf8))
         
         // start task and extract stdout and stderr
         let task = Process()
         task.launchPath = "./Tools/rareqs"
-        task.arguments = [tempFile.path]
+        task.arguments = [tempFile.path.asString]
 
         guard let stdout = SolverHelper.executeAndReturnStdout(task: task) else {
             return nil
@@ -316,19 +306,15 @@ struct DepQBF: QbfSolver {
         }
         
         // write to disk
-        guard let tempFile = TempFile(suffix: ".qdimacs") else {
+        guard let tempFile = try? TemporaryFile(suffix: ".qdimacs") else {
             return nil
         }
-        do {
-            try encodedFormula.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
-        } catch {
-            return nil
-        }
+        tempFile.fileHandle.write(Data(encodedFormula.utf8))
         
         // start task and extract stdout and stderr
         let task = Process()
         task.launchPath = "./Tools/depqbf"
-        task.arguments = ["--qdo", tempFile.path]
+        task.arguments = ["--qdo", tempFile.path.asString]
         
         guard let stdout = SolverHelper.executeAndReturnStdout(task: task) else {
             return nil
@@ -354,22 +340,18 @@ struct Bloqqer: QbfPreprocessor {
     }
     
     func preprocess(qbf: String) -> String? {
-        guard let tempFile = TempFile(suffix: ".qdimacs") else {
+        guard let tempFile = try? TemporaryFile(suffix: ".qdimacs") else {
             return nil
         }
-        do {
-            try qbf.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
-        } catch {
-            return nil
-        }
+        tempFile.fileHandle.write(Data(qbf.utf8))
         
         let task = Process()
         if !preserveAssignments {
             task.launchPath = "./Tools/bloqqer-031"
-            task.arguments = ["--keep=1", tempFile.path]
+            task.arguments = ["--keep=1", tempFile.path.asString]
         } else {
             task.launchPath = "./Tools/bloqqer"
-            task.arguments = ["--keep=1", "--partial-assignment=1", tempFile.path]
+            task.arguments = ["--keep=1", "--partial-assignment=1", tempFile.path.asString]
         }
         
         guard let stdout = SolverHelper.executeAndReturnStdout(task: task) else {
@@ -381,28 +363,24 @@ struct Bloqqer: QbfPreprocessor {
 
 struct HQSPre: QbfPreprocessor {
     func preprocess(qbf: String) -> String? {
-        guard let tempFile = TempFile(suffix: ".qdimacs") else {
+        guard let tempFile = try? TemporaryFile(suffix: ".qdimacs") else {
             return nil
         }
-        do {
-            try qbf.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
-        } catch {
-            return nil
-        }
+        tempFile.fileHandle.write(Data(qbf.utf8))
         
-        guard let outFile = TempFile(suffix: ".qdimacs") else {
+        guard let outFile = try? TemporaryFile(suffix: ".qdimacs") else {
             return nil
         }
         
         let task = Process()
         task.launchPath = "./Tools/hqspre-linux"
-        task.arguments = ["-o", outFile.path, tempFile.path]
+        task.arguments = ["-o", outFile.path.asString, tempFile.path.asString]
         
         guard let _ = SolverHelper.executeAndReturnStdout(task: task) else {
             return nil
         }
         
-        guard let qdimacs = try? String(contentsOfFile: outFile.path, encoding: String.Encoding.utf8) else {
+        guard let qdimacs = try? String(contentsOfFile: outFile.path.asString, encoding: String.Encoding.utf8) else {
             return nil
         }
         
@@ -424,19 +402,15 @@ struct CAQE: QbfSolver, CertifyingQbfSolver {
         }
         
         // write to disk
-        guard let tempFile = TempFile(suffix: ".qdimacs") else {
+        guard let tempFile = try? TemporaryFile(suffix: ".qdimacs") else {
             return nil
         }
-        do {
-            try encodedFormula.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
-        } catch {
-            return nil
-        }
+        tempFile.fileHandle.write(Data(encodedFormula.utf8))
         
         // start task and extract stdout and stderr
         let task = Process()
         task.launchPath = "./Tools/caqem"
-        task.arguments = ["--partial-assignments", "--expansion-refinement=1", tempFile.path]
+        task.arguments = ["--partial-assignments", "--expansion-refinement=1", tempFile.path.asString]
         
         guard let stdout = SolverHelper.executeAndReturnStdout(task: task) else {
             return nil
@@ -457,18 +431,14 @@ struct CAQE: QbfSolver, CertifyingQbfSolver {
         let qdimacsVisitor = QDIMACSVisitor(formula: formula)
         let encodedFormula = qdimacsVisitor.description
         
-        guard let tempFile = TempFile(suffix: ".qdimacs") else {
+        guard let tempFile = try? TemporaryFile(suffix: ".qdimacs") else {
             return nil
         }
-        do {
-            try encodedFormula.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
-        } catch {
-            return nil
-        }
+        tempFile.fileHandle.write(Data(encodedFormula.utf8))
         
         let task = Process()
         task.launchPath = "./Tools/caqem"
-        task.arguments = ["-c", tempFile.path]
+        task.arguments = ["-c", tempFile.path.asString]
         
         let stdoutPipe = Pipe()
         let stderrPipe = Pipe()
@@ -514,14 +484,10 @@ struct QuAbS: CertifyingQbfSolver {
         let qcirVisitor = QCIRVisitor(formula: formula)
         let encodedFormula = qcirVisitor.description
         
-        guard let tempFile = TempFile(suffix: ".qcir") else {
+        guard let tempFile = try? TemporaryFile(suffix: ".qcir") else {
             return nil
         }
-        do {
-            try encodedFormula.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
-        } catch {
-            return nil
-        }
+        tempFile.fileHandle.write(Data(encodedFormula.utf8))
         
         let task = Process()
 
@@ -530,7 +496,7 @@ struct QuAbS: CertifyingQbfSolver {
         #else
         task.launchPath = "./Tools/quabscm"
         #endif
-        task.arguments = ["-c", tempFile.path]
+        task.arguments = ["-c", tempFile.path.asString]
         
         let stdoutPipe = Pipe()
         let stderrPipe = Pipe()
@@ -576,18 +542,14 @@ struct CADET: CertifyingQbfSolver {
         let qdimacsVisitor = QDIMACSVisitor(formula: formula)
         let encodedFormula = qdimacsVisitor.description
         
-        guard let tempFile = TempFile(suffix: ".qdimacs") else {
+        guard let tempFile = try? TemporaryFile(suffix: ".qdimacs") else {
             return nil
         }
-        do {
-            try encodedFormula.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
-        } catch {
-            return nil
-        }
+        tempFile.fileHandle.write(Data(encodedFormula.utf8))
         
         let task = Process()
         task.launchPath = "./Tools/cadet"
-        task.arguments = ["-c", "stdout", tempFile.path]
+        task.arguments = ["-c", "stdout", tempFile.path.asString]
         
         let stdoutPipe = Pipe()
         let stderrPipe = Pipe()
@@ -633,15 +595,15 @@ extension UnsafeMutablePointer where Pointee == aiger {
     public var minimized: UnsafeMutablePointer<aiger>? {
         let minimized = aiger_init()
         
-        guard let inputTempFile = TempFile(suffix: ".aig") else {
+        guard let inputTempFile = try? TemporaryFile(suffix: ".aig") else {
             return nil
         }
-        guard let outputTempFile = TempFile(suffix: ".aig") else {
+        guard let outputTempFile = try? TemporaryFile(suffix: ".aig") else {
             return nil
         }
-        aiger_open_and_write_to_file(self, inputTempFile.path)
+        aiger_open_and_write_to_file(self, inputTempFile.path.asString)
         
-        var abcCommand = "read \(inputTempFile.path); strash; refactor -zl; rewrite -zl;"
+        var abcCommand = "read \(inputTempFile.path.asString); strash; refactor -zl; rewrite -zl;"
         if self.pointee.num_ands < 1_000_000 {
             abcCommand += " strash; refactor -zl; rewrite -zl;"
         }
@@ -651,7 +613,7 @@ extension UnsafeMutablePointer where Pointee == aiger {
         if self.pointee.num_ands < 200_000 {
             abcCommand += " dfraig; rewrite -zl; dfraig;"
         }
-        abcCommand += " write \(outputTempFile.path);"
+        abcCommand += " write \(outputTempFile.path.asString);"
         
         let task = Process()
         task.launchPath = "./Tools/abc"
@@ -664,7 +626,7 @@ extension UnsafeMutablePointer where Pointee == aiger {
         task.waitUntilExit()
         assert(task.terminationStatus == 0)
         
-        let result = aiger_open_and_read_from_file(minimized, outputTempFile.path)
+        let result = aiger_open_and_read_from_file(minimized, outputTempFile.path.asString)
         assert(result == nil)
         
         return minimized
@@ -679,19 +641,15 @@ struct iDQ: DqbfSolver {
         let encodedFormula = dqdimacsVisitor.description
 
         // write to disk
-        guard let tempFile = TempFile(suffix: ".dqdimacs") else {
+        guard let tempFile = try? TemporaryFile(suffix: ".dqdimacs") else {
             return nil
         }
-        do {
-            try encodedFormula.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
-        } catch {
-            return nil
-        }
+        tempFile.fileHandle.write(Data(encodedFormula.utf8))
         
         // start task and extract stdout and stderr
         let task = Process()
         task.launchPath = "./Tools/idq"
-        task.arguments = [tempFile.path]
+        task.arguments = [tempFile.path.asString]
         
         guard let output = SolverHelper.executeAndReturnStdout(task: task) else {
             return nil
@@ -713,19 +671,15 @@ struct HQS: DqbfSolver {
         let encodedFormula = dqdimacsVisitor.description
         
         // write to disk
-        guard let tempFile = TempFile(suffix: ".dqdimacs") else {
+        guard let tempFile = try? TemporaryFile(suffix: ".dqdimacs") else {
             return nil
         }
-        do {
-            try encodedFormula.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
-        } catch {
-            return nil
-        }
+        tempFile.fileHandle.write(Data(encodedFormula.utf8))
         
         // start task and extract stdout and stderr
         let task = Process()
         task.launchPath = "./Tools/hqs-linux"
-        task.arguments = [tempFile.path]
+        task.arguments = [tempFile.path.asString]
         
         guard let output = SolverHelper.executeAndReturnStdout(task: task) else {
             return nil
@@ -747,19 +701,15 @@ struct Eprover: DqbfSolver {
         let encodedFormula = dqdimacsVisitor.description
         
         // write to disk
-        guard let tempFile = TempFile(suffix: ".tptp3") else {
+        guard let tempFile = try? TemporaryFile(suffix: ".tptp3") else {
             return nil
         }
-        do {
-            try encodedFormula.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
-        } catch {
-            return nil
-        }
+        tempFile.fileHandle.write(Data(encodedFormula.utf8))
         
         // start task and extract stdout and stderr
         let task = Process()
         task.launchPath = "./Tools/eprover"
-        task.arguments = ["--auto", "--tptp3-format", tempFile.path]
+        task.arguments = ["--auto", "--tptp3-format", tempFile.path.asString]
         
         guard let output = SolverHelper.executeAndReturnStdout(task: task) else {
             return nil
@@ -781,19 +731,15 @@ struct Vampire: DqbfSolver {
         let encodedFormula = dqdimacsVisitor.description
         
         // write to disk
-        guard let tempFile = TempFile(suffix: ".tptp3") else {
+        guard let tempFile = try? TemporaryFile(suffix: ".tptp3") else {
             return nil
         }
-        do {
-            try encodedFormula.write(toFile: tempFile.path, atomically: true, encoding: String.Encoding.utf8)
-        } catch {
-            return nil
-        }
+        tempFile.fileHandle.write(Data(encodedFormula.utf8))
         
         // start task and extract stdout and stderr
         let task = Process()
         task.launchPath = "./Tools/vampire"
-        task.arguments = ["--mode", "casc", "-t","1200", tempFile.path]
+        task.arguments = ["--mode", "casc", "-t","1200", tempFile.path.asString]
         
         guard let output = SolverHelper.executeAndReturnStdout(task: task) else {
             return nil
@@ -811,7 +757,7 @@ struct Vampire: DqbfSolver {
 
 class GenericSmtSolver: SmtSolver {
     
-    let task: Process
+    let task: Foundation.Process
     let inputPipe: Pipe
     let outputPipe: Pipe
     

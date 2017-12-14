@@ -7,6 +7,7 @@ let package = Package(
         .executable(name: "BoSy", targets: ["BoSy"]),
     ],
     dependencies: [
+        .package(url: "https://github.com/apple/swift-package-manager.git", from: "0.1.0"),
         .package(url: "https://github.com/ltentrup/CAiger.git", from: "0.1.0"),
         .package(url: "https://github.com/ltentrup/SafetySynth.git", from: "0.2.0"),
         .package(url: "https://github.com/ltentrup/CUDD.git", from: "0.2.0"),
@@ -18,8 +19,8 @@ let package = Package(
         .target(name: "TransitionSystem", dependencies: ["Logic", "Utils", "Specification", "SafetySynth"]),
         .target(name: "Automata", dependencies: ["Logic", "Utils"]),
         .testTarget(name: "AutomataTests", dependencies: ["Automata"]),
-        .target(name: "Specification", dependencies: ["Logic", "Utils"]),
-        .target(name: "Logic", dependencies: ["Utils", "CAiger", "CUDD"]),
+        .target(name: "Specification", dependencies: ["Logic", "Utils", "Utility"]),
+        .target(name: "Logic", dependencies: ["Utils", "CAiger", "CUDD", "Utility"]),
         .testTarget(name: "LogicTests", dependencies: ["Logic"]),
         .target(name: "LTL"),
         .testTarget(name: "LTLTests", dependencies: ["LTL"]),
