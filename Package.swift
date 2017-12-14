@@ -5,6 +5,7 @@ let package = Package(
     name: "BoSy",
     products: [
         .executable(name: "BoSy", targets: ["BoSy"]),
+        .executable(name: "BoSyHyper", targets: ["BoSyHyper"])
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-package-manager.git", from: "0.1.0"),
@@ -26,5 +27,8 @@ let package = Package(
         .testTarget(name: "LTLTests", dependencies: ["LTL"]),
         .target(name: "Utils"),
         .testTarget(name: "UtilsTests", dependencies: ["Utils"]),
+        
+        // BoSyHyper
+        .target(name: "BoSyHyper", dependencies: ["Utility", "Automata", "LTL", "Logic", "Utils", "TransitionSystem", "Specification", "BoundedSynthesis"]),
     ]
 )
