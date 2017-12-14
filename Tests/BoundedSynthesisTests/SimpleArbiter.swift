@@ -1,6 +1,9 @@
 
 import XCTest
 
+import Basic
+import Utility
+
 import Specification
 import LTL
 import Utils
@@ -60,64 +63,30 @@ func modelCheckAiger(specification: SynthesisSpecification, implementation: Unsa
     guard let smvSecification = specification.smv else {
         fatalError()
     }
-    guard let tempFile = TempFile(suffix: ".smv"),
-          let monitorFile = TempFile(suffix: ".aig"),
-          let implementationFile = TempFile(suffix: ".aig"),
-          let combinedFile = TempFile(suffix: ".aig") else {
-        fatalError()
-    }
-    guard (try? smvSecification.write(toFile: tempFile.path, atomically: true, encoding: .utf8)) != nil else {
-        fatalError()
-    }
-    
-    let buildMonitor = Process()
-    buildMonitor.launchPath = "./Tools/smvtoaig"
-    buildMonitor.arguments = ["-L", "Tools/ltl2smv", tempFile.path, monitorFile.path]
+    let tempFile = try TemporaryFile(suffix: ".smv")
+    let monitorFile = try TemporaryFile(suffix: ".aig")
+    let implementationFile = try TemporaryFile(suffix: ".aig")
+    let combinedFile = try TemporaryFile(suffix: ".aig")
 
-    buildMonitor.launch()
-    
-    buildMonitor.waitUntilExit()
-    
-    aiger_open_and_write_to_file(implementation, implementationFile.path)
-    
-    let buildCombined = Process()
-    buildCombined.launchPath = "./Tools/combine-aiger"
-    buildCombined.arguments = [monitorFile.path, implementationFile.path]
-    
-    let stdoutPipe = Pipe()
-    buildCombined.standardOutput = stdoutPipe
-    buildCombined.launch()
-    
-    // there may be a large amount of stdout data
-    // by reading it before waiting, we avoid deadlocks
-    let stdoutHandle = stdoutPipe.fileHandleForReading
-    let stdoutData = StreamHelper.readAllAvailableData(from: stdoutHandle)
-    
-    buildCombined.waitUntilExit()
-    
-    try stdoutData.write(to: combinedFile.url)
-    
-    let modelChecker = Process()
-    modelChecker.launchPath = "./Tools/aigbmc"
-    modelChecker.arguments = [combinedFile.path]
-    
-    let mcOutPipe = Pipe()
-    modelChecker.standardOutput = mcOutPipe
-    modelChecker.launch()
-    
-    // there may be a large amount of stdout data
-    // by reading it before waiting, we avoid deadlocks
-    let mcStdoutHandle = mcOutPipe.fileHandleForReading
-    let mcStdoutData = StreamHelper.readAllAvailableData(from: mcStdoutHandle)
+    tempFile.fileHandle.write(Data(smvSecification.utf8))
 
-    modelChecker.waitUntilExit()
+
+    try Basic.Process.checkNonZeroExit(arguments: ["./Tools/smvtoaig", "-L", "Tools/ltl2smv", tempFile.path.asString, monitorFile.path.asString])
     
-    guard let mcStdout = String(data: mcStdoutData, encoding: .utf8) else {
-        fatalError()
-    }
-    if mcStdout.hasPrefix("1") {
+    aiger_open_and_write_to_file(implementation, implementationFile.path.asString)
+
+    let combiner = Basic.Process(arguments: ["./Tools/combine-aiger", monitorFile.path.asString, implementationFile.path.asString])
+    try combiner.launch()
+    let combinationResult = try combiner.waitUntilExit()
+    let sequence: [UInt8] = try combinationResult.output.dematerialize().map(UInt8.init)
+
+    combinedFile.fileHandle.write(Data(bytes: sequence))
+
+    let modelCheckOutput = try Basic.Process.checkNonZeroExit(arguments: ["./Tools/aigbmc", combinedFile.path.asString])
+
+    if modelCheckOutput.hasPrefix("1") {
         // found counterexample
-        print(mcStdout)
+        print(modelCheckOutput)
         return false
     }
     
@@ -209,7 +178,7 @@ class SimpleArbiterTest: XCTestCase {
         XCTAssertTrue(try encoding.solve(forBound: 1))
     }
     
-    func testSynthesisInputSymbolic() {
+    func testSynthesisInputSymbolic() throws {
         options.solver = .rareqs
         options.qbfPreprocessor = .bloqqer
         options.qbfCertifier = .quabs
@@ -237,17 +206,9 @@ class SimpleArbiterTest: XCTestCase {
             XCTFail()
             fatalError()
         }
-        guard let tempFile = TempFile(suffix: ".smv") else {
-            XCTFail()
-            fatalError()
-        }
-        do {
-            try smvRepresentation.write(toFile: tempFile.path, atomically: true, encoding: .utf8)
-        } catch {
-            XCTFail()
-            fatalError()
-        }
-        XCTAssertTrue(modelCheckSMV(file: tempFile.path))
+        let tempFile = try TemporaryFile(suffix: ".smv")
+        tempFile.fileHandle.write(Data(smvRepresentation.utf8))
+        XCTAssertTrue(modelCheckSMV(file: tempFile.path.asString))
         
         // Check AIGER implementation
         guard let aigerRepresentation = (transitionSystem as? AigerRepresentable)?.aiger else {
@@ -257,7 +218,7 @@ class SimpleArbiterTest: XCTestCase {
         XCTAssertTrue(try modelCheckAiger(specification: specification, implementation: aigerRepresentation))
     }
     
-    func testSynthesisExplicit() {
+    func testSynthesisExplicit() throws {
         options.solver = .picosat
         guard let specification = SynthesisSpecification.fromJson(string: jsonSpec) else {
             XCTFail()
@@ -283,17 +244,9 @@ class SimpleArbiterTest: XCTestCase {
             XCTFail()
             fatalError()
         }
-        guard let tempFile = TempFile(suffix: ".smv") else {
-            XCTFail()
-            fatalError()
-        }
-        do {
-            try smvRepresentation.write(toFile: tempFile.path, atomically: true, encoding: .utf8)
-        } catch {
-            XCTFail()
-            fatalError()
-        }
-        XCTAssertTrue(modelCheckSMV(file: tempFile.path))
+        let tempFile = try TemporaryFile(suffix: ".smv")
+        tempFile.fileHandle.write(Data(smvRepresentation.utf8))
+        XCTAssertTrue(modelCheckSMV(file: tempFile.path.asString))
         
         // Check AIGER implementation
         guard let aigerRepresentation = (transitionSystem as? AigerRepresentable)?.aiger else {
@@ -303,7 +256,7 @@ class SimpleArbiterTest: XCTestCase {
         XCTAssertTrue(try modelCheckAiger(specification: specification, implementation: aigerRepresentation))
     }
     
-    func testSynthesisSmt() {
+    func testSynthesisSmt() throws {
         options.solver = .z3
         guard let specification = SynthesisSpecification.fromJson(string: jsonSpec) else {
             XCTFail()
@@ -329,17 +282,9 @@ class SimpleArbiterTest: XCTestCase {
             XCTFail()
             fatalError()
         }
-        guard let tempFile = TempFile(suffix: ".smv") else {
-            XCTFail()
-            fatalError()
-        }
-        do {
-            try smvRepresentation.write(toFile: tempFile.path, atomically: true, encoding: .utf8)
-        } catch {
-            XCTFail()
-            fatalError()
-        }
-        XCTAssertTrue(modelCheckSMV(file: tempFile.path))
+        let tempFile = try TemporaryFile(suffix: ".smv")
+        tempFile.fileHandle.write(Data(smvRepresentation.utf8))
+        XCTAssertTrue(modelCheckSMV(file: tempFile.path.asString))
         
         // Check AIGER implementation
         guard let aigerRepresentation = (transitionSystem as? AigerRepresentable)?.aiger else {
