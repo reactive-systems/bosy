@@ -267,23 +267,20 @@ struct LTLLexer {
         switch scanner.current() {
         
         // True/False literals
-        case "0":
+        case "0", "⊥":
             scanner.next()
             return .False
-        case "1":
+        case "1", "⊤":
             scanner.next()
             return .True
         
         // Not
-        case "!":
-            scanner.next()
-            return .Not
-        case "~":
+        case "!", "~", "¬":
             scanner.next()
             return .Not
         
         // And
-        case "*":
+        case "*", "∧":
             scanner.next()
             return .And
         case "&":
@@ -298,7 +295,7 @@ struct LTLLexer {
             return .And
         
         // Or
-        case "+":
+        case "+", "∨":
             scanner.next()
             return .Or
         case "|":

@@ -1,5 +1,5 @@
 
-public struct LTLFunction {
+public struct LTLFunction: Codable {
     let symbol: String
     let arity: Int
 
@@ -46,15 +46,15 @@ public struct LTLFunction {
     }
 }
 
-public struct LTLAtomicProposition {
+public struct LTLAtomicProposition: Codable {
     let name: String
 }
 
-public struct LTLPathVariable {
+public struct LTLPathVariable: Codable {
     let name: String
 }
 
-public enum LTLQuantifier {
+public enum LTLQuantifier: String, Codable {
     case forall
     case exists
 
