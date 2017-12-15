@@ -5,6 +5,8 @@ import Utility
 
 import Specification
 import Utils
+import LTL
+import Automata
 
 // MARK: - argument parsing
 
@@ -23,7 +25,7 @@ func parseSpecification(fileName: String?) throws -> SynthesisSpecification {
 
         let standardInput = FileHandle.standardInput
         let input = StreamHelper.readAllAvailableData(from: standardInput)
-        guard let decoded = String(data: input, encoding: String.Encoding.utf8) else {
+        guard let decoded = String(data: input, encoding: .utf8) else {
             print("error: cannot read input from stdin")
             exit(1)
         }
@@ -38,12 +40,30 @@ func parseSpecification(fileName: String?) throws -> SynthesisSpecification {
 
 do {
     let parser = ArgumentParser(commandName: "BoSyHyper", usage: "specification", overview: "BoSyHyper is a synthesis tool for temporal hyperproperties.")
-    let specification = parser.add(positional: "specification", kind: String.self, optional: true, usage: "A file containing the specification in BoSy format", completion: .filename)
+    let specificationFile = parser.add(positional: "specification", kind: String.self, optional: true, usage: "A file containing the specification in BoSy format", completion: .filename)
 
     let args = Array(CommandLine.arguments.dropFirst())
     let result = try parser.parse(args)
 
-    print(try parseSpecification(fileName: result.get(specification)))
+    let specification = try parseSpecification(fileName: result.get(specificationFile))
+
+    assert(specification.assumptions.count == 0)
+    assert(specification.guarantees.count == 1)
+    guard let hyperltl = specification.guarantees.first else {
+        fatalError()
+    }
+    assert(hyperltl.isHyperLTL)
+    print(hyperltl)
+    let body = hyperltl.ltlBody
+    guard let spot = (!body).spot else {
+        fatalError()
+    }
+    print(spot)
+    guard let automaton = LTL2AutomatonConverter.spot.convert(ltl: spot) else {
+        Logger.default().error("could not construct automaton")
+        fatalError()
+    }
+    print(automaton)
 
 
 } catch ArgumentParserError.expectedValue(let value) {

@@ -1108,7 +1108,7 @@ class ScalarScanner {
             ("a"..."z").contains(scalars[end])
             || ("A"..."Z").contains(scalars[end])
             || ("0"..."9").contains(scalars[end])
-            || scalars[end] == "_"
+            || ["[", "]", "_"].contains(scalars[end])
             ) {
             end = scalars.index(after: end)
         }
