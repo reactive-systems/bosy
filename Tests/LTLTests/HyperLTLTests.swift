@@ -3,11 +3,18 @@ import XCTest
 
 class HyperLTLTests: XCTestCase {
 
+    let pi1 = LTLPathVariable(name: "pi1")
+    let pi2 = LTLPathVariable(name: "pi2")
+
     func testHyperLTLDetectionTrue() throws {
         let ltlString = "forall pi1 pi2. a[pi1] && b[pi2]"
         let parsed = try LTL.parse(fromString: ltlString)
 
         XCTAssertTrue(parsed.isHyperLTL)
+
+        XCTAssert(parsed.pathVariables.contains(pi1))
+        XCTAssert(parsed.pathVariables.contains(pi2))
+        XCTAssertEqual(parsed.pathVariables.count, 2)
     }
 
     func testHyperLTLDetectionTrueAlternation() throws {
@@ -37,8 +44,7 @@ class HyperLTLTests: XCTestCase {
 
         let a = LTLAtomicProposition(name: "a")
         let b = LTLAtomicProposition(name: "b")
-        let pi1 = LTLPathVariable(name: "pi1")
-        let pi2 = LTLPathVariable(name: "pi2")
+
         let api1: LTL = .pathProposition(a, pi1)
         let bpi2: LTL = .pathProposition(b, pi2)
         let body = api1 && bpi2

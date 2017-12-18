@@ -15,9 +15,13 @@ extension LTLAtomicProposition: Equatable {
     }
 }
 
-extension LTLPathVariable: Equatable {
+extension LTLPathVariable: Hashable {
     public static func ==(lhs: LTLPathVariable, rhs: LTLPathVariable) -> Bool {
         return lhs.name == rhs.name
+    }
+
+    public var hashValue: Int {
+        return name.hashValue
     }
 }
 

@@ -48,6 +48,10 @@ public struct LTLFunction: Codable {
 
 public struct LTLAtomicProposition: Codable {
     let name: String
+
+    public init(name: String) {
+        self.name = name
+    }
 }
 
 public struct LTLPathVariable: Codable {

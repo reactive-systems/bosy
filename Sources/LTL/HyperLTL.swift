@@ -34,7 +34,6 @@ extension LTL {
     }
 
     public var ltlBody: LTL {
-        print(self)
         precondition(isHyperLTL)
         return _getLTLBody()
     }
@@ -44,6 +43,20 @@ extension LTL {
             return body._getLTLBody()
         } else {
             return self
+        }
+    }
+
+    public var pathVariables: [LTLPathVariable] {
+        precondition(isHyperLTL)
+        return _getPathVariables()
+    }
+
+    private func _getPathVariables() -> [LTLPathVariable] {
+        switch self {
+        case .pathQuantifier(_, parameters: let variables, body: let body):
+            return variables + body._getPathVariables()
+        default:
+            return []
         }
     }
 }

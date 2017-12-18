@@ -7,6 +7,8 @@ import Specification
 import Utils
 import LTL
 import Automata
+import BoundedSynthesis
+import TransitionSystem
 
 // MARK: - argument parsing
 
@@ -65,6 +67,22 @@ do {
     }
     print(automaton)
 
+    var encoding = HyperSmtEncoding(
+        options: BoSyOptions(),
+        automaton: automaton,
+        specification: specification)
+
+    for i in 1... {
+        if try encoding.solve(forBound: i) {
+            print("realizable")
+
+            guard let solution = encoding.extractSolution() else {
+                fatalError()
+            }
+            print((solution as! DotRepresentable).dot)
+            exit(0)
+        }
+    }
 
 } catch ArgumentParserError.expectedValue(let value) {
     print("Missing value for argument \(value).")
