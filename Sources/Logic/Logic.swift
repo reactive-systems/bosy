@@ -19,7 +19,9 @@ public func ==(lhs: Logic, rhs: Logic) -> Bool {
     case let (lhs as Proposition, rhs as Proposition):
         return lhs == rhs
     case let (lhs as UnaryOperator, rhs as UnaryOperator):
-        return lhs.operand == rhs.operand
+        return lhs == rhs
+    case let (lhs as BinaryOperator, rhs as BinaryOperator):
+        return lhs == rhs
     default:
         //assert(type(of: lhs) != type(of: rhs))
         return false
