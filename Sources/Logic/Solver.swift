@@ -779,7 +779,6 @@ class GenericSmtSolver: SmtSolver {
         #if !os(Linux)
         task.standardError = FileHandle.nullDevice
         #endif
-        task.launch()
     }
     
     deinit {
@@ -790,7 +789,9 @@ class GenericSmtSolver: SmtSolver {
     }
     
     func solve(formula: String) -> SolverResult? {
-        precondition(task.isRunning)
+        if !task.isRunning {
+            task.launch()
+        }
         
         guard let encodedFormula = (formula + "(check-sat)\n").data(using: .utf8) else {
             return nil
