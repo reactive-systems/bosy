@@ -84,10 +84,7 @@ do {
         }
     }
 
-} catch ArgumentParserError.expectedValue(let value) {
-    print("Missing value for argument \(value).")
-} catch ArgumentParserError.expectedArguments(let parser, let stringArray) {
-    print("Missing arguments: \(stringArray.joined()).")
 } catch {
-    print(error.localizedDescription)
+    print(error)
+    exit(1)
 }
