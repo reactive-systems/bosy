@@ -72,7 +72,7 @@ extension ExplicitStateSolution: AigerRepresentable {
         for (source, outgoing) in transitions {
             for (target, condition) in outgoing {
                 let enabled = stateToBits(source, withLatches: latches).reduce(Literal.True, &) & condition
-                let targetEncoding = binaryFrom(target, bits: numBitsNeeded(states.count)).characters
+                let targetEncoding = binaryFrom(target, bits: numBitsNeeded(states.count))
                 for (bit, latch) in zip(targetEncoding, latches) {
                     assert(["0", "1"].contains(bit))
                     if bit == "0" {
@@ -92,7 +92,7 @@ extension ExplicitStateSolution: AigerRepresentable {
     
     private func stateToBits(_ state: Int, withLatches latches: [Proposition]) -> [Logic] {
         var bits: [Logic] = []
-        for (value, proposition) in zip(binaryFrom(state, bits: numBitsNeeded(states.count)).characters, latches) {
+        for (value, proposition) in zip(binaryFrom(state, bits: numBitsNeeded(states.count)), latches) {
             assert(["0", "1"].contains(value))
             if value == "0" {
                 bits.append(!proposition)

@@ -129,7 +129,7 @@ struct SymbolicEncoding: BoSyEncoding {
 
     func explicitToSymbolic(base: String, value: Int, bits: Int, parameters: [Proposition]? = nil) -> Logic {
         var and: [Logic] = []
-        for (i, bit) in binaryFrom(value, bits: bits).characters.enumerated() {
+        for (i, bit) in binaryFrom(value, bits: bits).enumerated() {
             let prop: Logic
             if let parameters = parameters {
                 prop = FunctionApplication(function: Proposition("\(base)\(i)"), application: parameters)

@@ -453,7 +453,7 @@ private func parse(hoaf: String) -> CoBüchiAutomaton? {
         var aps: [String] = []
         
         var ap: String? = nil
-        for character in line.characters {
+        for character in line {
             if character == "\"" {
                 if let apValue = ap {
                     aps.append(apValue)
@@ -472,7 +472,7 @@ private func parse(hoaf: String) -> CoBüchiAutomaton? {
         var formula: String? = nil
         var proposition: Int? = nil
         var target: Int? = nil
-        for character in line.characters {
+        for character in line {
             if character == "[" {
                 formula = ""
             } else if character == "]" {

@@ -73,12 +73,12 @@ public class BoSyStatistics: CustomStringConvertible {
     // Conformance to CustomStringConvertible
     public var description: String {
         var stat = "\nStatistics\n"
-        let maximalName = Phase.allValues.map({ $0.description.characters.count }).reduce(0, { max($0 ,$1) })
+        let maximalName = Phase.allValues.map({ $0.description.count }).reduce(0, { max($0 ,$1) })
         for phase in Phase.allValues {
             guard let measurements = durations[phase] else {
                 continue
             }
-            let padding = String(repeating: " ", count: maximalName - phase.description.characters.count)
+            let padding = String(repeating: " ", count: maximalName - phase.description.count)
             let total = measurements.reduce(0, +)
             let average = total / Double(measurements.count)
             let totalFormat = String(format: "%.4f", total)

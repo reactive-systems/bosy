@@ -180,7 +180,7 @@ struct SmtEncoding: BoSyEncoding {
                     return nil
                 }
                 let transition = i.map({ v, val in val == Literal.True ? v : !v }).reduce(Literal.True, &)
-                guard let target = Int(proposition.name.substring(from: proposition.name.index(after: proposition.name.startIndex)), radix: 10) else {
+                guard let target = Int(proposition.name[proposition.name.index(after: proposition.name.startIndex)..<proposition.name.endIndex], radix: 10) else {
                     return nil
                 }
                 solution.addTransition(from: source, to: target, withGuard: transition)

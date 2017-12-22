@@ -14,10 +14,10 @@ public func numBitsNeeded(_ x: Int) -> Int {
 public func binaryFrom(_ n: Int, bits: Int) -> String {
     let binary = String(n, radix: 2)
     // padding on left
-    assert(binary.characters.count <= bits)
-    if binary.characters.count == bits {
+    assert(binary.count <= bits)
+    if binary.count == bits {
         return binary
     }
-    let padding = String(repeating: "0", count: bits - binary.characters.count)
+    let padding = String(repeating: "0", count: bits - binary.count)
     return padding + binary
 }
