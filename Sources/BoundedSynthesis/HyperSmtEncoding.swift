@@ -137,7 +137,7 @@ public struct HyperSmtEncoding: BoSyEncoding {
             }
         }
 
-        print(smt)
+        //print(smt)
         
         return smt
     }

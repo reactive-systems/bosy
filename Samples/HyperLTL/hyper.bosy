@@ -1,0 +1,10 @@
+{
+    "semantics": "mealy",
+    "inputs": ["i_l", "i_h"],
+    "outputs": ["o_l"],
+    "assumptions": [],
+    "guarantees": [
+        "forall pi1 pi2. ( (o_l[pi1] <-> i_h[pi1]) || (X o_l[pi1] <-> i_l[pi1]) ) && ( (o_l[pi1] <-> o_l[pi2]) W !(i_l[pi1] <-> i_l[pi2]) )"
+    ]
+}
+

@@ -9,6 +9,7 @@ import LTL
 import Automata
 import BoundedSynthesis
 import TransitionSystem
+import CAiger
 
 // MARK: - argument parsing
 
@@ -80,6 +81,14 @@ do {
                 fatalError()
             }
             print((solution as! DotRepresentable).dot)
+
+            guard let aiger_solution = (solution as? AigerRepresentable)?.aiger else {
+                Logger.default().error("could not encode solution as AIGER")
+                exit(1)
+            }
+            let minimized = aiger_solution.minimized
+            aiger_write_to_file(minimized, aiger_ascii_mode, stdout)
+
             exit(0)
         }
     }
