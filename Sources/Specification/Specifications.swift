@@ -30,6 +30,14 @@ public struct SynthesisSpecification: Codable {
     public let outputs: [String]
     public let assumptions: [LTL]
     public let guarantees: [LTL]
+
+    public init(semantics: TransitionSystemType, inputs: [String], outputs: [String], assumptions: [LTL], guarantees: [LTL]) {
+        self.semantics = semantics
+        self.inputs = inputs
+        self.outputs = outputs
+        self.assumptions = assumptions
+        self.guarantees = guarantees
+    }
     
     public var dualized: SynthesisSpecification {
         let dualizedLTL = !ltl

@@ -6,7 +6,7 @@ enum BoSyEncodingError: Error {
     case SolvingFailed(String)
 }
 
-protocol BoSyEncoding {
+public protocol BoSyEncoding {
     
     mutating func solve(forBound bound: Int) throws -> Bool
     func extractSolution() -> TransitionSystem?

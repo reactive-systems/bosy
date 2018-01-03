@@ -3,6 +3,7 @@
 
 // FIXME: check which precedence is correct
 infix operator =>
+infix operator <=>
 
 extension LTL {
 
@@ -22,8 +23,16 @@ extension LTL {
         return .application(.implies, parameters: [lhs, rhs])
     }
 
+    public static func <=> (lhs: LTL, rhs: LTL) -> LTL {
+        return .application(.equivalent, parameters: [lhs, rhs])
+    }
+
     public static func until(_ lhs: LTL, _ rhs: LTL) -> LTL {
         return .application(.until, parameters: [lhs, rhs])
     }
 
+    public static func weakUntil(_ lhs: LTL, _ rhs: LTL) -> LTL {
+        return .application(.weakUntil, parameters: [lhs, rhs])
+    }
+    
 }

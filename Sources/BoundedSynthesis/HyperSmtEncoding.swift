@@ -6,7 +6,12 @@ import Specification
 import TransitionSystem
 import LTL
 
-public struct HyperSmtEncoding: BoSyEncoding {
+/**
+ * Bounded Synthesis encoding for synthesizing system strategies given
+ * a universal HyperLTL specification.
+ * Uses an SMT solver as backend.
+ */
+public class HyperSmtEncoding: BoSyEncoding {
     
     let options: BoSyOptions
     let automaton: CoBüchiAutomaton
@@ -172,7 +177,7 @@ public struct HyperSmtEncoding: BoSyEncoding {
         return Proposition("lambdaSharp_\(automatonState)")
     }
 
-    public mutating func solve(forBound bound: Int) throws -> Bool {
+    public func solve(forBound bound: Int) throws -> Bool {
         Logger.default().info("build encoding for bound \(bound)")
         
         let constraintTimer = options.statistics?.startTimer(phase: .constraintGeneration)

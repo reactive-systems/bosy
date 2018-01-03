@@ -5,7 +5,7 @@ import Automata
 import Specification
 import TransitionSystem
 
-struct InputSymbolicEncoding: BoSyEncoding {
+public class InputSymbolicEncoding: BoSyEncoding {
     
     let options: BoSyOptions
     let automaton: CoBüchiAutomaton
@@ -17,7 +17,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
     var instance: Logic?
     var solutionBound: Int
     
-    init(options: BoSyOptions, automaton: CoBüchiAutomaton, specification: SynthesisSpecification, synthesize: Bool) {
+    public init(options: BoSyOptions, automaton: CoBüchiAutomaton, specification: SynthesisSpecification, synthesize: Bool) {
         self.options = options
         self.automaton = automaton
         self.specification = specification
@@ -165,7 +165,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
         return "\(name)_\(state)"
     }
     
-    mutating func solve(forBound bound: Int) throws -> Bool {
+    public func solve(forBound bound: Int) throws -> Bool {
         Logger.default().info("build encoding for bound \(bound)")
         
         let constraintTimer = options.statistics?.startTimer(phase: .constraintGeneration)
@@ -205,7 +205,7 @@ struct InputSymbolicEncoding: BoSyEncoding {
         return false
     }
     
-    func extractSolution() -> TransitionSystem? {
+    public func extractSolution() -> TransitionSystem? {
         let extractionTimer = options.statistics?.startTimer(phase: .solutionExtraction)
         guard let instance = self.instance, let assignments = self.assignments else {
             Logger.default().error("hasSolution() must be true before calling this function")
