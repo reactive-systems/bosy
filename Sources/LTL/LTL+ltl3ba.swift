@@ -42,7 +42,7 @@ extension LTL {
                 guard let smvScope = parameters[0].ltl3ba else {
                     return nil
                 }
-                return "\(translatedOp) (\(smvScope))"
+                return "(\(translatedOp) \(smvScope))"
             case 2:
                 assert(parameters.count == 2)
                 guard let translatedOp = ltl3baOperatorMapping[function] else {
@@ -55,7 +55,7 @@ extension LTL {
                     return nil
                 }
 
-                return "(\(translatedLhs)) \(translatedOp) (\(translatedRhs))"
+                return "(\(translatedLhs) \(translatedOp) \(translatedRhs))"
             default:
                 return nil
             }

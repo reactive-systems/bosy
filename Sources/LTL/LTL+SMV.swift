@@ -40,7 +40,7 @@ extension LTL {
                 guard let smvScope = parameters[0].smv else {
                     return nil
                 }
-                return "\(smvOp) (\(smvScope))"
+                return "(\(smvOp) \(smvScope))"
             case 2:
                 assert(parameters.count == 2)
                 guard let smvOp = smvOperatorMapping[function] else {
