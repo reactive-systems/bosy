@@ -93,36 +93,21 @@ do {
 
     // MARK: - concurrent execution of search strategy
 
-    let condition = NSCondition()
-    condition.lock()
-    var finished = false
-    condition.unlock()
+    let semaphore = DispatchSemaphore(value: 0)
 
     // search for system strategy
     DispatchQueue.global().async {
         search(specification: specification, player: .system, synthesize: synthesize)
-        condition.lock()
-        finished = true
-        condition.broadcast()
-        condition.unlock()
+        semaphore.signal()
     }
 
     // search for environment strategy
     DispatchQueue.global().async {
         search(specification: specification.dualized, player: .environment, synthesize: synthesize)
-        condition.lock()
-        finished = true
-        condition.broadcast()
-        condition.unlock()
+        semaphore.signal()
     }
 
-    condition.lock()
-    if !finished {
-        condition.wait()
-    }
-    condition.unlock()
-
-    
+    semaphore.wait()
 
 } catch {
     print(error)
