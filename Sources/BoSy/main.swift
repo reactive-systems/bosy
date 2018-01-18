@@ -1,287 +1,131 @@
 import Foundation
-//import Dispatch
+import Dispatch
+
+import Basic
+import Utility
 
 import Utils
-import Automata
 import Specification
-import TransitionSystem
+import Automata
 import BoundedSynthesis
-
+import TransitionSystem
+import LTL
 import CAiger
 
-
-
-var options = BoSyOptions()
-
-do {
-    try options.parseCommandLine()
-} catch {
-    print(error)
-    options.printHelp()
-    exit(1)
-}
-
-let json: String
-
-let parseTimer = options.statistics?.startTimer(phase: .parsing)
-
-var fileFormat: SupportedFileFormats = .bosy
-
-if let specificationFile = options.specificationFile {
-    Logger.default().debug("reading from file \"\(specificationFile)\"")
-    guard let specficationString = try? String(contentsOfFile: specificationFile, encoding: String.Encoding.utf8) else {
-        print("error: cannot read input file \(specificationFile)")
-        exit(1)
-    }
-    json = specficationString
-    if specificationFile.hasSuffix(".tlsf") {
-        fileFormat = .tlsf
-    }
-} else {
-    // Read from stdin
-    let standardInput = FileHandle.standardInput
-    
-    Logger.default().debug("reading from stdin")
-    
-    let input = StreamHelper.readAllAvailableData(from: standardInput)
-    
-    guard let specficationString = String(data: input, encoding: String.Encoding.utf8) else {
-        print("error: cannot read input from stdin")
-        exit(1)
-    }
-    json = specficationString
-}
-
-var specification: SynthesisSpecification
-
-switch fileFormat {
-case .bosy:
-    guard let s = SynthesisSpecification.fromJson(string: json) else {
-        print("error: cannot parse specification")
-        exit(1)
-    }
-    specification = s
-case .tlsf:
-    guard let s = SynthesisSpecification.from(tlsf: json) else {
-        print("error: cannot parse specification")
-        exit(1)
-    }
-    specification = s
-}
-
-parseTimer?.stop()
-
-// override semantics if given as command line argument
-if let semantics = options.semantics {
-    specification.semantics = semantics
-}
-
-//Logger.default().info("inputs: \(specification.inputs), outputs: \(specification.outputs)")
-//Logger.default().info("assumptions: \(specification.assumptions), guarantees: \(specification.guarantees)")
-
-private func buildAutomaton(player: Player) -> CoBüchiAutomaton? {
-    Logger.default().debug("start building automaton for player \(player)")
-    if options.monolithic || player == .environment || specification.assumptions.count > 0 {
-        let assumptionString = specification.assumptions.compactMap( { $0.ltl3ba } ).joined(separator: " && ")
-        let guaranteeString = specification.guarantees.compactMap( { $0.ltl3ba } ).joined(separator: " && ")
-        
-        let ltlSpec: String
-        if player == .system {
-            ltlSpec = specification.assumptions.count == 0 ? "!(\(guaranteeString))" : "!((\(assumptionString)) -> (\(guaranteeString)))"
-        } else {
-            assert(player == .environment)
-            ltlSpec = specification.assumptions.count == 0 ? "\(guaranteeString)" : "(\(assumptionString)) -> (\(guaranteeString))"
-        }
-        
-        let automatonTimer = options.statistics?.startTimer(phase: .ltl2automaton)
-        guard let automaton = options.converter.convert(ltl: ltlSpec) else {
-            Logger.default().error("could not construct automaton")
-            return nil
-        }
-        automatonTimer?.stop()
-        Logger.default().debug("building automaton for player \(player) succeeded")
-        return automaton
-    } else {
-        assert(specification.assumptions.count == 0)
-        assert(player == .system)
-        
-        var automata: [CoBüchiAutomaton] = []
-        for guarantee in specification.guarantees {
-            let automatonTimer = options.statistics?.startTimer(phase: .ltl2automaton)
-            guard let ltl3baDescription = guarantee.ltl3ba else {
-                Logger.default().error("could not convert guarantees to ltl3ba format")
-                return nil
-            }
-            guard let automaton = options.converter.convert(ltl: "!(\(ltl3baDescription))") else {
-                Logger.default().error("could not construct automaton")
-                return nil
-            }
-            automatonTimer?.stop()
-            automata.append(automaton)
-        }
-        
-        Logger.default().debug("building automaton for player \(player) succeeded")
-        
-        return CoBüchiAutomaton(automata: automata)
-    }
-}
-
-func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -> ()) {
-    Logger.default().debug("start search strategy (strategy: \"\(strategy)\", player: \"\(player)\", synthesize: \(synthesize))")
-    return {
-        guard let automaton = buildAutomaton(player: player) else {
-            return
-        }
-
+func search(specification: SynthesisSpecification, player: Player, synthesize: Bool) {
+    do {
+        let automaton = try CoBüchiAutomaton.from(ltl: !specification.ltl)
         Logger.default().info("automaton contains \(automaton.states.count) states")
 
-        let synthesize = synthesize && !(player == .environment && options.syntcomp2017rules)
-        
-        var search = SolutionSearch(options: options, specification: specification, automaton: automaton, searchStrategy: strategy, player: player, backend: options.backend, initialBound: options.minBound, synthesize: synthesize)
+        // search for minimal number of rejecting state visits
+        let backend = SafetyGameReduction(options: BoSyOptions(), automaton: automaton, specification: specification)
 
-        if search.hasSolution(limit: options.maxBound ?? Int.max) {
-            if !synthesize {
-                player == .system ? print("result: realizable") : print("result: unrealizable")
-                return
-            }
-            guard let solution = search.getSolution() else {
-                Logger.default().error("could not construct solution")
-                return
-            }
-            switch options.target {
-            case .aiger:
-                guard let aiger_solution = (solution as? AigerRepresentable)?.aiger else {
-                    Logger.default().error("could not encode solution as AIGER")
-                    return
-                }
-                let minimized = aiger_solution.minimized
-                aiger_write_to_file(minimized, aiger_ascii_mode, stdout)
-                player == .system ? print("result: realizable") : print("result: unrealizable")
-            case .dot:
-                guard let dot = (solution as? DotRepresentable)?.dot else {
-                    Logger.default().error("could not encode solution as dot")
-                    return
-                }
-                print(dot)
-            case .dotTopology:
-                guard let dot = (solution as? DotRepresentable)?.dotTopology else {
-                    Logger.default().error("could not encode solution as dot")
-                    return
-                }
-                print(dot)
-            case .smv:
-                guard let smv = (solution as? SmvRepresentable)?.smv else {
-                    Logger.default().error("could not encode solution as SMV")
-                    return
-                }
-                print(smv)
-            case .verilog:
-                guard let verilog = (solution as? VerilogRepresentable)?.verilog else {
-                    Logger.default().error("could not encode solution as Verilog")
-                    return
-                }
-                print(verilog)
-            case .all:
-                var result: [String:String] = [:]
-                guard let dotSolution = solution as? DotRepresentable else {
-                    Logger.default().error("could not encode solution as dot")
-                    return
-                }
-                result["dot"] = dotSolution.dot
-                result["dot-topology"] = dotSolution.dotTopology
-                guard let smv = (solution as? SmvRepresentable)?.smv else {
-                    Logger.default().error("could not encode solution as SMV")
-                    return
-                }
-                result["smv"] = smv
-                guard let verilog = (solution as? VerilogRepresentable)?.verilog else {
-                    Logger.default().error("could not encode solution as Verilog")
-                    return
-                }
-                result["verilog"] = verilog
-                guard let jsonData = try? JSONSerialization.data(withJSONObject: result) else {
-                    Logger.default().error("could not encode solution JSON")
-                    return
-                }
-                guard let jsonString = String(data: jsonData, encoding: .utf8) else {
-                    Logger.default().error("could not encode solution JSON")
-                    return
-                }
-                print(jsonString)
-            }
-
+        guard let rejectingCounter = try backend.searchMinimalLinear() else {
+            fatalError()
+        }
+        Logger.default().info("found solution with rejecting counter \(rejectingCounter)")
+        guard synthesize else {
+            print("result:", player == .system ? "realizable" : "unrealizable")
             return
         }
-        print("result: unknown")
+
+        let safetyAutomaton = automaton.reduceToSafety(bound: rejectingCounter.value)
+        var options = BoSyOptions()
+        options.qbfCertifier = .quabs
+        options.qbfPreprocessor = .bloqqer
+        options.solver = .rareqs
+        let synthesizer = InputSymbolicEncoding(options: options, automaton: safetyAutomaton, specification: specification, synthesize: true)
+        guard let states = try synthesizer.searchMinimalLinear() else {
+            fatalError()
+        }
+        Logger.default().info("found solution with \(states) states")
+
+        guard let solution = synthesizer.extractSolution() else {
+            fatalError()
+        }
+        guard let aiger_solution = (solution as? AigerRepresentable)?.aiger else {
+            Logger.default().error("could not encode solution as AIGER")
+            return
+        }
+        let minimized = aiger_solution.minimized
+        aiger_write_to_file(minimized, aiger_ascii_mode, stdout)
+        player == .system ? print("result: realizable") : print("result: unrealizable")
+
+    } catch {
+        Logger.default().error("search for winning strategy failed")
+        Logger.default().error("\(error)")
     }
 }
 
-//search(strategy: options.searchStrategy, player: .system, synthesize: options.synthesize)()
+do {
+    // MARK: - argument parsing
+    let parser = ArgumentParser(commandName: "BoSy", usage: "[options] specification", overview: "BoSy is a reactive synthesis tool from temporal specifications.")
+    let specificationFile = parser.add(positional: "specification", kind: String.self, optional: true, usage: "a file containing the specification in BoSy format", completion: .filename)
+    let readStdinOption = parser.add(option: "--read-from-stdin", shortName: "-in", kind: Bool.self, usage: "read specification from standard input")
+    let synthesizeOption = parser.add(option: "--synthesize", kind: Bool.self, usage: "construct system after checking realizability")
+    let verbosityOption = parser.add(option: "--verbose", shortName: "-v", kind: Bool.self, usage: "enable verbose output")
 
-let condition = NSCondition()
-var finished = false
+    let arguments = Array(CommandLine.arguments.dropFirst())
+    let parsed = try parser.parse(arguments)
 
 
-let searchSystem = search(strategy: options.searchStrategy, player: .system, synthesize: options.synthesize)
-let searchEnvironment = search(strategy: options.searchStrategy, player: .environment, synthesize: options.synthesize)
-
-let doSearchSystem = options.player.contains(.system)
-let doSearchEnvironment = options.player.contains(.environment)
-
-#if os(Linux)
-let thread1 = Thread() {
-    searchSystem()
-    condition.lock()
-    finished = true
-    condition.broadcast()
-    condition.unlock()
-}
-let thread2 = Thread() {
-    searchEnvironment()
-    condition.lock()
-    finished = true
-    condition.broadcast()
-    condition.unlock()
-}
-if doSearchSystem {
-    thread1.start()
-}
-if doSearchEnvironment {
-    thread2.start()
-}
-#else
-    class ThreadedExecution: Thread {
-        
-        let function: () -> ()
-        
-        init(function: @escaping (() -> ())) {
-            self.function = function
+    // either --stdin was given or specification file
+    let specification: SynthesisSpecification
+    let readStdin = parsed.get(readStdinOption) ?? false
+    if readStdin {
+        // attemp to read from standard input
+        guard parsed.get(specificationFile) == nil else {
+            throw ArgumentParserError.unexpectedArgument("\"specification\": cannot be combined with reading from standard input")
         }
-        
-        override func main() {
-            function()
-            condition.lock()
-            finished = true
-            condition.broadcast()
-            condition.unlock()
-        }
+        let input = StreamHelper.readAllAvailableData(from: FileHandle.standardInput)
+        specification = try SynthesisSpecification.from(data: input)
+
+    } else if let fileName = parsed.get(specificationFile) {
+        specification = try SynthesisSpecification.from(fileName: fileName)
+    } else {
+        throw ArgumentParserError.expectedArguments(parser, ["input file was not specified; use --help to list available arguments"])
     }
-if doSearchSystem {
-    ThreadedExecution(function: searchSystem).start()
-}
-if doSearchEnvironment {
-    ThreadedExecution(function: searchEnvironment).start()
-}
-#endif
 
-condition.lock()
-if !finished {
-    condition.wait()
-}
-condition.unlock()
+    let synthesize = parsed.get(synthesizeOption) ?? false
+    let verbose = parsed.get(verbosityOption) ?? false
 
-if let statistics = options.statistics {
-    print(statistics.description)
-}
+    Logger.default().verbosity = verbose ? .debug : .info
 
+    // MARK: - concurrent execution of search strategy
+
+    let condition = NSCondition()
+    condition.lock()
+    var finished = false
+    condition.unlock()
+
+    // search for system strategy
+    DispatchQueue.global().async {
+        search(specification: specification, player: .system, synthesize: synthesize)
+        condition.lock()
+        finished = true
+        condition.broadcast()
+        condition.unlock()
+    }
+
+    // search for environment strategy
+    DispatchQueue.global().async {
+        search(specification: specification.dualized, player: .environment, synthesize: synthesize)
+        condition.lock()
+        finished = true
+        condition.broadcast()
+        condition.unlock()
+    }
+
+    condition.lock()
+    if !finished {
+        condition.wait()
+    }
+    condition.unlock()
+
+    
+
+} catch {
+    print(error)
+    exit(1)
+}
 

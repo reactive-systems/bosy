@@ -4,7 +4,11 @@ import PackageDescription
 let package = Package(
     name: "BoSy",
     products: [
+        // The main BoSy executable, opts for the best/easiest synthesis experience
         .executable(name: "BoSy", targets: ["BoSy"]),
+        // BoSy executable to only execute one backend (legacy version)
+        .executable(name: "BoSyBackend", targets: ["BoSyBackend"]),
+        // BoSy executable to synthesize from HyperLTL specifications
         .executable(name: "BoSyHyper", targets: ["BoSyHyper"])
     ],
     dependencies: [
@@ -14,8 +18,9 @@ let package = Package(
         .package(url: "https://github.com/ltentrup/CUDD.git", from: "0.2.4"),
     ],
     targets: [
-        .target(name: "BoSy", dependencies: ["BoundedSynthesis"]),
-        .target(name: "BoundedSynthesis", dependencies: ["Automata", "LTL", "TransitionSystem", "SafetyGameSolver"]),
+        .target(name: "BoSy", dependencies: ["Automata", "LTL", "Logic", "Utils", "TransitionSystem", "Specification", "BoundedSynthesis"]),
+        .target(name: "BoSyBackend", dependencies: ["Automata", "LTL", "Logic", "Utils", "TransitionSystem", "Specification", "BoundedSynthesis"]),
+        .target(name: "BoundedSynthesis", dependencies: ["Automata", "LTL", "Logic", "Utils", "TransitionSystem", "Specification", "SafetyGameSolver", "CUDD"]),
         .testTarget(name: "BoundedSynthesisTests", dependencies: ["BoundedSynthesis"]),
         .target(name: "TransitionSystem", dependencies: ["Specification"]),
         .target(name: "Automata", dependencies: ["Logic"]),

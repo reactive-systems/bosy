@@ -5,10 +5,12 @@ import Automata
 import Specification
 import TransitionSystem
 
-public class InputSymbolicEncoding: BoSyEncoding {
-    
+public class InputSymbolicEncoding<A: Automaton>: BoSyEncoding, SingleParamaterSearch where A: SafetyAcceptance {
+
+    public typealias Parameter = NumberOfStates
+
     let options: BoSyOptions
-    let automaton: CoBüchiAutomaton
+    let automaton: A
     let specification: SynthesisSpecification
     let synthesize: Bool
     
@@ -17,7 +19,7 @@ public class InputSymbolicEncoding: BoSyEncoding {
     var instance: Logic?
     var solutionBound: Int
     
-    public init(options: BoSyOptions, automaton: CoBüchiAutomaton, specification: SynthesisSpecification, synthesize: Bool) {
+    public init(options: BoSyOptions, automaton: A, specification: SynthesisSpecification, synthesize: Bool) {
         self.options = options
         self.automaton = automaton
         self.specification = specification
@@ -28,7 +30,7 @@ public class InputSymbolicEncoding: BoSyEncoding {
         solutionBound = 0
     }
     
-    func getEncoding(forBound bound: Int) -> Logic? {
+    public func getEncoding(forBound bound: Int) -> Logic? {
         
         let states = 0..<bound
 
@@ -61,7 +63,7 @@ public class InputSymbolicEncoding: BoSyEncoding {
                 }
                 
                 for (qPrime, guardCondition) in outgoing {
-                    let transitionCondition = requireTransition(from: source, q: q, qPrime: qPrime, bound: bound, rejectingStates: automaton.rejectingStates)
+                    let transitionCondition = requireTransition(from: source, q: q, qPrime: qPrime, bound: bound)
                     if guardCondition as? Literal != nil && guardCondition as! Literal == Literal.True {
                         conjunct.append(transitionCondition)
                     } else {
@@ -80,10 +82,13 @@ public class InputSymbolicEncoding: BoSyEncoding {
                 lambdas.append(lambda(s, q))
             }
         }
+
         var lambdaSharps: [Proposition] = []
-        for s in 0..<bound {
-            for q in automaton.states {
-                lambdaSharps.append(lambdaSharp(s, q))
+        if automaton is CoBüchiAutomaton {
+            for s in 0..<bound {
+                for q in automaton.states {
+                    lambdaSharps.append(lambdaSharp(s, q))
+                }
             }
         }
         var taus: [Proposition] = []
@@ -127,9 +132,18 @@ public class InputSymbolicEncoding: BoSyEncoding {
         return qbf
     }
     
-    func requireTransition(from s: Int, q: CoBüchiAutomaton.State, qPrime: CoBüchiAutomaton.State, bound: Int, rejectingStates: Set<CoBüchiAutomaton.State>) -> Logic {
+    func requireTransition(from s: Int, q: A.State, qPrime: A.State, bound: Int) -> Logic {
         let validTransition: [Logic]
-        if automaton.isStateInNonRejectingSCC(q) || automaton.isStateInNonRejectingSCC(qPrime) || !automaton.isInSameSCC(q, qPrime) {
+
+        guard let coBüchi = automaton as? CoBüchiAutomaton else {
+            // safety automaton
+            validTransition = (0..<bound).map({
+                sPrime in
+                tauNextStateAssertion(state: s, nextState: sPrime, bound: bound) --> lambda(sPrime, qPrime)
+            })
+            return validTransition.reduce(Literal.True, &)
+        }
+        if coBüchi.isStateInNonRejectingSCC(q as! CoBüchiAutomaton.State) || coBüchi.isStateInNonRejectingSCC(qPrime as! CoBüchiAutomaton.State) || !coBüchi.isInSameSCC(q as! CoBüchiAutomaton.State, qPrime as! CoBüchiAutomaton.State) {
             // no need for comparator constrain
             validTransition = (0..<bound).map({
                 sPrime in
@@ -139,7 +153,7 @@ public class InputSymbolicEncoding: BoSyEncoding {
             validTransition = (0..<bound).map({
                 sPrime in
                 tauNextStateAssertion(state: s, nextState: sPrime, bound: bound) -->
-                (lambda(sPrime, qPrime) & BooleanComparator(rejectingStates.contains(qPrime) ? .Less : .LessOrEqual, lhs: lambdaSharp(sPrime, qPrime), rhs: lambdaSharp(s, q)))
+                (lambda(sPrime, qPrime) & BooleanComparator(coBüchi.rejectingStates.contains(qPrime as! CoBüchiAutomaton.State) ? .Less : .LessOrEqual, lhs: lambdaSharp(sPrime, qPrime), rhs: lambdaSharp(s, q)))
             })
         }
         return validTransition.reduce(Literal.True, &)
@@ -149,11 +163,11 @@ public class InputSymbolicEncoding: BoSyEncoding {
         return tau(state, nextState)
     }
     
-    func lambda(_ state: Int, _ automatonState: CoBüchiAutomaton.State) -> Proposition {
+    func lambda(_ state: Int, _ automatonState: A.State) -> Proposition {
         return Proposition("λ_\(state)_\(automatonState)")
     }
     
-    func lambdaSharp(_ state: Int, _ automatonState: CoBüchiAutomaton.State) -> Proposition {
+    func lambdaSharp(_ state: Int, _ automatonState: A.State) -> Proposition {
         return Proposition("λ#_\(state)_\(automatonState)")
     }
     
@@ -298,5 +312,9 @@ public class InputSymbolicEncoding: BoSyEncoding {
         }
         extractionTimer?.stop()
         return solution
+    }
+
+    public func solve(forBound bound: NumberOfStates) throws -> Bool {
+        return try solve(forBound: bound.value)
     }
 }

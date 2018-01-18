@@ -8,6 +8,7 @@ import Specification
 import LTL
 import Utils
 import TransitionSystem
+import Automata
 
 import CAiger
 
@@ -34,15 +35,8 @@ class WrongLTLPrintTest: XCTestCase {
             XCTFail()
             return
         }
-        guard let ltlSpec = (!specification.ltl).ltl3ba else {
-            XCTFail()
-            return
-        }
-        guard let automaton = options.converter.convert(ltl: ltlSpec) else {
-            XCTFail()
-            return
-        }
-        var encoding = InputSymbolicEncoding(options: options, automaton: automaton, specification: specification, synthesize: true)
+        let automaton = try CoBüchiAutomaton.from(ltl: !specification.ltl)
+        let encoding = InputSymbolicEncoding(options: options, automaton: automaton, specification: specification, synthesize: true)
         XCTAssertTrue(try encoding.solve(forBound: 1))
         guard let transitionSystem = encoding.extractSolution() else {
             XCTFail()

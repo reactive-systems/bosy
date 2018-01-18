@@ -8,6 +8,7 @@ import Specification
 import LTL
 import Utils
 import TransitionSystem
+import Automata
 
 import CAiger
 
@@ -28,74 +29,46 @@ class DetectorUnrealizableTest: XCTestCase {
     var options = BoSyOptions()
 
     // Realizability
-    func testRealizabilityInputSymbolic() {
+    func testRealizabilityInputSymbolic() throws {
         options.solver = .rareqs
         options.qbfPreprocessor = .bloqqer
         guard let specification = SynthesisSpecification.fromJson(string: jsonSpec)?.dualized else {
             XCTFail()
             return
         }
-        guard let ltlSpec = (!specification.ltl).ltl3ba else {
-            XCTFail()
-            return
-        }
-        guard let automaton = options.converter.convert(ltl: ltlSpec) else {
-            XCTFail()
-            return
-        }
-        var encoding = InputSymbolicEncoding(options: options, automaton: automaton, specification: specification, synthesize: false)
+        let automaton = try CoBüchiAutomaton.from(ltl: !specification.ltl)
+        let encoding = InputSymbolicEncoding(options: options, automaton: automaton, specification: specification, synthesize: false)
         XCTAssertTrue(try encoding.solve(forBound: 1))
     }
 
-    func testRealizabilityExplicit() {
+    func testRealizabilityExplicit() throws {
         options.solver = .picosat
         guard let specification = SynthesisSpecification.fromJson(string: jsonSpec)?.dualized else {
             XCTFail()
             return
         }
-        guard let ltlSpec = (!specification.ltl).ltl3ba else {
-            XCTFail()
-            return
-        }
-        guard let automaton = options.converter.convert(ltl: ltlSpec) else {
-            XCTFail()
-            return
-        }
+        let automaton = try CoBüchiAutomaton.from(ltl: !specification.ltl)
         var encoding = ExplicitEncoding(options: options, automaton: automaton, specification: specification)
         XCTAssertTrue(try encoding.solve(forBound: 1))
     }
 
-    func testRealizabilitySmt() {
+    func testRealizabilitySmt() throws {
         options.solver = .z3
         guard let specification = SynthesisSpecification.fromJson(string: jsonSpec)?.dualized else {
             XCTFail()
             return
         }
-        guard let ltlSpec = (!specification.ltl).ltl3ba else {
-            XCTFail()
-            return
-        }
-        guard let automaton = options.converter.convert(ltl: ltlSpec) else {
-            XCTFail()
-            return
-        }
+        let automaton = try CoBüchiAutomaton.from(ltl: !specification.ltl)
         var encoding = SmtEncoding(options: options, automaton: automaton, specification: specification)
         XCTAssertTrue(try encoding.solve(forBound: 1))
     }
 
-    func testRealizabilityGameSolver() {
+    func testRealizabilityGameSolver() throws {
         guard let specification = SynthesisSpecification.fromJson(string: jsonSpec)?.dualized else {
             XCTFail()
             return
         }
-        guard let ltlSpec = (!specification.ltl).ltl3ba else {
-            XCTFail()
-            return
-        }
-        guard let automaton = options.converter.convert(ltl: ltlSpec) else {
-            XCTFail()
-            return
-        }
+        let automaton = try CoBüchiAutomaton.from(ltl: !specification.ltl)
         let encoding = SafetyGameReduction(options: options, automaton: automaton, specification: specification)
         XCTAssertTrue(try encoding.solve(forBound: 1))
     }
@@ -108,15 +81,8 @@ class DetectorUnrealizableTest: XCTestCase {
             XCTFail()
             return
         }
-        guard let ltlSpec = (!specification.ltl).ltl3ba else {
-            XCTFail()
-            return
-        }
-        guard let automaton = options.converter.convert(ltl: ltlSpec) else {
-            XCTFail()
-            return
-        }
-        var encoding = InputSymbolicEncoding(options: options, automaton: automaton, specification: specification, synthesize: true)
+        let automaton = try CoBüchiAutomaton.from(ltl: !specification.ltl)
+        let encoding = InputSymbolicEncoding(options: options, automaton: automaton, specification: specification, synthesize: true)
         XCTAssertTrue(try encoding.solve(forBound: 1))
         guard let transitionSystem = encoding.extractSolution() else {
             XCTFail()
@@ -146,14 +112,7 @@ class DetectorUnrealizableTest: XCTestCase {
             XCTFail()
             return
         }
-        guard let ltlSpec = (!specification.ltl).ltl3ba else {
-            XCTFail()
-            return
-        }
-        guard let automaton = options.converter.convert(ltl: ltlSpec) else {
-            XCTFail()
-            return
-        }
+        let automaton = try CoBüchiAutomaton.from(ltl: !specification.ltl)
         var encoding = ExplicitEncoding(options: options, automaton: automaton, specification: specification)
         XCTAssertTrue(try encoding.solve(forBound: 1))
         guard let transitionSystem = encoding.extractSolution() else {
@@ -184,14 +143,7 @@ class DetectorUnrealizableTest: XCTestCase {
             XCTFail()
             return
         }
-        guard let ltlSpec = (!specification.ltl).ltl3ba else {
-            XCTFail()
-            return
-        }
-        guard let automaton = options.converter.convert(ltl: ltlSpec) else {
-            XCTFail()
-            return
-        }
+        let automaton = try CoBüchiAutomaton.from(ltl: !specification.ltl)
         var encoding = SmtEncoding(options: options, automaton: automaton, specification: specification)
         XCTAssertTrue(try encoding.solve(forBound: 1))
         guard let transitionSystem = encoding.extractSolution() else {
@@ -216,19 +168,12 @@ class DetectorUnrealizableTest: XCTestCase {
         XCTAssertTrue(try modelCheckAiger(specification: specification, implementation: aigerRepresentation))
     }
 
-    func testSynthesisGameSolver() {
+    func testSynthesisGameSolver() throws {
         guard let specification = SynthesisSpecification.fromJson(string: jsonSpec)?.dualized else {
             XCTFail()
             return
         }
-        guard let ltlSpec = (!specification.ltl).ltl3ba else {
-            XCTFail()
-            return
-        }
-        guard let automaton = options.converter.convert(ltl: ltlSpec) else {
-            XCTFail()
-            return
-        }
+        let automaton = try CoBüchiAutomaton.from(ltl: !specification.ltl)
         let encoding = SafetyGameReduction(options: options, automaton: automaton, specification: specification)
         XCTAssertTrue(try encoding.solve(forBound: 1))
         guard let transitionSystem = encoding.extractSolution() else {

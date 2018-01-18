@@ -95,6 +95,18 @@ public struct SynthesisSpecification: Codable {
         return smv.joined(separator: "\n")
     }
 
+    public static func from(fileName: String) throws -> SynthesisSpecification {
+        // get file contents
+        let data = try Data(contentsOf: URL(fileURLWithPath: fileName))
+
+        return try from(data: data)
+    }
+
+    public static func from(data: Data) throws -> SynthesisSpecification {
+        // parse contents of `data`
+        return try JSONDecoder().decode(SynthesisSpecification.self, from: data)
+    }
+
     /**
      * Returns true if the specification contains at least one HyperLTL formula
      */

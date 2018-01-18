@@ -119,7 +119,9 @@ class UCWGame: SafetyGame {
     }
 }
 
-class SafetyGameReduction: BoSyEncoding {
+public class SafetyGameReduction: BoSyEncoding, SingleParamaterSearch {
+
+    public typealias Parameter = RejectingCounter
     
     let options: BoSyOptions
     let automaton: CoBüchiAutomaton
@@ -129,13 +131,17 @@ class SafetyGameReduction: BoSyEncoding {
     var solver: SafetyGameSolver? = nil
     var winningRegion: CUDDNode? = nil
     
-    init(options: BoSyOptions, automaton: CoBüchiAutomaton, specification: SynthesisSpecification) {
+    public init(options: BoSyOptions, automaton: CoBüchiAutomaton, specification: SynthesisSpecification) {
         self.options = options
         self.automaton = automaton
         self.specification = specification
     }
+
+    public func solve(forBound bound: RejectingCounter) throws -> Bool {
+        return try solve(forBound: bound.value)
+    }
     
-    func solve(forBound bound: Int) throws -> Bool {
+    public func solve(forBound bound: Int) throws -> Bool {
         Logger.default().info("build safety game with k=\(bound)")
         
         let manager = CUDDManager()
@@ -154,7 +160,7 @@ class SafetyGameReduction: BoSyEncoding {
         }
     }
     
-    func extractSolution() -> TransitionSystem? {
+    public func extractSolution() -> TransitionSystem? {
         guard let solver = solver else {
             fatalError()
         }
