@@ -27,8 +27,11 @@ extension SingleParamaterSearch {
     /**
      * Linear search for the smallest bound such that the synthesis problem has a solution.
      */
-    public func searchMinimalLinear() throws -> Parameter? {
+    public func searchMinimalLinear(cancelled: inout Bool) throws -> Parameter? {
         for i in Parameter.min..<Parameter.max {
+            if cancelled {
+                return nil
+            }
             let parameter = Parameter(value: i)
             if try solve(forBound: parameter) {
                 return parameter

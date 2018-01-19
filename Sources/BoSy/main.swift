@@ -12,7 +12,48 @@ import TransitionSystem
 import LTL
 import CAiger
 
-func search(specification: SynthesisSpecification, player: Player, synthesize: Bool) {
+var cancelled = false
+
+class TerminationCondition {
+    let lock = NSCondition()
+
+    var remainingRealizabilityWorker: Int
+    var successfulRealizability: Bool
+
+    init(realizabilityWorker: Int) {
+        lock.lock()
+        remainingRealizabilityWorker = realizabilityWorker
+        successfulRealizability = false
+        lock.unlock()
+    }
+
+    func realizabilityDone(success: Bool) {
+        lock.lock()
+        if success {
+            successfulRealizability = true
+        }
+        assert(remainingRealizabilityWorker > 0)
+        remainingRealizabilityWorker -= 1
+        if condition {
+            lock.broadcast()
+        }
+        lock.unlock()
+    }
+
+    func wait() {
+        lock.lock()
+        if !condition {
+            lock.wait()
+        }
+        lock.unlock()
+    }
+
+    var condition: Bool {
+        return successfulRealizability || remainingRealizabilityWorker == 0
+    }
+}
+
+func search(specification: SynthesisSpecification, player: Player) -> SafetyAutomaton<CoBüchiAutomaton.CounterState>? {
     do {
         let automaton = try CoBüchiAutomaton.from(ltl: !specification.ltl)
         Logger.default().info("automaton contains \(automaton.states.count) states")
@@ -20,22 +61,28 @@ func search(specification: SynthesisSpecification, player: Player, synthesize: B
         // search for minimal number of rejecting state visits
         let backend = SafetyGameReduction(options: BoSyOptions(), automaton: automaton, specification: specification)
 
-        guard let rejectingCounter = try backend.searchMinimalLinear() else {
-            fatalError()
+        guard let rejectingCounter = try backend.searchMinimalLinear(cancelled: &cancelled) else {
+            Logger.default().info("search for player \(player) aborted; either cancelled or max-bound reached")
+            return nil
         }
         Logger.default().info("found solution with rejecting counter \(rejectingCounter)")
-        guard synthesize else {
-            print("result:", player == .system ? "realizable" : "unrealizable")
-            return
-        }
+        return automaton.reduceToSafety(bound: rejectingCounter.value)
+    } catch {
+        Logger.default().error("search for winning strategy failed")
+        Logger.default().error("\(error)")
+        return nil
+    }
+}
 
-        let safetyAutomaton = automaton.reduceToSafety(bound: rejectingCounter.value)
+func synthesizeSolution(specification: SynthesisSpecification, player: Player, safetyAutomaton: SafetyAutomaton<CoBüchiAutomaton.CounterState>) {
+    do {
         var options = BoSyOptions()
         options.qbfCertifier = .quabs
         options.qbfPreprocessor = .bloqqer
         options.solver = .rareqs
         let synthesizer = InputSymbolicEncoding(options: options, automaton: safetyAutomaton, specification: specification, synthesize: true)
-        guard let states = try synthesizer.searchMinimalLinear() else {
+        var f = false
+        guard let states = try synthesizer.searchMinimalLinear(cancelled: &f) else {
             fatalError()
         }
         Logger.default().info("found solution with \(states) states")
@@ -50,9 +97,8 @@ func search(specification: SynthesisSpecification, player: Player, synthesize: B
         let minimized = aiger_solution.minimized
         aiger_write_to_file(minimized, aiger_ascii_mode, stdout)
         player == .system ? print("result: realizable") : print("result: unrealizable")
-
     } catch {
-        Logger.default().error("search for winning strategy failed")
+        Logger.default().error("synthesizing winning strategy failed")
         Logger.default().error("\(error)")
     }
 }
@@ -93,21 +139,52 @@ do {
 
     // MARK: - concurrent execution of search strategy
 
-    let semaphore = DispatchSemaphore(value: 0)
+    let termination = TerminationCondition(realizabilityWorker: 2)
+
+    var winner: Player? = nil
+    var safetyAutomaton: SafetyAutomaton<CoBüchiAutomaton.CounterState>? = nil
 
     // search for system strategy
     DispatchQueue.global().async {
-        search(specification: specification, player: .system, synthesize: synthesize)
-        semaphore.signal()
+        if let safety = search(specification: specification, player: .system) {
+            winner = .system
+            safetyAutomaton = safety
+            termination.realizabilityDone(success: true)
+        } else {
+            termination.realizabilityDone(success: false)
+        }
     }
 
     // search for environment strategy
     DispatchQueue.global().async {
-        search(specification: specification.dualized, player: .environment, synthesize: synthesize)
-        semaphore.signal()
+        if let safety = search(specification: specification.dualized, player: .environment) {
+            winner = .environment
+            safetyAutomaton = safety
+            termination.realizabilityDone(success: true)
+        } else {
+            termination.realizabilityDone(success: false)
+        }
     }
 
-    semaphore.wait()
+    termination.wait()
+
+    guard let w = winner else {
+        print("result: unknown")
+        exit(0)
+    }
+
+    guard synthesize else {
+        print("result:", w == .system ? "realizable" : "unrealizable")
+        exit(0)
+    }
+
+    guard let automaton = safetyAutomaton else {
+        fatalError()
+    }
+
+    cancelled = true
+
+    synthesizeSolution(specification: w == .system ? specification : specification.dualized, player: w, safetyAutomaton: automaton)
 
 } catch {
     print(error)
