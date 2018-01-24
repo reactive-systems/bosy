@@ -5,7 +5,7 @@
  * different parameters.
  */
 public protocol SynthesisParameter {
-    associatedtype Value: Strideable where Value.Stride: SignedInteger
+    associatedtype Value: Strideable, SignedInteger where Value.Stride: SignedInteger
 
     var value: Value { get set }
 

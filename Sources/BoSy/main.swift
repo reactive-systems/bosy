@@ -82,7 +82,7 @@ func synthesizeSolution(specification: SynthesisSpecification, player: Player, s
         options.solver = .rareqs
         let synthesizer = InputSymbolicEncoding(options: options, automaton: safetyAutomaton, specification: specification, synthesize: true)
         var f = false
-        guard let states = try synthesizer.searchMinimalLinear(cancelled: &f) else {
+        guard let states = try synthesizer.searchMinimalExponential(cancelled: &f) else {
             fatalError()
         }
         Logger.default().info("found solution with \(states) states")
