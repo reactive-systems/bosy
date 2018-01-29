@@ -30,18 +30,23 @@ public struct SynthesisSpecification: Codable {
     public let outputs: [String]
     public let assumptions: [LTL]
     public let guarantees: [LTL]
+    public let hyper: [LTL]
 
-    public init(semantics: TransitionSystemType, inputs: [String], outputs: [String], assumptions: [LTL], guarantees: [LTL]) {
+    public init(semantics: TransitionSystemType, inputs: [String], outputs: [String], assumptions: [LTL], guarantees: [LTL], hyper: [LTL] = []) {
         self.semantics = semantics
         self.inputs = inputs
         self.outputs = outputs
         self.assumptions = assumptions
         self.guarantees = guarantees
+        self.hyper = hyper
     }
     
     public var dualized: SynthesisSpecification {
         let dualizedLTL = !ltl
-        return SynthesisSpecification(semantics: semantics.swapped, inputs: outputs, outputs: inputs, assumptions: [], guarantees: [dualizedLTL])
+        guard !isHyper else {
+            fatalError("Specifications containiung hyperproperties cannot be dualized")
+        }
+        return SynthesisSpecification(semantics: semantics.swapped, inputs: outputs, outputs: inputs, assumptions: [], guarantees: [dualizedLTL], hyper: [])
     }
     
     public var ltl: LTL {
@@ -88,6 +93,24 @@ public struct SynthesisSpecification: Codable {
         }
         smv.append("\tLTLSPEC \(smvLTLSpec)")
         return smv.joined(separator: "\n")
+    }
+
+    /**
+     * Returns true if the specification contains at least one HyperLTL formula
+     */
+    public var isHyper: Bool {
+        return hyper.count > 0
+    }
+
+    /**
+     * Returns HyperLTL formula in prenex format
+     */
+    public var hyperPrenex: LTL {
+        precondition(isHyper)
+        guard hyper.count > 1 else {
+            return hyper[0]
+        }
+        return LTL.application(.and, parameters: hyper).prenex
     }
 }
 

@@ -14,7 +14,8 @@ import LTL
 public class HyperSmtEncoding: BoSyEncoding {
     
     let options: BoSyOptions
-    let automaton: CoBüchiAutomaton
+    let linearAutomaton: CoBüchiAutomaton
+    let hyperAutomaton: CoBüchiAutomaton
     let specification: SynthesisSpecification
     
     // intermediate results
@@ -23,9 +24,10 @@ public class HyperSmtEncoding: BoSyEncoding {
     var solutionBound: Int
     var solver: SmtSolver?
     
-    public init(options: BoSyOptions, automaton: CoBüchiAutomaton, specification: SynthesisSpecification) {
+    public init(options: BoSyOptions, linearAutomaton: CoBüchiAutomaton, hyperAutomaton: CoBüchiAutomaton, specification: SynthesisSpecification) {
         self.options = options
-        self.automaton = automaton
+        self.linearAutomaton = linearAutomaton
+        self.hyperAutomaton = hyperAutomaton
         self.specification = specification
         
         assignments = nil
@@ -34,18 +36,6 @@ public class HyperSmtEncoding: BoSyEncoding {
     }
     
     func getEncoding(forBound bound: Int) -> String? {
-
-        guard specification.guarantees.count == 1,
-            specification.assumptions.count == 0 else {
-                fatalError()
-        }
-        guard let hyperltl = specification.guarantees.first else {
-            fatalError()
-        }
-        let pathVariables = hyperltl.pathVariables
-        guard pathVariables.count > 1 else {
-            fatalError()
-        }
         
         let states = 0..<bound
         
@@ -53,20 +43,10 @@ public class HyperSmtEncoding: BoSyEncoding {
         
         // states
         smt.append("(declare-datatypes () ((S \(states.map({ "(s\($0))" }).joined(separator: " ")))))\n")
-        
-        // lambdas
-        for q in automaton.states {
-            smt.append("(declare-fun \(lambda(q)) (\(pathVariables.map({ _ in "S" }).joined(separator: " "))) Bool)\n")
-        }
-        
-        // lambda sharp
-        for q in automaton.states {
-            smt.append("(declare-fun \(lambdaSharp(q)) (\(pathVariables.map({ _ in "S" }).joined(separator: " "))) Int)\n")
-        }
-        
+
         // tau
         smt.append("(declare-fun tau (S \(specification.inputs.map({ name in "Bool" }).joined(separator: " "))) S)\n")
-        
+
         switch specification.semantics {
         case .moore:
             for o in specification.outputs {
@@ -77,13 +57,132 @@ public class HyperSmtEncoding: BoSyEncoding {
                 smt.append("(declare-fun \(o) (S \(specification.inputs.map({ name in "Bool" }).joined(separator: " "))) Bool)\n")
             }
         }
-        guard automaton.initialStates.count == 1 else {
+
+        encodeLinearAutomaton(smt: &smt)
+        encodeHyperAutomaton(smt: &smt)
+
+        //print(smt)
+        
+        return smt
+    }
+
+    func encodeLinearAutomaton(smt: inout String) {
+        // lambdas
+        for q in linearAutomaton.states {
+            smt.append("(declare-fun \(lambda(q)) (S) Bool)\n")
+        }
+
+        // lambda sharp
+        for q in linearAutomaton.states {
+            smt.append("(declare-fun \(lambdaSharp(q)) (S) Int)\n")
+        }
+
+        // tau
+        smt.append("(declare-fun tau (S \(specification.inputs.map({ name in "Bool" }).joined(separator: " "))) S)\n")
+
+        switch specification.semantics {
+        case .moore:
+            for o in specification.outputs {
+                smt.append("(declare-fun \(o) (S) Bool)\n")
+            }
+        case .mealy:
+            for o in specification.outputs {
+                smt.append("(declare-fun \(o) (S \(specification.inputs.map({ name in "Bool" }).joined(separator: " "))) Bool)\n")
+            }
+        }
+        for state in linearAutomaton.initialStates {
+            smt.append("(assert (\(lambda(state)) s0))\n")
+        }
+
+        let printer = SmtPrinter()
+
+        for q in linearAutomaton.states {
+
+            let replacer = ReplacingPropositionVisitor(replace: {
+                proposition in
+                if self.specification.outputs.contains(proposition.name) {
+                    switch self.specification.semantics {
+                    case .mealy:
+                        let inputProps = [Proposition("s")] + self.specification.inputs.map({Proposition($0)})
+                        return FunctionApplication(function: proposition, application: inputProps)
+                    case .moore:
+                        return FunctionApplication(function: proposition, application: [Proposition("s")])
+                    }
+                } else {
+                    return nil
+                }
+            })
+
+            if let condition = linearAutomaton.safetyConditions[q] {
+                let assertion = FunctionApplication(function: lambda(q), application: [Proposition("s")]) --> condition.accept(visitor: replacer)
+                smt.append("(assert (forall ((s S) \(specification.inputs.map({ "(\($0) Bool)" }).joined(separator: " "))) \(assertion.accept(visitor: printer))))\n")
+            }
+            guard let outgoing = linearAutomaton.transitions[q] else {
+                continue
+            }
+
+            for (qPrime, guardCondition) in outgoing {
+                let transitionCondition = requireTransition(q: q, qPrime: qPrime, rejectingStates: linearAutomaton.rejectingStates)
+                let assertion = (FunctionApplication(function: lambda(q), application: [Proposition("s")]) & guardCondition.accept(visitor: replacer)) --> transitionCondition
+                smt.append("(assert (forall ((s S) \(specification.inputs.map({ "(\($0) Bool)" }).joined(separator: " "))) \(assertion.accept(visitor: printer))))\n")
+            }
+        }
+    }
+
+    func requireTransition(q: CoBüchiAutomaton.State, qPrime: CoBüchiAutomaton.State, rejectingStates: Set<CoBüchiAutomaton.State>) -> Logic {
+        let lambdaNext = FunctionApplication(function: lambda(qPrime), application: [
+            FunctionApplication(function: Proposition("tau"), application: [
+                Proposition("s")
+                ] + specification.inputs.map(Proposition.init) as [Proposition])
+            ])
+        if linearAutomaton.isStateInNonRejectingSCC(q) || linearAutomaton.isStateInNonRejectingSCC(qPrime) || !linearAutomaton.isInSameSCC(q, qPrime) {
+            // no need for comparator constrain
+            return lambdaNext
+        } else {
+            return lambdaNext & BooleanComparator(rejectingStates.contains(qPrime) ? .Less : .LessOrEqual,
+                                                  lhs: FunctionApplication(function: lambdaSharp(qPrime), application: [
+                                                    FunctionApplication(function: Proposition("tau"), application: [
+                                                        Proposition("s")
+                                                        ] + specification.inputs.map(Proposition.init) as [Proposition])
+                                                    ]),
+                                                  rhs: FunctionApplication(function: lambdaSharp(q), application: [Proposition("s")]))
+        }
+    }
+
+    func lambda(_ automatonState: CoBüchiAutomaton.State) -> Proposition {
+        return Proposition("lambda_\(automatonState)")
+    }
+
+    func lambdaSharp(_ automatonState: CoBüchiAutomaton.State) -> Proposition {
+        return Proposition("lambdaSharp_\(automatonState)")
+    }
+
+
+    func encodeHyperAutomaton(smt: inout String) {
+        let hyperltl = specification.hyperPrenex
+        let pathVariables = hyperltl.pathVariables
+        guard pathVariables.count > 1 else {
             fatalError()
         }
-        guard let automatonInitial = automaton.initialStates.first else {
+
+        // lambdas
+        for q in hyperAutomaton.states {
+            smt.append("(declare-fun \(lambdaHyper(q)) (\(pathVariables.map({ _ in "S" }).joined(separator: " "))) Bool)\n")
+        }
+
+        // lambda sharp
+        for q in hyperAutomaton.states {
+            smt.append("(declare-fun \(lambdaHyperSharp(q)) (\(pathVariables.map({ _ in "S" }).joined(separator: " "))) Int)\n")
+        }
+
+
+        guard hyperAutomaton.initialStates.count == 1 else {
             fatalError()
         }
-        smt.append("(assert (\(lambda(automatonInitial)) \(pathVariables.map({ _ in "s0" }).joined(separator: " "))))\n")
+        guard let automatonInitial = hyperAutomaton.initialStates.first else {
+            fatalError()
+        }
+        smt.append("(assert (\(lambdaHyper(automatonInitial)) \(pathVariables.map({ _ in "s0" }).joined(separator: " "))))\n")
 
         let printer = SmtPrinter()
 
@@ -101,9 +200,9 @@ public class HyperSmtEncoding: BoSyEncoding {
 
         let pstates: [Proposition] = pathVariables.map({ variable in Proposition("s_\(variable)_") })
         print(pstates)
-        
-        for q in automaton.states {
-            
+
+        for q in hyperAutomaton.states {
+
             let replacer = ReplacingPropositionVisitor(replace: {
                 proposition in
                 for (variable, variableOutputs) in outputs {
@@ -126,54 +225,50 @@ public class HyperSmtEncoding: BoSyEncoding {
                 }
                 return p
             })
-            
-            if let condition = automaton.safetyConditions[q] {
-                let assertion = FunctionApplication(function: lambda(q), application: pstates) --> condition.accept(visitor: replacer)
+
+            if let condition = hyperAutomaton.safetyConditions[q] {
+                let assertion = FunctionApplication(function: lambdaHyper(q), application: pstates) --> condition.accept(visitor: replacer)
                 smt.append("(assert (forall (\(pstates.map({ "(\($0) S)" }).joined(separator: " ")) \(inputs.flatMap({ $0.value }).map({ "(\($0) Bool)" }).joined(separator: " "))) \(assertion.accept(visitor: printer))))\n")
             }
-            guard let outgoing = automaton.transitions[q] else {
+            guard let outgoing = hyperAutomaton.transitions[q] else {
                 continue
             }
-            
+
             for (qPrime, guardCondition) in outgoing {
-                let transitionCondition = requireTransition(q: q, qPrime: qPrime, rejectingStates: automaton.rejectingStates, variables: pathVariables, inputs: inputs)
-                let assertion = (FunctionApplication(function: lambda(q), application: pstates) & guardCondition.accept(visitor: replacer)) --> transitionCondition
+                let transitionCondition = requireHyperTransition(q: q, qPrime: qPrime, rejectingStates: hyperAutomaton.rejectingStates, variables: pathVariables, inputs: inputs)
+                let assertion = (FunctionApplication(function: lambdaHyper(q), application: pstates) & guardCondition.accept(visitor: replacer)) --> transitionCondition
                 smt.append("(assert (forall (\(pstates.map({ "(\($0) S)" }).joined(separator: " ")) \(inputs.flatMap({ $0.value }).map({ "(\($0) Bool)" }).joined(separator: " "))) \(assertion.accept(visitor: printer))))\n")
             }
         }
-
-        //print(smt)
-        
-        return smt
     }
     
-    func requireTransition(q: CoBüchiAutomaton.State, qPrime: CoBüchiAutomaton.State, rejectingStates: Set<CoBüchiAutomaton.State>, variables: [LTLPathVariable], inputs: [LTLPathVariable: [Proposition]]) -> Logic {
-        let lambdaNext = FunctionApplication(function: lambda(qPrime), application: variables.map({
+    private func requireHyperTransition(q: CoBüchiAutomaton.State, qPrime: CoBüchiAutomaton.State, rejectingStates: Set<CoBüchiAutomaton.State>, variables: [LTLPathVariable], inputs: [LTLPathVariable: [Proposition]]) -> Logic {
+        let lambdaNext = FunctionApplication(function: lambdaHyper(qPrime), application: variables.map({
             variable in
             return FunctionApplication(function: Proposition("tau"), application: [
                 Proposition("s_\(variable)_")
                 ] + inputs[variable]!)
         }))
-        if automaton.isStateInNonRejectingSCC(q) || automaton.isStateInNonRejectingSCC(qPrime) || !automaton.isInSameSCC(q, qPrime) {
+        if hyperAutomaton.isStateInNonRejectingSCC(q) || hyperAutomaton.isStateInNonRejectingSCC(qPrime) || !hyperAutomaton.isInSameSCC(q, qPrime) {
             // no need for comparator constrain
             return lambdaNext
         } else {
             return lambdaNext & BooleanComparator(rejectingStates.contains(qPrime) ? .Less : .LessOrEqual,
-                                                  lhs: FunctionApplication(function: lambdaSharp(qPrime), application: variables.map({
+                                                  lhs: FunctionApplication(function: lambdaHyperSharp(qPrime), application: variables.map({
                                                         variable in
                                                         return FunctionApplication(function: Proposition("tau"), application: [
                                                             Proposition("s_\(variable)_")
                                                         ] + inputs[variable]!)
                                                   })),
-                                                  rhs: FunctionApplication(function: lambdaSharp(q), application: variables.map({ Proposition("s_\($0)_") })))
+                                                  rhs: FunctionApplication(function: lambdaHyperSharp(q), application: variables.map({ Proposition("s_\($0)_") })))
         }
     }
     
-    func lambda(_ automatonState: CoBüchiAutomaton.State) -> Proposition {
+    private func lambdaHyper(_ automatonState: CoBüchiAutomaton.State) -> Proposition {
         return Proposition("lambda_\(automatonState)")
     }
     
-    func lambdaSharp(_ automatonState: CoBüchiAutomaton.State) -> Proposition {
+    private func lambdaHyperSharp(_ automatonState: CoBüchiAutomaton.State) -> Proposition {
         return Proposition("lambdaSharp_\(automatonState)")
     }
 

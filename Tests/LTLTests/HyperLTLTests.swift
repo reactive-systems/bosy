@@ -52,5 +52,14 @@ class HyperLTLTests: XCTestCase {
 
         XCTAssertEqual(parsed.ltlBody, body)
     }
+
+    func testPrenex() throws {
+        let ltlString = "(forall pi1. forall pi2. a[pi1]) && (forall pi2. b[pi2])"
+        let parsed = try LTL.parse(fromString: ltlString)
+        let prenex = parsed.prenex
+        XCTAssert(prenex.pathVariables.contains(pi1))
+        XCTAssert(prenex.pathVariables.contains(pi2))
+        XCTAssertEqual(prenex.pathVariables.count, 2)
+    }
 }
 

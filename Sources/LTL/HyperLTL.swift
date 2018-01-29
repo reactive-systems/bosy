@@ -33,6 +33,20 @@ extension LTL {
         }
     }
 
+    /**
+     * Contains a quantifier.
+     */
+    public var isHyper: Bool {
+        switch self {
+        case .pathQuantifier(_, parameters: _, body: _):
+            return true
+        case .application(_, parameters: let paramters):
+            return paramters.reduce(false, { val, paramter in val || paramter.isHyper })
+        default:
+            return false
+        }
+    }
+
     public var ltlBody: LTL {
         precondition(isHyperLTL)
         return _getLTLBody()
@@ -47,7 +61,7 @@ extension LTL {
     }
 
     public var pathVariables: [LTLPathVariable] {
-        precondition(isHyperLTL)
+        precondition(isHyper)
         return _getPathVariables()
     }
 
@@ -57,6 +71,60 @@ extension LTL {
             return variables + body._getPathVariables()
         default:
             return []
+        }
+    }
+
+    public var isUniversal: Bool {
+        //precondition(isNNF)
+        switch self {
+        case .pathQuantifier(let quantifier, parameters: _, body: let body):
+            return quantifier == .forall && body.isUniversal
+        case .application(_, parameters: let parameters):
+            return parameters.reduce(true, { val, parameter in val && parameter.isUniversal })
+        default:
+            return true
+        }
+    }
+
+    /**
+     * Moves quantifier to the front.
+     * Does it in a way to not introduce new quantifier.
+     * This function assumes the formula in negation normal form and does not allow existential quantification.
+     */
+    public var prenex: LTL {
+        //precondition(isNNF)
+        precondition(isUniversal)
+        guard case .application(.and, parameters: let parameters) = self else {
+            fatalError("not implemented")
+        }
+        let pathVariables = parameters[0].pathVariables
+        let body = parameters.reduce(.tt, { val, ltl in val && ltl.toPrenex(free: pathVariables, mapping: [:]) })
+        return .pathQuantifier(.forall, parameters: pathVariables, body: body)
+    }
+
+    private func toPrenex(free: [LTLPathVariable], mapping: [LTLPathVariable:LTLPathVariable]) -> LTL {
+        switch self {
+        case .pathQuantifier(let quantifier, parameters: let parameters, body: let body):
+            assert(quantifier == .forall)
+            var copy = ArraySlice(free)
+            var newMapping = mapping
+            for parameter in parameters {
+                assert(mapping[parameter] == nil)
+                guard let mapped = copy.popFirst() else {
+                    fatalError()
+                }
+                newMapping[parameter] = mapped
+            }
+            return body.toPrenex(free: copy.map({ $0 }), mapping: newMapping)
+        case .application(let function, parameters: let parameters):
+            return .application(function, parameters: parameters.map({ $0.toPrenex(free: free, mapping: mapping) }))
+        case .pathProposition(let prop, let pathVar):
+            guard let newPathVar = mapping[pathVar] else {
+                fatalError()
+            }
+            return .pathProposition(prop, newPathVar)
+        default:
+            fatalError()
         }
     }
 }

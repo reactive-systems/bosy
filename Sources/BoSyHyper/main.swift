@@ -56,32 +56,41 @@ do {
 
     let specification = try parseSpecification(fileName: result.get(specificationFile))
 
-    assert(specification.assumptions.count == 0)
-    assert(specification.guarantees.count == 1)
-    guard let hyperltl = specification.guarantees.first else {
-        fatalError()
-    }
-    assert(hyperltl.isHyperLTL)
-    print(hyperltl)
-
-    let body = hyperltl.ltlBody
+    let linear = specification.ltl
+    let hyperltl = specification.hyperPrenex
+    print("linear", linear)
+    print("hyper", hyperltl)
 
     if !searchEnvironment {
 
+        // build automaton for linear
+        guard let linearSpot = (!linear).spot else {
+            fatalError()
+        }
+        guard let linearAutomaton = LTL2AutomatonConverter.spot.convert(ltl: linearSpot) else {
+            Logger.default().error("could not construct automaton")
+            fatalError()
+        }
+
+        Logger.default().info("Linear automaton contains \(linearAutomaton.states.count) states")
+
         // build the specification automaton for the system player
 
+        let body = hyperltl.ltlBody
         guard let spot = (!body).spot else {
             fatalError()
         }
-        print(spot)
         guard let automaton = LTL2AutomatonConverter.spot.convert(ltl: spot) else {
             Logger.default().error("could not construct automaton")
             fatalError()
         }
 
+        Logger.default().info("Hyper automaton contains \(automaton.states.count) states")
+
         let encoding = HyperSmtEncoding(
                 options: BoSyOptions(),
-                automaton: automaton,
+                linearAutomaton: linearAutomaton,
+                hyperAutomaton: automaton,
                 specification: specification)
         
         for i in initialBound... {
@@ -110,6 +119,9 @@ do {
         // the environment wins, if it
         // 1) either forces a violation of the specification, or
         // 2) the system player plays non-deterministic
+
+        let body = hyperltl.ltlBody
+        fatalError("does not work currently")
 
         let pathVariables = hyperltl.pathVariables
         guard pathVariables.count == 2 else {

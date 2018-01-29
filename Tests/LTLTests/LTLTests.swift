@@ -80,6 +80,13 @@ class LTLTests: XCTestCase {
         let expected = try! LTL.parse(fromString: "(a & b) | (!a & !b)")
         XCTAssertEqual(parsed.normalized, expected)
     }
+
+    func testIsNNf() throws {
+        let parsed = try! LTL.parse(fromString: "!(a & b)")
+        XCTAssertFalse(parsed.isNNF)
+        let expected = try! LTL.parse(fromString: "!a | !b")
+        XCTAssertTrue(expected.isNNF)
+    }
     
     static var allTests : [(String, (LTLTests) -> () throws -> Void)] {
         return [

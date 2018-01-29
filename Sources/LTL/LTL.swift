@@ -141,6 +141,34 @@ extension LTL {
     }
 
     /**
+     * Checks if a formula is in negation normal form
+     */
+    public var isNNF: Bool {
+        switch self {
+        case .atomicProposition(_):
+            return true
+        case .pathProposition(_, _):
+            return true
+        case .pathQuantifier(_, parameters: _, body: let body):
+            return body.isNNF
+        case .application(.negation, parameters: let parameters):
+            guard let parameter = parameters.first else {
+                fatalError()
+            }
+            switch parameter {
+            case .atomicProposition(_):
+                return true
+            case .pathProposition(_, _):
+                return true
+            default:
+                return false
+            }
+        case .application(_, parameters: let parameters):
+            return parameters.reduce(true, { val, parameter in val && parameter.isNNF })
+        }
+    }
+
+    /**
      * Returns an equivalent LTL formula without derived operators such as
      * implication, equivalence, finally, and globally
      */

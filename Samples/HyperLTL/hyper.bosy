@@ -4,7 +4,10 @@
     "outputs": ["o_l"],
     "assumptions": [],
     "guarantees": [
-        "forall pi1 pi2. ( (o_l[pi1] <-> i_h[pi1]) || (X o_l[pi1] <-> i_l[pi1]) ) && ( (o_l[pi1] <-> o_l[pi2]) W !(i_l[pi1] <-> i_l[pi2]) )"
+        "(o_l <-> i_h) || (X o_l <-> i_l) )",
+    ],
+    "hyper": [
+        "forall pi1 pi2. ( (o_l[pi1] <-> o_l[pi2]) W !(i_l[pi1] <-> i_l[pi2]) )"
     ]
 }
 
