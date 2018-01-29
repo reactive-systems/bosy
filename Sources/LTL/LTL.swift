@@ -56,6 +56,10 @@ public struct LTLAtomicProposition: Codable {
 
 public struct LTLPathVariable: Codable {
     let name: String
+
+    public init(name: String) {
+        self.name = name
+    }
 }
 
 public enum LTLQuantifier: String, Codable {

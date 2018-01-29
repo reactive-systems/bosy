@@ -127,14 +127,28 @@ do {
             fatalError("more than two path variables is currently not implemented")
         }
 
-        let pi = pathVariables[0]
-        let piPrime = pathVariables[1]
+        let environmentBound = 2
+
+        var counterPaths: [LTLPathVariable] = []
+        for i in 1...environmentBound {
+            counterPaths.append(LTLPathVariable(name: "env\(i)"))
+        }
+
         let outputPropositions: [LTLAtomicProposition] = specification.outputs.map({ LTLAtomicProposition(name: $0) })
         let inputPropositions: [LTLAtomicProposition] = specification.inputs.map({ LTLAtomicProposition(name: $0) })
-        let outputEqual: LTL = outputPropositions.map({ ap in LTL.pathProposition(ap, pi) <=> LTL.pathProposition(ap, piPrime) })
-                                                 .reduce(LTL.tt, { val, res in val && res })
-        let inputEqual: LTL = inputPropositions.map({ ap in LTL.pathProposition(ap, pi) <=> LTL.pathProposition(ap, piPrime) })
-                                               .reduce(LTL.tt, { val, res in val && res })
+
+
+        var equalOutputs: [LTL] = []
+        var equalInputs: [LTL] = []
+
+        for (i, path1) in counterPaths.enumerated() {
+            for path2 in counterPaths[(i+1)...] {
+                equalOutputs += outputPropositions.map({ ap in LTL.pathProposition(ap, path1) <=> LTL.pathProposition(ap, path2) })
+                equalInputs += inputPropositions.map({ ap in LTL.pathProposition(ap, path1) <=> LTL.pathProposition(ap, path2) })
+            }
+        }
+        let outputEqual: LTL = equalOutputs.reduce(LTL.tt, { val, res in val && res })
+        let inputEqual: LTL = equalInputs.reduce(LTL.tt, { val, res in val && res })
         let deterministic: LTL
         switch specification.semantics {
         case .mealy:
@@ -144,9 +158,17 @@ do {
         }
 
         // actually the negated spec of environment
-        var environmentSpec = deterministic && body
+        var environmentSpec = deterministic
 
-        for pathVar in pathVariables {
+        let pi = pathVariables[0]
+        let piPrime = pathVariables[1]
+        for (i, path1) in counterPaths.enumerated() {
+            for path2 in counterPaths[(i+1)...] {
+                environmentSpec &= body.replacePathProposition(mapping: [pi: path1, piPrime: path2])
+            }
+        }
+
+        for pathVar in counterPaths {
             environmentSpec &= linear.addPathPropositions(path: pathVar)
         }
 
@@ -160,8 +182,8 @@ do {
         }
 
         let ltlSpecification = SynthesisSpecification(semantics: specification.semantics.swapped,
-                                                      inputs: outputPropositions.reduce([], { res, val in res + pathVariables.map({ pi in LTL.pathProposition(val, pi).description }) }),
-                                                      outputs: inputPropositions.reduce([], { res, val in res + pathVariables.map({ pi in LTL.pathProposition(val, pi).description }) }),
+                                                      inputs: outputPropositions.reduce([], { res, val in res + counterPaths.map({ pi in LTL.pathProposition(val, pi).description }) }),
+                                                      outputs: inputPropositions.reduce([], { res, val in res + counterPaths.map({ pi in LTL.pathProposition(val, pi).description }) }),
                                                       assumptions: [],
                                                       guarantees: [environmentSpec])
 

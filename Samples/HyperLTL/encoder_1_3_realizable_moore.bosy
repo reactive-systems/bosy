@@ -1,0 +1,18 @@
+{
+    "semantics": "moore",
+    "inputs": ["i1", "ienc1", "ienc2", "ienc3"],
+    "outputs": ["enc1", "enc2", "enc3", "dec1"],
+    "assumptions": [],
+    "guarantees": [
+        "((G ((ienc1 <-> enc1) && (ienc2 <-> enc2))) -> ( G (XX dec1 <-> i1) ))",
+        "((G ((ienc2 <-> enc2) && (ienc3 <-> enc3))) -> ( G (XX dec1 <-> i1) ))",
+        "((G ((ienc1 <-> enc1) && (ienc3 <-> enc3))) -> ( G (XX dec1 <-> i1) ))"
+    ],
+    "hyper": [
+        "forall pi1 pi2. (!((i1[pi1] <-> i1[pi2])) R (enc1[pi1] <-> enc1[pi2]))",
+        "forall pi1 pi2. (!((i1[pi1] <-> i1[pi2])) R (enc2[pi1] <-> enc2[pi2]))",
+        "forall pi1 pi2. (!((i1[pi1] <-> i1[pi2])) R (enc3[pi1] <-> enc3[pi2]))",
+        "forall pi1 pi2. (!((ienc1[pi1] <-> ienc1[pi2]) && (ienc2[pi1] <-> ienc2[pi2]) && (ienc3[pi1] <-> ienc3[pi2])) R (dec1[pi1] <-> dec1[pi2]))",
+    ]
+}
+

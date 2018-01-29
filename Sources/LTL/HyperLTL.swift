@@ -141,4 +141,21 @@ extension LTL {
             fatalError()
         }
     }
+
+    /**
+     * Replaces path variables in pathPropositions according to given mapping
+     */
+    public func replacePathProposition(mapping: [LTLPathVariable:LTLPathVariable]) -> LTL {
+        switch self {
+        case .pathProposition(let prop, let variable):
+            guard let newVariable = mapping[variable] else {
+                fatalError("\(variable) not contained in mapping")
+            }
+            return .pathProposition(prop, newVariable)
+        case .application(let function, parameters: let parameters):
+            return .application(function, parameters: parameters.map({ $0.replacePathProposition(mapping: mapping) }))
+        default:
+            fatalError()
+        }
+    }
 }
