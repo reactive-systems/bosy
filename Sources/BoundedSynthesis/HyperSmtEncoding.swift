@@ -190,16 +190,16 @@ public class HyperSmtEncoding: BoSyEncoding {
         for variable in pathVariables {
             inputs[variable] = specification.inputs.map({ input in Proposition("\(input)_\(variable)_") })
         }
-        print(inputs)
+        //print(inputs)
 
         var outputs: [LTLPathVariable: [Proposition]] = [:]
         for variable in pathVariables {
             outputs[variable] = specification.outputs.map({ output in Proposition(LTL.pathProposition(LTLAtomicProposition(name: output), variable).description) })
         }
-        print(outputs)
+        //print(outputs)
 
         let pstates: [Proposition] = pathVariables.map({ variable in Proposition("s_\(variable)_") })
-        print(pstates)
+        //print(pstates)
 
         for q in hyperAutomaton.states {
 
