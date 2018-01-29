@@ -127,4 +127,18 @@ extension LTL {
             fatalError()
         }
     }
+
+    /**
+     * For a given LTL formula, replace all atomic propositions by path propositions.
+     */
+    public func addPathPropositions(path: LTLPathVariable) -> LTL {
+        switch self {
+        case .atomicProposition(let prop):
+            return .pathProposition(prop, path)
+        case .application(let function, parameters: let parameters):
+            return .application(function, parameters: parameters.map({ $0.addPathPropositions(path: path) }))
+        default:
+            fatalError()
+        }
+    }
 }

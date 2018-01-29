@@ -11,6 +11,10 @@ extension LTL {
         return .application(.and, parameters: [lhs, rhs])
     }
 
+    public static func &= (lhs: inout LTL, rhs: LTL) {
+        lhs = lhs && rhs
+    }
+
     public static func || (lhs: LTL, rhs: LTL) -> LTL {
         return .application(.or, parameters: [lhs, rhs])
     }

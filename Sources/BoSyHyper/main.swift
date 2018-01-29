@@ -121,12 +121,12 @@ do {
         // 2) the system player plays non-deterministic
 
         let body = hyperltl.ltlBody
-        fatalError("does not work currently")
 
         let pathVariables = hyperltl.pathVariables
         guard pathVariables.count == 2 else {
             fatalError("more than two path variables is currently not implemented")
         }
+
         let pi = pathVariables[0]
         let piPrime = pathVariables[1]
         let outputPropositions: [LTLAtomicProposition] = specification.outputs.map({ LTLAtomicProposition(name: $0) })
@@ -143,7 +143,12 @@ do {
             deterministic = .release(!inputEqual, outputEqual)
         }
 
-        let environmentSpec = deterministic && body
+        // actually the negated spec of environment
+        var environmentSpec = deterministic && body
+
+        for pathVar in pathVariables {
+            environmentSpec &= linear.addPathPropositions(path: pathVar)
+        }
 
         guard let spot = environmentSpec.spot else {
             fatalError()
