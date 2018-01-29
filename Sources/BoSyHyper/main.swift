@@ -46,11 +46,13 @@ do {
     let parser = ArgumentParser(commandName: "BoSyHyper", usage: "specification", overview: "BoSyHyper is a synthesis tool for temporal hyperproperties.")
     let specificationFile = parser.add(positional: "specification", kind: String.self, optional: true, usage: "A file containing the specification in BoSy format", completion: .filename)
     let environmentOption = parser.add(option: "--environment", kind: Bool.self, usage: "Search for environment strategies instead of system")
+    let minBoundOption = parser.add(option: "--min-bound", kind: Int.self, usage: "Specify the initial bound (default 1)")
 
     let args = Array(CommandLine.arguments.dropFirst())
     let result = try parser.parse(args)
 
     let searchEnvironment = result.get(environmentOption) ?? false
+    let initialBound = result.get(minBoundOption) ?? 1
 
     let specification = try parseSpecification(fileName: result.get(specificationFile))
 
@@ -82,7 +84,7 @@ do {
                 automaton: automaton,
                 specification: specification)
         
-        for i in 1... {
+        for i in initialBound... {
             if try encoding.solve(forBound: i) {
                 print("realizable")
                 
@@ -121,10 +123,13 @@ do {
                                                  .reduce(LTL.tt, { val, res in val && res })
         let inputEqual: LTL = inputPropositions.map({ ap in LTL.pathProposition(ap, pi) <=> LTL.pathProposition(ap, piPrime) })
                                                .reduce(LTL.tt, { val, res in val && res })
-        guard specification.semantics == .mealy else {
-            fatalError("only mealy specifications are currently supported")
+        let deterministic: LTL
+        switch specification.semantics {
+        case .mealy:
+            deterministic = .weakUntil(outputEqual, !inputEqual)
+        case .moore:
+            deterministic = .release(!inputEqual, outputEqual)
         }
-        let deterministic: LTL = .weakUntil(outputEqual, !inputEqual)
 
         let environmentSpec = deterministic && body
 
@@ -150,9 +155,9 @@ do {
 
         let encoding = InputSymbolicEncoding(options: options, automaton: specificationAutomaton, specification: ltlSpecification, synthesize: false)
 
-        for i in 1... {
+        for i in initialBound... {
             if try encoding.solve(forBound: i) {
-                print("realizable")
+                print("unrealizable")
 
                 guard let solution = encoding.extractSolution() else {
                     fatalError()

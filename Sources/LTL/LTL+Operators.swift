@@ -34,5 +34,9 @@ extension LTL {
     public static func weakUntil(_ lhs: LTL, _ rhs: LTL) -> LTL {
         return .application(.weakUntil, parameters: [lhs, rhs])
     }
+
+    public static func release(_ lhs: LTL, _ rhs: LTL) -> LTL {
+        return .application(.release, parameters: [lhs, rhs])
+    }
     
 }

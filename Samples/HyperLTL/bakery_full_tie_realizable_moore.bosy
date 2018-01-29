@@ -1,0 +1,10 @@
+{
+    "semantics": "moore",
+    "inputs": ["r1", "r2", "tie"],
+    "outputs": ["g1", "g2"],
+    "assumptions": [],
+    "guarantees": [
+        "forall pi1 pi2. ( (G (r1[pi1] -> F g1[pi1])) && (G (r2[pi1] -> F g2[pi1])) && (G (!g1[pi1] || !g2[pi1])) && ( r1[pi1] R !g1[pi1] ) && ( r2[pi1] R !g2[pi1] ) && ( !((tie[pi1] <-> !tie[pi2]) && (r1[pi1] <-> r2[pi2])) R (g1[pi1] <-> g2[pi2]) ) )"
+    ]
+}
+
