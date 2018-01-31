@@ -1,0 +1,15 @@
+{
+    "semantics": "mealy",
+    "inputs": ["req1", "req2", "chan1", "chan2"],
+    "outputs": ["com1", "com2", "out1", "out2"],
+    "assumptions": [
+    ],
+    "guarantees": [
+        "( (out1 <-> out2) && ((req1 || req2) <-> (out1 || out2)) ) W ( !(chan1 <-> com1) || !(chan2 <-> com2) )",
+    ],
+    "hyper": [
+        "forall pi1 pi2. ( ((com1[pi1] <-> com1[pi2]) && (out1[pi1] <-> out1[pi2])) W !( (req1[pi1] <-> req1[pi2]) && (chan2[pi1] <-> chan2[pi2]) ) )",
+        "forall pi1 pi2. ( ((com2[pi1] <-> com2[pi2]) && (out2[pi1] <-> out2[pi2])) W !( (req2[pi1] <-> req2[pi2]) && (chan1[pi1] <-> chan1[pi2]) ) )",
+    ]
+}
+

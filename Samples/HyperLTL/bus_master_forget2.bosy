@@ -1,0 +1,22 @@
+{
+    "semantics": "moore",
+    "inputs": ["in", "addr", "send", "ack"],
+    "outputs": ["idle", "start", "transmitAddr", "transmitData", "data", "waitForAck", "success", "failure"],
+    "assumptions": [
+    ],
+    "guarantees": [
+        "idle",
+        "G ((idle && !send) -> X idle)",
+        "G ((idle && send) -> ((X start) && (XX transmitAddr) && (XX data <-> addr) && (XXX transmitData) && (XXX data <-> in) ) )",
+        "G (transmitData -> (X waitForAck))",
+        "G ((waitForAck && ack) <-> (X success))",
+        "G ((waitForAck && !ack) <-> (X failure))",
+        "G (success -> (X idle))",
+        "G (failure -> (X idle))",
+        "G (!(idle && transmitAddr) && !(idle && transmitData) && !(idle && waitForAck) && !(idle && success) && !(idle && failure) && !(start && transmitAddr)&& !(start && transmitData) && !(start && waitForAck))",
+    ],
+    "hyper": [
+        "forall pi1 pi2. (G ( (send[pi1] <-> send[pi2]) && (ack[pi1] <-> ack[pi2]) && (addr[pi1] <-> addr[pi2]) ) ) -> ( G ( (send[pi1] <-> send[pi2]) && (ack[pi1] <-> ack[pi2]) && (addr[pi1] <-> addr[pi2]) && (in[pi1] <-> in[pi2]) ) -> FG (data[pi1] <-> data[pi2]) )"
+    ]
+}
+

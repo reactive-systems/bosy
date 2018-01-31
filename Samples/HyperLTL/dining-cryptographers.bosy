@@ -1,26 +1,26 @@
 {
     "semantics": "mealy",
-    "inputs": ["paid_a", "paid_b", "paid_c", "paid_n", "secret_ab", "secret_bc", "secret_ac", "in_a", "in_b", "in_c"],
+    "inputs": ["paid_a", "paid_b", "paid_c", "paid_n", "secret_ab", "secret_bc", "secret_ac"],
     "outputs": ["paid_group", "out_a", "out_b", "out_c"],
     "assumptions": [
-        "(!paid_a || !paid_b)",
-        "(!paid_a || !paid_c)",
-        "(!paid_a || !paid_n)",
-        "(!paid_b || !paid_c)",
-        "(!paid_b || !paid_n)",
-        "(!paid_c || !paid_n)",
-        "G (in_a <-> out_a)",
-        "G (in_b <-> out_b)",
-        "G (in_c <-> out_c)"
+        "G (!paid_a || !paid_b)",
+        "G (!paid_a || !paid_c)",
+        "G (!paid_a || !paid_n)",
+        "G (!paid_b || !paid_c)",
+        "G (!paid_b || !paid_n)",
+        "G (!paid_c || !paid_n)",
     ],
     "guarantees": [
-        "( paid_group <-> (paid_a || paid_b || paid_c) )",
+        "G ( paid_group <-> (paid_a || paid_b || paid_c) )",
     ],
     "hyper": [
         "forall pi1 pi2. ( (out_a[pi1] <-> out_a[pi2]) W !((paid_a[pi1] <-> paid_a[pi2]) && (secret_ab[pi1] <-> secret_ab[pi2]) && (secret_ac[pi1] <-> secret_ac[pi2])) )",
         "forall pi1 pi2. ( (out_b[pi1] <-> out_b[pi2]) W !((paid_b[pi1] <-> paid_b[pi2]) && (secret_ab[pi1] <-> secret_ab[pi2]) && (secret_bc[pi1] <-> secret_bc[pi2])) )",
         "forall pi1 pi2. ( (out_c[pi1] <-> out_c[pi2]) W !((paid_c[pi1] <-> paid_c[pi2]) && (secret_ac[pi1] <-> secret_ac[pi2]) && (secret_bc[pi1] <-> secret_bc[pi2])) )",
-        "forall pi1 pi2. ( (paid_group[pi1] <-> paid_group[pi2]) W !((in_a[pi1] <-> in_a[pi2]) && (in_b[pi1] <-> in_b[pi2]) && (in_c[pi1] <-> in_c[pi2])) )"
+        "forall pi1 pi2. ( (paid_group[pi1] <-> paid_group[pi2]) W !((out_a[pi1] <-> out_a[pi2]) && (out_b[pi1] <-> out_b[pi2]) && (out_c[pi1] <-> out_c[pi2])) )",
+        "forall pi1 pi2. G ( (paid_a[pi1] && !paid_a[pi2] && !paid_b[pi1] && paid_b[pi2] && (secret_ab[pi1] <-> !secret_ab[pi2]) && (secret_bc[pi1] <-> secret_bc[pi2])  && (secret_ac[pi1] <-> secret_ac[pi2])  ) -> ((out_a[pi1] <-> out_a[pi2]) && (out_b[pi1] <-> out_b[pi2]) ) )",
+        "forall pi1 pi2. G ( (paid_a[pi1] && !paid_a[pi2] && !paid_c[pi1] && paid_c[pi2] && (secret_ab[pi1] <-> secret_ab[pi2])  && (secret_bc[pi1] <-> secret_bc[pi2])  && (secret_ac[pi1] <-> !secret_ac[pi2]) ) -> ((out_a[pi1] <-> out_a[pi2]) && (out_c[pi1] <-> out_c[pi2]) ) )",
+        "forall pi1 pi2. G ( (paid_b[pi1] && !paid_b[pi2] && !paid_c[pi1] && paid_c[pi2] && (secret_ab[pi1] <-> secret_ab[pi2])  && (secret_bc[pi1] <-> !secret_bc[pi2]) && (secret_ac[pi1] <-> secret_ac[pi2])  ) -> ((out_b[pi1] <-> out_b[pi2]) && (out_c[pi1] <-> out_c[pi2]) ) )",
     ]
 }
 

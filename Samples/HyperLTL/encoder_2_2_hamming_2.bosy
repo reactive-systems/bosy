@@ -1,0 +1,16 @@
+{
+    "semantics": "mealy",
+    "inputs": ["i1", "i2"],
+    "outputs": ["enc1", "enc2", "dec1", "dec2"],
+    "assumptions": [
+    ],
+    "guarantees": [
+        "( G ((dec1 <-> i1) && (dec2 <-> i2)) )"
+    ],
+    "hyper": [
+        "forall pi1 pi2. (((enc1[pi1] <-> enc1[pi2]) && (enc2[pi1] <-> enc2[pi2])) W !((i1[pi1] <-> i1[pi2]) && (i2[pi1] <-> i2[pi2])))",
+        "forall pi1 pi2. (((dec1[pi1] <-> dec1[pi2]) && (dec2[pi1] <-> dec2[pi2])) W !((enc1[pi1] <-> enc1[pi2]) && (enc2[pi1] <-> enc2[pi2])))",
+        "forall pi1 pi2. (G ((!(i1[pi1] <-> i1[pi2]) || !(i2[pi1] <-> i2[pi2])) -> ((!(enc1[pi1] <-> enc1[pi2]) && !(enc2[pi1] <-> enc2[pi2])) )))"
+    ]
+}
+

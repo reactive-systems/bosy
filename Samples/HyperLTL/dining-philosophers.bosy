@@ -1,0 +1,18 @@
+{
+    "semantics": "moore",
+    "inputs": ["h"],
+    "outputs": ["s1", "s2", "s3", "s4"],
+    "assumptions": [
+    ],
+    "guarantees": [
+        "G (h -> ( (F !s1) && (F !s2) && (F !s3) && (F !s4) ) )",
+        "G (s1 || s2)",
+        "G (s2 || s3)",
+        "G (s3 || s4)",
+        "G (s4 || s1)",
+    ],
+    "hyper": [
+        "forall pi1 pi2. ( !((h[pi1] <-> h[pi2])) R (s1[pi1] <-> s1[pi2]) )"
+    ]
+}
+

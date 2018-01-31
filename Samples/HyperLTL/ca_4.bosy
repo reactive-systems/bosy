@@ -1,0 +1,18 @@
+{
+    "semantics": "mealy",
+    "inputs": ["req1", "req2", "req3", "req4", "chan1", "chan2", "chan3", "chan4"],
+    "outputs": ["com1", "com2", "com3", "com4", "out1", "out2", "out3", "out4"],
+    "assumptions": [
+        "(G (chan1 <-> com1) && G (chan2 <-> com2) && G (chan3 <-> com3) && G (chan4 <-> com4))"
+    ],
+    "guarantees": [
+        "G ( (out1 <-> out2) && (out2 <-> out3) && (out3 <-> out4) && ((req1 || req2 || req3 || req4) <-> (out1 || out2 || out3 || out4)) )",
+    ],
+    "hyper": [
+        "forall pi1 pi2. ( ((com1[pi1] <-> com1[pi2]) && (out1[pi1] <-> out1[pi2])) W !( (req1[pi1] <-> req1[pi2]) && (chan2[pi1] <-> chan2[pi2]) && (chan3[pi1] <-> chan3[pi2]) && (chan4[pi1] <-> chan4[pi2]) ) )",
+        "forall pi1 pi2. ( ((com2[pi1] <-> com2[pi2]) && (out2[pi1] <-> out2[pi2])) W !( (req2[pi1] <-> req2[pi2]) && (chan1[pi1] <-> chan1[pi2]) && (chan3[pi1] <-> chan3[pi2]) && (chan4[pi1] <-> chan4[pi2]) ) )",
+        "forall pi1 pi2. ( ((com3[pi1] <-> com3[pi2]) && (out3[pi1] <-> out3[pi2])) W !( (req3[pi1] <-> req3[pi2]) && (chan1[pi1] <-> chan1[pi2]) && (chan2[pi1] <-> chan2[pi2]) && (chan4[pi1] <-> chan4[pi2]) ) )",
+        "forall pi1 pi2. ( ((com4[pi1] <-> com4[pi2]) && (out4[pi1] <-> out4[pi2])) W !( (req4[pi1] <-> req4[pi2]) && (chan1[pi1] <-> chan1[pi2]) && (chan2[pi1] <-> chan2[pi2]) && (chan3[pi1] <-> chan3[pi2]) ) )",
+    ]
+}
+

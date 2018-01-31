@@ -1,0 +1,22 @@
+{
+    "semantics": "moore",
+    "inputs": ["in", "addr", "send", "sda_i", "scl_i"],
+    "outputs": ["idle", "transmit", "waitForAck", "success", "failure", "sda_o", "scl_o"],
+    "assumptions": [
+        "G (send -> (in <-> X in))",
+        "G (send -> ((success || failure) R send))"
+    ],
+    "guarantees": [
+        "idle",
+        "G (idle -> (scl_o && sda_o))",
+        "G ((idle && !send) -> X idle)",
+        "G ((idle && send) -> X (scl_o && !sda_o && transmit))",
+        "G (transmit -> (X!scl_o && (X sda_o <-> in) && XX waitForAck))",
+        "G (waitForAck -> (!scl_o && sda_o))",
+        "G ((waitForAck && !sda_i) <-> (X success))",
+        "G ((waitForAck && sda_i) <-> (X failure))",
+        "G (success -> (scl_o && sda_o && X idle))",
+        "G (failure -> (scl_o && sda_o && X idle))"
+    ]
+}
+

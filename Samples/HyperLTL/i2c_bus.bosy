@@ -1,0 +1,15 @@
+{
+    "semantics": "moore",
+    "inputs": ["sda", "scl"],
+    "outputs": ["start", "stop", "busy"],
+    "assumptions": [
+        "G ((scl && !sda) -> F (scl && sda))"
+    ],
+    "guarantees": [
+        "G ((scl && !sda) <-> X start)",
+        "G ((scl && sda) <-> X stop)",
+        "G (start -> X(busy U stop))",
+        "!busy W start"
+    ]
+}
+

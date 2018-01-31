@@ -136,7 +136,7 @@ class SafetyGameReduction: BoSyEncoding {
     }
     
     func solve(forBound bound: Int) throws -> Bool {
-        Logger.default().debug("build safety game with k=\(bound)")
+        Logger.default().info("build safety game with k=\(bound)")
         
         let manager = CUDDManager()
         manager.AutodynEnable(reorderingAlgorithm: .GroupSift)

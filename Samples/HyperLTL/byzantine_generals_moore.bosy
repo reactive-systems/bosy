@@ -1,0 +1,19 @@
+{
+    "semantics": "moore",
+    "inputs": ["v", "c12", "c13", "c32", "c23"],
+    "outputs": ["g12", "g13", "g23", "g32", "g2", "g3"],
+    "assumptions": [],
+    "guarantees": [
+        "(G ( (c23 <-> g23) && (c32 <-> g32) )) -> XXX (g2 <-> g3) ",
+        "(G ( (c12 <-> g12) && (c13 <-> g13) && (c32 <-> g32) )) -> (v <-> XXX g3)",
+        "(G ( (c12 <-> g12) && (c13 <-> g13) && (c23 <-> g23) )) -> (v <-> XXX g2)",
+    ],
+    "hyper": [
+        "forall pi1 pi2. ( !( (v[pi1] <-> v[pi2]) ) R ((g12[pi1] <-> g12[pi2]) && (g13[pi1] <-> g13[pi2])) )",
+        "forall pi1 pi2. ( !( (c12[pi1] <-> c12[pi2]) ) R ((g23[pi1] <-> g23[pi2])) )",
+        "forall pi1 pi2. ( !( (c13[pi1] <-> c13[pi2]) ) R ((g32[pi1] <-> g32[pi2])) )",
+        "forall pi1 pi2. ( !( (c12[pi1] <-> c12[pi2]) && (c32[pi1] <-> c32[pi2]) ) R ((g2[pi1] <-> g2[pi2])) )",
+        "forall pi1 pi2. ( !( (c13[pi1] <-> c13[pi2]) && (c23[pi1] <-> c23[pi2]) ) R ((g3[pi1] <-> g3[pi2])) )",
+    ]
+}
+

@@ -47,12 +47,16 @@ do {
     let specificationFile = parser.add(positional: "specification", kind: String.self, optional: true, usage: "A file containing the specification in BoSy format", completion: .filename)
     let environmentOption = parser.add(option: "--environment", kind: Bool.self, usage: "Search for environment strategies instead of system")
     let minBoundOption = parser.add(option: "--min-bound", kind: Int.self, usage: "Specify the initial bound (default 1)")
+    let synthesizeOption = parser.add(option: "--synthesize", kind: Bool.self, usage: "Synthesize implementation after realizability check")
+    let environmentPaths = parser.add(option: "--paths", kind: Int.self, usage: "Number of paths the environment can use for counterexample strategy (default 2)")
 
     let args = Array(CommandLine.arguments.dropFirst())
     let result = try parser.parse(args)
 
     let searchEnvironment = result.get(environmentOption) ?? false
     let initialBound = result.get(minBoundOption) ?? 1
+    let synthesize = result.get(synthesizeOption) ?? false
+    let environmentBound = result.get(environmentPaths) ?? 2
 
     let specification = try parseSpecification(fileName: result.get(specificationFile))
 
@@ -96,6 +100,10 @@ do {
         for i in initialBound... {
             if try encoding.solve(forBound: i) {
                 print("realizable")
+
+                if !synthesize {
+                    exit(0)
+                }
                 
                 guard let solution = encoding.extractSolution() else {
                     fatalError()
@@ -126,8 +134,6 @@ do {
         guard pathVariables.count == 2 else {
             fatalError("more than two path variables is currently not implemented")
         }
-
-        let environmentBound = 2
 
         var counterPaths: [LTLPathVariable] = []
         for i in 1...environmentBound {
@@ -175,11 +181,13 @@ do {
         guard let spot = environmentSpec.spot else {
             fatalError()
         }
-        print(spot)
+        //print(spot)
         guard let specificationAutomaton = LTL2AutomatonConverter.spot.convert(ltl: spot) else {
             Logger.default().error("could not construct automaton")
             fatalError()
         }
+
+        Logger.default().info("Automaton contains \(specificationAutomaton.states.count) states")
 
         let ltlSpecification = SynthesisSpecification(semantics: specification.semantics.swapped,
                                                       inputs: outputPropositions.reduce([], { res, val in res + counterPaths.map({ pi in LTL.pathProposition(val, pi).description }) }),
@@ -197,6 +205,10 @@ do {
         for i in initialBound... {
             if try encoding.solve(forBound: i) {
                 print("unrealizable")
+
+                if !synthesize {
+                    exit(0)
+                }
 
                 guard let solution = encoding.extractSolution() else {
                     fatalError()

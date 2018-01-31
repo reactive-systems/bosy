@@ -1,14 +1,14 @@
 {
     "semantics": "mealy",
-    "inputs": ["i1", "i2", "ienc1", "ienc2", "ienc3"],
+    "inputs": ["i1", "i2"],
     "outputs": ["enc1", "enc2", "enc3", "dec1", "dec2"],
     "assumptions": [],
     "guarantees": [
-        "((G ((ienc1 <-> enc1) && (ienc2 <-> enc2) && (ienc3 <-> enc3))) -> ( G ((dec1 <-> i1) && (dec2 <-> i2)) ))"
+        "G ((dec1 <-> i1) && (dec2 <-> i2))"
     ],
     "hyper": [
         "forall pi1 pi2. (((enc1[pi1] <-> enc1[pi2]) && (enc2[pi1] <-> enc2[pi2]) && (enc3[pi1] <-> enc3[pi2])) W !((i1[pi1] <-> i1[pi2]) && (i2[pi1] <-> i2[pi2])))",
-        "forall pi1 pi2. (((dec1[pi1] <-> dec1[pi2]) && (dec2[pi1] <-> dec2[pi2])) W !((ienc1[pi1] <-> ienc1[pi2]) && (ienc2[pi1] <-> ienc2[pi2]) && (ienc3[pi1] <-> ienc3[pi2])))",
+        "forall pi1 pi2. (((dec1[pi1] <-> dec1[pi2]) && (dec2[pi1] <-> dec2[pi2])) W !((enc1[pi1] <-> enc1[pi2]) && (enc2[pi1] <-> enc2[pi2]) && (enc3[pi1] <-> enc3[pi2])))",
         "forall pi1 pi2. (G ((!(i1[pi1] <-> i1[pi2]) || !(i2[pi1] <-> i2[pi2])) -> ((!(enc1[pi1] <-> enc1[pi2]) && !(enc2[pi1] <-> enc2[pi2])) || (!(enc2[pi1] <-> enc2[pi2]) && !(enc3[pi1] <-> enc3[pi2])) || (!(enc1[pi1] <-> enc1[pi2]) && !(enc3[pi1] <-> enc3[pi2])) )))"
     ]
 }
