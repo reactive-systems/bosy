@@ -9,9 +9,10 @@
         "G (!paid_b || !paid_c)",
         "G (!paid_b || !paid_n)",
         "G (!paid_c || !paid_n)",
+        "G (paid_a || paid_b || paid_c || paid_n)",
     ],
     "guarantees": [
-        "G ( paid_group <-> (paid_a || paid_b || paid_c) )",
+        "G ( paid_group <-> !(paid_n) )",
     ],
     "hyper": [
         "forall pi1 pi2. ( (out_a[pi1] <-> out_a[pi2]) W !((paid_a[pi1] <-> paid_a[pi2]) && (secret_ab[pi1] <-> secret_ab[pi2]) && (secret_ac[pi1] <-> secret_ac[pi2])) )",

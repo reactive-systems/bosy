@@ -1,0 +1,35 @@
+{
+    "semantics": "mealy",
+    "inputs": ["paid_a", "paid_b", "paid_c", "paid_d", "paid_n", "secret_ab", "secret_ac", "secret_ad", "secret_bc", "secret_bd", "secret_cd" ],
+    "outputs": ["paid_group", "out_a", "out_b", "out_c", "out_d"],
+    "assumptions": [
+        "G (!paid_a || !paid_b)",
+        "G (!paid_a || !paid_c)",
+        "G (!paid_a || !paid_d)",
+        "G (!paid_a || !paid_n)",
+        "G (!paid_b || !paid_c)",
+        "G (!paid_b || !paid_d)",
+        "G (!paid_b || !paid_n)",
+        "G (!paid_c || !paid_d)",
+        "G (!paid_c || !paid_n)",
+        "G (!paid_d || !paid_n)",
+        "G (paid_a || paid_b || paid_c || paid_n || paid_n)",
+    ],
+    "guarantees": [
+        "G ( paid_group <-> !paid_n )",
+    ],
+    "hyper": [
+        "forall pi1 pi2. ( (out_a[pi1] <-> out_a[pi2]) W !((paid_a[pi1] <-> paid_a[pi2]) && (secret_ab[pi1] <-> secret_ab[pi2]) && (secret_ac[pi1] <-> secret_ac[pi2]) && (secret_ad[pi1] <-> secret_ad[pi2])) )",
+        "forall pi1 pi2. ( (out_b[pi1] <-> out_b[pi2]) W !((paid_b[pi1] <-> paid_b[pi2]) && (secret_ab[pi1] <-> secret_ab[pi2]) && (secret_bc[pi1] <-> secret_bc[pi2]) && (secret_bd[pi1] <-> secret_bd[pi2])) )",
+        "forall pi1 pi2. ( (out_c[pi1] <-> out_c[pi2]) W !((paid_c[pi1] <-> paid_c[pi2]) && (secret_ac[pi1] <-> secret_ac[pi2]) && (secret_bc[pi1] <-> secret_bc[pi2]) && (secret_cd[pi1] <-> secret_cd[pi2])) )",
+        "forall pi1 pi2. ( (out_d[pi1] <-> out_d[pi2]) W !((paid_d[pi1] <-> paid_d[pi2]) && (secret_ad[pi1] <-> secret_ad[pi2]) && (secret_bd[pi1] <-> secret_bd[pi2]) && (secret_cd[pi1] <-> secret_cd[pi2])) )",
+        "forall pi1 pi2. ( (paid_group[pi1] <-> paid_group[pi2]) W !((out_a[pi1] <-> out_a[pi2]) && (out_b[pi1] <-> out_b[pi2]) && (out_c[pi1] <-> out_c[pi2]) && (out_d[pi1] <-> out_d[pi2])) )",
+        "forall pi1 pi2. G ( (paid_a[pi1] && !paid_a[pi2] && !paid_b[pi1] && paid_b[pi2] && (secret_ab[pi1] <-> !secret_ab[pi2]) && (secret_ac[pi1] <-> secret_ac[pi2])  && (secret_ad[pi1] <-> secret_ad[pi2]) && (secret_bc[pi1] <-> secret_bc[pi2]) && (secret_bd[pi1] <-> secret_bd[pi2]) && (secret_cd[pi1] <-> secret_cd[pi2]) ) -> ((out_a[pi1] <-> out_a[pi2]) && (out_b[pi1] <-> out_b[pi2]) ) )",
+        "forall pi1 pi2. G ( (paid_a[pi1] && !paid_a[pi2] && !paid_c[pi1] && paid_c[pi2] && (secret_ab[pi1] <-> secret_ab[pi2])  && (secret_ac[pi1] <-> !secret_ac[pi2]) && (secret_ad[pi1] <-> secret_ad[pi2]) && (secret_bc[pi1] <-> secret_bc[pi2]) && (secret_bd[pi1] <-> secret_bd[pi2]) && (secret_cd[pi1] <-> secret_cd[pi2]) ) -> ((out_a[pi1] <-> out_a[pi2]) && (out_c[pi1] <-> out_c[pi2]) ) )",
+        "forall pi1 pi2. G ( (paid_a[pi1] && !paid_a[pi2] && !paid_d[pi1] && paid_d[pi2] && (secret_ab[pi1] <-> secret_ab[pi2])  && (secret_ac[pi1] <-> secret_ac[pi2])  && (secret_ad[pi1] <-> !secret_ad[pi2]) && (secret_bc[pi1] <-> secret_bc[pi2]) && (secret_bd[pi1] <-> secret_bd[pi2]) && (secret_cd[pi1] <-> secret_cd[pi2]) ) -> ((out_a[pi1] <-> out_a[pi2]) && (out_d[pi1] <-> out_d[pi2]) ) )",
+        "forall pi1 pi2. G ( (paid_b[pi1] && !paid_b[pi2] && !paid_c[pi1] && paid_c[pi2] && (secret_ab[pi1] <-> secret_ab[pi2])  && (secret_ac[pi1] <-> secret_ac[pi2])  && (secret_ad[pi1] <-> secret_ad[pi2]) && (secret_bc[pi1] <-> !secret_bc[pi2]) && (secret_bd[pi1] <-> secret_bd[pi2]) && (secret_cd[pi1] <-> secret_cd[pi2])  ) -> ((out_b[pi1] <-> out_b[pi2]) && (out_c[pi1] <-> out_c[pi2]) ) )",
+        "forall pi1 pi2. G ( (paid_b[pi1] && !paid_b[pi2] && !paid_d[pi1] && paid_d[pi2] && (secret_ab[pi1] <-> secret_ab[pi2])  && (secret_ac[pi1] <-> secret_ac[pi2])  && (secret_ad[pi1] <-> secret_ad[pi2]) && (secret_bc[pi1] <-> secret_bc[pi2]) && (secret_bd[pi1] <-> !secret_bd[pi2]) && (secret_cd[pi1] <-> secret_cd[pi2])  ) -> ((out_b[pi1] <-> out_b[pi2]) && (out_d[pi1] <-> out_d[pi2]) ) )",
+        "forall pi1 pi2. G ( (paid_c[pi1] && !paid_c[pi2] && !paid_d[pi1] && paid_d[pi2] && (secret_ab[pi1] <-> secret_ab[pi2])  && (secret_ac[pi1] <-> secret_ac[pi2])  && (secret_ad[pi1] <-> secret_ad[pi2]) && (secret_bc[pi1] <-> secret_bc[pi2]) && (secret_bd[pi1] <-> secret_bd[pi2]) && (secret_cd[pi1] <-> !secret_cd[pi2])  ) -> ((out_c[pi1] <-> out_c[pi2]) && (out_d[pi1] <-> out_d[pi2]) ) )",
+    ]
+}
+

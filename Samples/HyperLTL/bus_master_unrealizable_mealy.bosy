@@ -1,0 +1,22 @@
+{
+    "semantics": "mealy",
+    "inputs": ["in", "send", "ack"],
+    "outputs": ["idle", "start", "transmit", "data", "waitForAck", "success", "failure"],
+    "assumptions": [
+    ],
+    "guarantees": [
+        "idle",
+        "G ((idle && !send) -> X idle)",
+        "G ((idle && send) -> ((X start) && (XX transmit) && (XX data <-> in) ) )",
+        "G (transmit -> (X waitForAck))",
+        "G ((waitForAck && ack) <-> (X success))",
+        "G ((waitForAck && !ack) <-> (X failure))",
+        "G (success -> (X idle))",
+        "G (failure -> (X idle))",
+        "G (!(idle && transmit) && !(idle && waitForAck) && !(idle && success) && !(idle && failure) && !(start && transmit) && !(start && waitForAck))",
+    ],
+    "hyper": [
+        "forall pi1 pi2. (G ( (send[pi1] <-> send[pi2]) && (ack[pi1] <-> ack[pi2]) ) ) -> G (data[pi1] <-> data[pi2])"
+    ]
+}
+
