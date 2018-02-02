@@ -1,0 +1,13 @@
+{
+    "semantics": "moore",
+    "inputs": ["i"],
+    "outputs": ["o"],
+    "assumptions": [],
+    "guarantees": [
+        "F (i <-> o)"
+    ],
+    "hyper": [
+        "forall pi1 pi2. o[pi1] || !o[pi1]"
+    ]
+}
+
