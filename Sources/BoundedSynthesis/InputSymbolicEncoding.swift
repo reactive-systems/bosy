@@ -58,7 +58,6 @@ public class InputSymbolicEncoding<A: Automaton>: BoSyEncoding, SingleParamaterS
                 }
                 
                 guard let outgoing = automaton.transitions[q] else {
-                    assert(conjunct.isEmpty)
                     continue
                 }
                 

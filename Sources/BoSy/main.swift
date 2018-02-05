@@ -74,7 +74,7 @@ func search(specification: SynthesisSpecification, player: Player) -> SafetyAuto
     }
 }
 
-func synthesizeSolution(specification: SynthesisSpecification, player: Player, safetyAutomaton: SafetyAutomaton<CoBüchiAutomaton.CounterState>) {
+func synthesizeSolution(specification: SynthesisSpecification, player: Player, safetyAutomaton: SafetyAutomaton<CoBüchiAutomaton.CounterState>) -> UnsafeMutablePointer<aiger>? {
     do {
         var options = BoSyOptions()
         options.qbfCertifier = .quabs
@@ -92,14 +92,35 @@ func synthesizeSolution(specification: SynthesisSpecification, player: Player, s
         }
         guard let aiger_solution = (solution as? AigerRepresentable)?.aiger else {
             Logger.default().error("could not encode solution as AIGER")
-            return
+            return nil
         }
         let minimized = aiger_solution.minimized
-        aiger_write_to_file(minimized, aiger_ascii_mode, stdout)
-        player == .system ? print("result: realizable") : print("result: unrealizable")
+        return minimized
     } catch {
         Logger.default().error("synthesizing winning strategy failed")
         Logger.default().error("\(error)")
+        return nil
+    }
+}
+
+func optimizeSolution(specification: SynthesisSpecification, player: Player, safetyAutomaton: SafetyAutomaton<CoBüchiAutomaton.CounterState>, solution: UnsafeMutablePointer<aiger>) -> AigerSolution? {
+    do {
+        var options = BoSyOptions()
+        options.solver = .cryptominisat
+        let optimizer = AigerEncoding(options: options, automaton: safetyAutomaton, specification: specification, stateBits: Int(solution.pointee.num_latches))
+
+        var bound = NumberOfAndGatesInAIGER(value: Int(solution.pointee.num_ands))
+        var solution: AigerSolution? = nil
+        while bound.value >= 0, try optimizer.solve(forBound: bound) {
+            solution = optimizer.extractSolution() as? AigerSolution
+            bound = NumberOfAndGatesInAIGER(value: bound.value - 1)
+        }
+        return solution
+
+    } catch {
+        Logger.default().error("optimizing winning strategy failed")
+        Logger.default().error("\(error)")
+        return nil
     }
 }
 
@@ -110,6 +131,7 @@ do {
     let readStdinOption = parser.add(option: "--read-from-stdin", shortName: "-in", kind: Bool.self, usage: "read specification from standard input")
     let synthesizeOption = parser.add(option: "--synthesize", kind: Bool.self, usage: "construct system after checking realizability")
     let verbosityOption = parser.add(option: "--verbose", shortName: "-v", kind: Bool.self, usage: "enable verbose output")
+    let optimizeOption = parser.add(option: "--optimize", kind: Bool.self, usage: "optimize parameter")
 
     let arguments = Array(CommandLine.arguments.dropFirst())
     let parsed = try parser.parse(arguments)
@@ -134,6 +156,7 @@ do {
 
     let synthesize = parsed.get(synthesizeOption) ?? false
     let verbose = parsed.get(verbosityOption) ?? false
+    let optimize = parsed.get(optimizeOption) ?? false
 
     Logger.default().verbosity = verbose ? .debug : .info
 
@@ -184,7 +207,26 @@ do {
 
     cancelled = true
 
-    synthesizeSolution(specification: w == .system ? specification : specification.dualized, player: w, safetyAutomaton: automaton)
+    guard let solution = synthesizeSolution(specification: w == .system ? specification : specification.dualized, player: w, safetyAutomaton: automaton) else {
+        fatalError()
+    }
+
+    if !optimize {
+        aiger_write_to_file(solution, aiger_ascii_mode, stdout)
+        w == .system ? print("result: realizable") : print("result: unrealizable")
+        exit(0)
+    }
+
+    if let optimized = optimizeSolution(specification: w == .system ? specification : specification.dualized, player: w, safetyAutomaton: automaton, solution: solution) {
+        aiger_write_to_file(optimized.aiger, aiger_ascii_mode, stdout)
+        w == .system ? print("result: realizable") : print("result: unrealizable")
+        exit(0)
+    } else {
+        aiger_write_to_file(solution, aiger_ascii_mode, stdout)
+        w == .system ? print("result: realizable") : print("result: unrealizable")
+        exit(0)
+    }
+
 
 } catch {
     print(error)

@@ -133,6 +133,7 @@ public protocol CertifyingQbfSolver: Solver {
 public protocol SmtSolver: Solver {
     func solve(formula: String) -> SolverResult?
     func getValue(expression: String) -> Logic?
+    func getIntValue(name: String) -> Int?
 }
 
 public protocol DqbfSolver: Solver {
@@ -805,6 +806,9 @@ class GenericSmtSolver: SmtSolver {
             guard let output = String(data: data, encoding: .utf8) else {
                 return nil
             }
+            if output.contains("error") {
+                Logger.default().error("SMT solver returns error: \(output)")
+            }
             if output.contains("unsat") {
                 result = .unsat
                 return .unsat
@@ -832,7 +836,22 @@ class GenericSmtSolver: SmtSolver {
         }
         return result
     }
-    
+
+    func getIntValue(name: String) -> Int? {
+        precondition(task.isRunning)
+
+        guard let encoded = "(get-value (\(name)))\n".data(using: .utf8) else {
+            return nil
+        }
+        inputPipe.fileHandleForWriting.write(encoded)
+        let data = outputPipe.fileHandleForReading.availableData
+        guard let resultString = String(data: data, encoding: .utf8) else {
+            return nil
+        }
+        let int = resultString.replacingOccurrences(of: name, with: "").replacingOccurrences(of: "(", with: "").replacingOccurrences(of: ")", with: "").replacingOccurrences(of: " ", with: "").replacingOccurrences(of: "\n", with: "")
+        return Int(int, radix: 10)
+    }
+
 }
 
 final class Z3: GenericSmtSolver {
