@@ -168,7 +168,7 @@ do {
     var safetyAutomaton: SafetyAutomaton<CoBüchiAutomaton.CounterState>? = nil
 
     // search for system strategy
-    DispatchQueue.global().async {
+    DispatchQueue(label: "system").async {
         if let safety = search(specification: specification, player: .system) {
             winner = .system
             safetyAutomaton = safety
@@ -179,7 +179,7 @@ do {
     }
 
     // search for environment strategy
-    DispatchQueue.global().async {
+    DispatchQueue(label: "environment").async {
         if let safety = search(specification: specification.dualized, player: .environment) {
             winner = .environment
             safetyAutomaton = safety
