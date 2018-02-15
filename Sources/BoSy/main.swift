@@ -114,6 +114,7 @@ func optimizeSolution(specification: SynthesisSpecification, player: Player, saf
         while bound.value >= 0, try optimizer.solve(forBound: bound) {
             solution = optimizer.extractSolution() as? AigerSolution
             bound = NumberOfAndGatesInAIGER(value: bound.value - 1)
+            currentlySmallestSolution = solution?.aiger
         }
         return solution
 
@@ -124,6 +125,20 @@ func optimizeSolution(specification: SynthesisSpecification, player: Player, saf
     }
 }
 
+var currentlySmallestSolution: UnsafeMutablePointer<aiger>? = nil
+
+signal(SIGINT) {
+    s in
+    Logger.default().info("got SIGINT, terminating...")
+    guard let solution = currentlySmallestSolution else {
+        Logger.default().info("did not find solution")
+        exit(1)
+    }
+    Logger.default().info("found solution! printing to stdout...")
+    aiger_write_to_file(solution, aiger_ascii_mode, stdout)
+    exit(0)
+}
+
 do {
     // MARK: - argument parsing
     let parser = ArgumentParser(commandName: "BoSy", usage: "[options] specification", overview: "BoSy is a reactive synthesis tool from temporal specifications.")
@@ -132,6 +147,7 @@ do {
     let synthesizeOption = parser.add(option: "--synthesize", kind: Bool.self, usage: "construct system after checking realizability")
     let verbosityOption = parser.add(option: "--verbose", shortName: "-v", kind: Bool.self, usage: "enable verbose output")
     let optimizeOption = parser.add(option: "--optimize", kind: Bool.self, usage: "optimize parameter")
+    let syntcompOption = parser.add(option: "--syntcomp", kind: Bool.self, usage: "enable mode that is tailored to the rules of the reactive synthesis competition")
 
     let arguments = Array(CommandLine.arguments.dropFirst())
     let parsed = try parser.parse(arguments)
@@ -156,9 +172,14 @@ do {
 
     let synthesize = parsed.get(synthesizeOption) ?? false
     let verbose = parsed.get(verbosityOption) ?? false
-    let optimize = parsed.get(optimizeOption) ?? false
+    let syntcomp = parsed.get(syntcompOption) ?? false
+    let optimize = parsed.get(optimizeOption) ?? syntcomp  // always optimize in syntcomp mode
 
     Logger.default().verbosity = verbose ? .debug : .info
+
+    if syntcomp {
+        //Logger.default().verbosity = .warning
+    }
 
     // MARK: - concurrent execution of search strategy
 
@@ -201,6 +222,12 @@ do {
         exit(0)
     }
 
+    if syntcomp && w == .environment {
+        // in syntcomp, we do not need to synthesize counter-strategies
+        print("result:", w == .system ? "realizable" : "unrealizable")
+        exit(0)
+    }
+
     guard let automaton = safetyAutomaton else {
         fatalError()
     }
@@ -216,6 +243,8 @@ do {
         w == .system ? print("result: realizable") : print("result: unrealizable")
         exit(0)
     }
+
+    currentlySmallestSolution = solution
 
     if let optimized = optimizeSolution(specification: w == .system ? specification : specification.dualized, player: w, safetyAutomaton: automaton, solution: solution) {
         aiger_write_to_file(optimized.aiger, aiger_ascii_mode, stdout)
