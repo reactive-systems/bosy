@@ -95,16 +95,27 @@ public struct SynthesisSpecification: Codable {
         return smv.joined(separator: "\n")
     }
 
-    public static func from(fileName: String) throws -> SynthesisSpecification {
+    public static func from(fileName: String, tlsf: Bool = false) throws -> SynthesisSpecification {
         // get file contents
         let data = try Data(contentsOf: URL(fileURLWithPath: fileName))
-
-        return try from(data: data)
+        if tlsf || fileName.hasSuffix(".tlsf") {
+            return try from(tlsf: data)
+        } else {
+            return try from(data: data)
+        }
     }
 
     public static func from(data: Data) throws -> SynthesisSpecification {
         // parse contents of `data`
         return try JSONDecoder().decode(SynthesisSpecification.self, from: data)
+    }
+
+    public static func from(tlsf: Data) throws -> SynthesisSpecification {
+        let tempFile = try TemporaryFile(suffix: "tlsf")
+        tempFile.fileHandle.write(tlsf)
+
+        let result = try Basic.Process.popen(arguments: ["./Tools/syfco", "--format", "bosy", tempFile.path.asString])
+        return try .from(data: result.utf8Output().data(using: .utf8)!)
     }
 
     /**

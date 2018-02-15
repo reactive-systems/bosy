@@ -144,10 +144,11 @@ do {
     let parser = ArgumentParser(commandName: "BoSy", usage: "[options] specification", overview: "BoSy is a reactive synthesis tool from temporal specifications.")
     let specificationFile = parser.add(positional: "specification", kind: String.self, optional: true, usage: "a file containing the specification in BoSy format", completion: .filename)
     let readStdinOption = parser.add(option: "--read-from-stdin", shortName: "-in", kind: Bool.self, usage: "read specification from standard input")
+    let tlsfOption = parser.add(option: "--tlsf", kind: Bool.self, usage: "input file is in TLSF format")
     let synthesizeOption = parser.add(option: "--synthesize", kind: Bool.self, usage: "construct system after checking realizability")
     let verbosityOption = parser.add(option: "--verbose", shortName: "-v", kind: Bool.self, usage: "enable verbose output")
     let optimizeOption = parser.add(option: "--optimize", kind: Bool.self, usage: "optimize parameter")
-    let syntcompOption = parser.add(option: "--syntcomp", kind: Bool.self, usage: "enable mode that is tailored to the rules of the reactive synthesis competition")
+    let syntcompOption = parser.add(option: "--syntcomp", kind: Bool.self, usage: "enable mode that is tailored to the rules of the reactive synthesis competition (and useless otherwise)")
 
     let arguments = Array(CommandLine.arguments.dropFirst())
     let parsed = try parser.parse(arguments)
@@ -156,16 +157,21 @@ do {
     // either --stdin was given or specification file
     let specification: SynthesisSpecification
     let readStdin = parsed.get(readStdinOption) ?? false
+    let tlsf = parsed.get(tlsfOption) ?? false
     if readStdin {
         // attemp to read from standard input
         guard parsed.get(specificationFile) == nil else {
             throw ArgumentParserError.unexpectedArgument("\"specification\": cannot be combined with reading from standard input")
         }
         let input = StreamHelper.readAllAvailableData(from: FileHandle.standardInput)
-        specification = try SynthesisSpecification.from(data: input)
+        if tlsf {
+            specification = try SynthesisSpecification.from(tlsf: input)
+        } else {
+            specification = try SynthesisSpecification.from(data: input)
+        }
 
     } else if let fileName = parsed.get(specificationFile) {
-        specification = try SynthesisSpecification.from(fileName: fileName)
+        specification = try SynthesisSpecification.from(fileName: fileName, tlsf: tlsf)
     } else {
         throw ArgumentParserError.expectedArguments(parser, ["input file was not specified; use --help to list available arguments"])
     }
