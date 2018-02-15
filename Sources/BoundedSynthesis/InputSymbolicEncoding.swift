@@ -31,7 +31,7 @@ public class InputSymbolicEncoding<A: Automaton>: BoSyEncoding, SingleParamaterS
     }
     
     public func getEncoding(forBound bound: Int) -> Logic? {
-        
+
         let states = 0..<bound
 
         // assignment that represents initial state condition
@@ -57,16 +57,14 @@ public class InputSymbolicEncoding<A: Automaton>: BoSyEncoding, SingleParamaterS
                     conjunct.append(condition.accept(visitor: renamer))
                 }
                 
-                guard let outgoing = automaton.transitions[q] else {
-                    continue
-                }
-                
-                for (qPrime, guardCondition) in outgoing {
-                    let transitionCondition = requireTransition(from: source, q: q, qPrime: qPrime, bound: bound)
-                    if guardCondition as? Literal != nil && guardCondition as! Literal == Literal.True {
-                        conjunct.append(transitionCondition)
-                    } else {
-                        conjunct.append(guardCondition.accept(visitor: renamer) --> transitionCondition)
+                if let outgoing = automaton.transitions[q] {
+                    for (qPrime, guardCondition) in outgoing {
+                        let transitionCondition = requireTransition(from: source, q: q, qPrime: qPrime, bound: bound)
+                        if guardCondition as? Literal != nil && guardCondition as! Literal == Literal.True {
+                            conjunct.append(transitionCondition)
+                        } else {
+                            conjunct.append(guardCondition.accept(visitor: renamer) --> transitionCondition)
+                        }
                     }
                 }
                 matrix.append(lambda(source, q) --> conjunct.reduce(Literal.True, &))
