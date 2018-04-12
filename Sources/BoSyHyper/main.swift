@@ -62,8 +62,8 @@ do {
 
     let linear = specification.ltl
     let hyperltl = specification.hyperPrenex
-    print("linear", linear)
-    print("hyper", hyperltl)
+    //print("linear", linear)
+    //print("hyper", hyperltl)
 
     if !searchEnvironment {
 

@@ -81,7 +81,7 @@ time swift run -c release BoSy --player system Samples/HyperLTL/cap_2.bosy
 
 time swift run -c release BoSyHyper --environment Samples/HyperLTL/cap_2_moore.bosy # slow ~30min
 
-time swift run -c release BoSyHyper --environment Samples/HyperLTL/cap_2.bosy # does not work due to encoding
+#time swift run -c release BoSyHyper --environment Samples/HyperLTL/cap_2.bosy # does not work due to encoding
 
 time swift run -c release BoSyHyper Samples/HyperLTL/ca_2.bosy
 
