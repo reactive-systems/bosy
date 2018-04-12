@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 
-printf "${RED}Symmetric Mutex${NC}\n"
+printf "\n${RED}Symmetric Mutex${NC}\n"
 
 # Symmetric arbiter (moore)
 printf "\n* ${BLUE}Symmetric Mutex (moore,non-sym)${NC}\n"
@@ -62,7 +62,7 @@ printf "\n* ${BLUE}Symmetric Mutex (mealy,tie)${NC}\n"
 time swift run -c release BoSyHyper Samples/HyperLTL/bakery_full_tie_realizable.bosy
 
 
-printf "\n${RED}Encoder/Decoder${NC}\n"
+printf "\n\n${RED}Encoder/Decoder${NC}\n"
 
 # Encoder/Decoder (moore)
 printf "\n* ${BLUE}Encoder/Decoder (moore,1-2-hamming-2)${NC}\n"
@@ -103,7 +103,7 @@ time swift run -c release BoSyHyper --environment --paths 3 Samples/HyperLTL/enc
 
 # CAP Theorem
 
-printf "${RED}CAP Theorem${NC}\n"
+printf "\n\n${RED}CAP Theorem${NC}\n"
 
 printf "\n* ${BLUE}CAP Theorem (moore,cap-2-linear)${NC}\n"
 time swift run -c release BoSy --player system Samples/HyperLTL/cap_2_moore.bosy
@@ -145,7 +145,7 @@ printf "\n* ${BLUE}CAP Theorem (mealy,ap-3)${NC}\n"
 time swift run -c release BoSyHyper Samples/HyperLTL/ap_3.bosy
 
 
-printf "${RED}Bus protocol${NC}\n"
+printf "\n\n${RED}Bus protocol${NC}\n"
 
 # bus protocol (moore)
 
@@ -164,7 +164,7 @@ printf "\n* ${BLUE}Bus protocol (mealy,ni2)${NC}\n"
 time swift run -c release BoSyHyper Samples/HyperLTL/bus_master_forget_mealy.bosy
 
 
-printf "${RED}Dining Cryptographers${NC}\n"
+printf "\n\n${RED}Dining Cryptographers${NC}\n"
 
 # dining cryptographers
 time swift run -c release BoSyHyper Samples/HyperLTL/dining-cryptographers.bosy
