@@ -93,11 +93,14 @@ time swift run -c release BoSy --player system Samples/HyperLTL/encoder_1_2_hamm
 printf "\n* ${BLUE}Encoder/Decoder (mealy,1-3-fault-tolerant)${NC}\n"
 time swift run -c release BoSyHyper Samples/HyperLTL/encoder_1_3_realizable.bosy
 
+printf "\n* ${BLUE}Encoder/Decoder (mealy,2-2-hamming-2)${NC}\n"
+time swift run -c release BoSyHyper --environment --paths 3 Samples/HyperLTL/encoder_2_2_hamming_2.bosy
+
 printf "\n* ${BLUE}Encoder/Decoder (mealy,2-3-hamming-2)${NC}\n"
 time swift run -c release BoSyHyper Samples/HyperLTL/encoder_2_3_hamming_2.bosy
 
 printf "\n* ${BLUE}Encoder/Decoder (mealy,2-3-hamming-3)${NC}\n"
-time swift run -c release BoSyHyper --environment --paths 3 Samples/HyperLTL/encoder_2_2_hamming_2.bosy
+time swift run -c release BoSyHyper --environment --paths 3 Samples/HyperLTL/encoder_2_3_hamming_3.bosy
 
 
 
