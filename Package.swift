@@ -10,12 +10,12 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/apple/swift-package-manager.git", from: "0.1.0"),
         .package(url: "https://github.com/ltentrup/CAiger.git", from: "0.1.0"),
-        .package(url: "https://github.com/ltentrup/SafetySynth.git", from: "0.2.0"),
+        .package(url: "https://github.com/ltentrup/SafetySynth.git", from: "0.3.0"),
         .package(url: "https://github.com/ltentrup/CUDD.git", from: "0.2.0"),
     ],
     targets: [
         .target(name: "BoSy", dependencies: ["Automata", "LTL", "Logic", "Utils", "TransitionSystem", "Specification", "BoundedSynthesis"]),
-        .target(name: "BoundedSynthesis", dependencies: ["Automata", "LTL", "Logic", "Utils", "TransitionSystem", "Specification"]),
+        .target(name: "BoundedSynthesis", dependencies: ["Automata", "LTL", "Logic", "Utils", "TransitionSystem", "Specification", "SafetyGameSolver", "CUDD"]),
         .testTarget(name: "BoundedSynthesisTests", dependencies: ["BoundedSynthesis"]),
         .target(name: "TransitionSystem", dependencies: ["Logic", "Utils", "Specification", "SafetySynth"]),
         .target(name: "Automata", dependencies: ["Logic", "Utils", "Utility"]),
