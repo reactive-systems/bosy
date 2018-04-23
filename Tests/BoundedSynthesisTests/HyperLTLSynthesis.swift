@@ -31,7 +31,7 @@ import CAiger
  */
 class HyperLTLSynthesisTest: XCTestCase {
 
-    let jsonSpec = "{\"semantics\": \"mealy\", \"inputs\": [\"i_l\", \"i_h\"], \"outputs\": [\"o_l\"], \"assumptions\": [], \"guarantees\": [\"forall pi1 pi2. ( (o_l[pi1] <-> i_h[pi1]) || (X o_l[pi1] <-> i_l[pi1]) ) && ( (o_l[pi1] <-> o_l[pi2]) W !(i_l[pi1] <-> i_l[pi2]) )\"] }"
+    let jsonSpec = "{\"semantics\": \"mealy\", \"inputs\": [\"i_l\", \"i_h\"], \"outputs\": [\"o_l\"], \"assumptions\": [], \"guarantees\": [\"G (o_l || !o_l)\"], \"hyper\": [\"forall pi1 pi2. ( (o_l[pi1] <-> i_h[pi1]) || (X o_l[pi1] <-> i_l[pi1]) ) && ( (o_l[pi1] <-> o_l[pi2]) W !(i_l[pi1] <-> i_l[pi2]) )\"] }"
 
     var options = BoSyOptions()
 
@@ -45,11 +45,19 @@ class HyperLTLSynthesisTest: XCTestCase {
         }
         XCTAssertEqual(specification.assumptions.count, 0)
         XCTAssertEqual(specification.guarantees.count, 1)
-        guard let hyperltl = specification.guarantees.first else {
+        XCTAssertEqual(specification.hyper!.count, 1)
+        let linear = specification.ltl
+        let hyperltl = specification.hyperPrenex
+
+        guard let linearSpot = (!linear).spot else {
             XCTFail()
             return
         }
-        XCTAssert(hyperltl.isHyperLTL)
+        guard let linearAutomaton = LTL2AutomatonConverter.spot.convert(ltl: linearSpot) else {
+            XCTFail("could not create linear automaton")
+            return
+        }
+
         let body = hyperltl.ltlBody
         guard let spot = (!body).spot else {
             XCTFail()
@@ -59,7 +67,7 @@ class HyperLTLSynthesisTest: XCTestCase {
             XCTFail()
             return
         }
-        var encoding = HyperSmtEncoding(options: options, automaton: automaton, specification: specification)
+        let encoding = HyperSmtEncoding(options: options, linearAutomaton: linearAutomaton, hyperAutomaton: automaton, specification: specification)
         XCTAssertFalse(try encoding.solve(forBound: 1))
         XCTAssertTrue(try encoding.solve(forBound: 2))
         XCTAssertTrue(try encoding.solve(forBound: 3))

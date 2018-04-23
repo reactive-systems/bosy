@@ -30,7 +30,7 @@ public struct SynthesisSpecification: Codable {
     public let outputs: [String]
     public let assumptions: [LTL]
     public let guarantees: [LTL]
-    public let hyper: [LTL]
+    public let hyper: [LTL]?
 
     public init(semantics: TransitionSystemType, inputs: [String], outputs: [String], assumptions: [LTL], guarantees: [LTL], hyper: [LTL] = []) {
         self.semantics = semantics
@@ -99,6 +99,9 @@ public struct SynthesisSpecification: Codable {
      * Returns true if the specification contains at least one HyperLTL formula
      */
     public var isHyper: Bool {
+        guard let hyper = self.hyper else {
+            return false
+        }
         return hyper.count > 0
     }
 
@@ -107,6 +110,9 @@ public struct SynthesisSpecification: Codable {
      */
     public var hyperPrenex: LTL {
         precondition(isHyper)
+        guard let hyper = self.hyper else {
+            fatalError("no hyper specification")
+        }
         guard hyper.count > 1 else {
             return hyper[0]
         }
