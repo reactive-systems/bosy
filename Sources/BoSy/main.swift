@@ -127,9 +127,8 @@ func optimizeSolution(specification: SynthesisSpecification, player: Player, saf
 
 var currentlySmallestSolution: UnsafeMutablePointer<aiger>? = nil
 
-signal(SIGINT) {
-    s in
-    Logger.default().info("got SIGINT, terminating...")
+func termination() {
+    Logger.default().info("got signal, terminating...")
     guard let solution = currentlySmallestSolution else {
         Logger.default().info("did not find solution")
         exit(1)
@@ -137,6 +136,13 @@ signal(SIGINT) {
     Logger.default().info("found solution! printing to stdout...")
     aiger_write_to_file(solution, aiger_ascii_mode, stdout)
     exit(0)
+}
+
+signal(SIGINT) {
+    s in termination()
+}
+signal(SIGTERM) {
+    s in termination()
 }
 
 do {
