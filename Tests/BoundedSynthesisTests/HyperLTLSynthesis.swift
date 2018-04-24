@@ -49,24 +49,16 @@ class HyperLTLSynthesisTest: XCTestCase {
         let linear = specification.ltl
         let hyperltl = specification.hyperPrenex
 
-        guard let linearSpot = (!linear).spot else {
-            XCTFail()
-            return
-        }
-        guard let linearAutomaton = LTL2AutomatonConverter.spot.convert(ltl: linearSpot) else {
+        guard let linearAutomaton = try? CoBüchiAutomaton.from(ltl: !linear, using: .spot) else {
             XCTFail("could not create linear automaton")
             return
         }
 
-        let body = hyperltl.ltlBody
-        guard let spot = (!body).spot else {
+        guard let automaton = try? CoBüchiAutomaton.from(ltl: !hyperltl.ltlBody, using: .spot) else {
             XCTFail()
             return
         }
-        guard let automaton = LTL2AutomatonConverter.spot.convert(ltl: spot) else {
-            XCTFail()
-            return
-        }
+
         let encoding = HyperSmtEncoding(options: options, linearAutomaton: linearAutomaton, hyperAutomaton: automaton, specification: specification)
         XCTAssertFalse(try encoding.solve(forBound: 1))
         XCTAssertTrue(try encoding.solve(forBound: 2))

@@ -32,7 +32,7 @@ func convertWithLtl3ba(ltl: LTL) throws -> CoBüchiAutomaton {
 }
 
 func convertWithSpot(ltl: LTL, hoaf: Bool = false) throws -> CoBüchiAutomaton {
-    guard let ltl3baFormatted = ltl.ltl3ba else {
+    guard let ltl3baFormatted = ltl.spot else {
         throw "cannot transform LTL to ltl3ba format"
     }
     var arguments = ["./Tools/ltl2tgba", "-f", "(\(ltl3baFormatted))"]
