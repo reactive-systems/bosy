@@ -26,6 +26,25 @@ BoSy is tested on macOS and Ubuntu.
 
 > One may need to install additional dependencies for building the tools that BoSy depends on. Check the make output and the respective tool description for more information.
 
+### System Package Dependencies
+
+The following packages need to be installed in order to build BoSy with all dependencies.
+
+#### Ubuntu 16.04
+
+```bash
+apt-get install bison build-essential clang cmake curl flex gcc git libantlr3c-dev libbdd-dev libboost-program-options-dev libicu-dev libreadline-dev mercurial unzip vim-common wget zlib1g-dev
+# Haskell stack
+curl -sSL https://get.haskellstack.org/ | sh
+```
+
+#### macOS
+
+```
+brew tap homebrew/science
+brew install libbuddy haskell-stack
+```
+
 
 ## Usage
 
@@ -52,3 +71,40 @@ The command `./bosy.sh [--synthesize] arbiter.json` checks the specification for
 If the option `--synthesize` is given, a solution is extracted after realizability check.
 Check `./bosy.sh --help` for more options.
 
+
+## Synthesis from HyperLTL Specifications
+
+`BoSyHyper` (a separate binary) supports synthesis of reactive systems from specifications given in HyperLTL.
+
+
+### Example
+
+The following system keeps a `secret` until the `publish` signal arrives.
+
+```json
+{
+    "semantics": "moore",
+    "inputs": ["decision", "value", "publish"],
+    "outputs": ["internal", "result"],
+    "assumptions": [],
+    "guarantees": [
+        "!internal",
+        "(G (decision -> (value <-> X internal)))",
+        "(G (!decision -> (internal <-> X internal)))",
+        "(G ( publish -> X(internal <-> result)))"
+    ],
+    "hyper": [
+        "forall pi1 pi2. ( (publish[pi1] || publish[pi2]) R (result[pi1] <-> result[pi2]) )"
+    ]
+}
+```
+
+```bash
+$ swift run -c release BoSyHyper Samples/HyperLTL/SecretDecision.bosy
+info: Linear automaton contains 4 states
+info: Hyper automaton contains 1 states
+info: build encoding for bound 1
+info: build encoding for bound 2
+info: build encoding for bound 3
+realizable
+```
