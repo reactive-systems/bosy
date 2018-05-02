@@ -9,7 +9,7 @@ import TransitionSystem
  * Bounded Synthesis encoding that encodes the existence of a ralizing
  * solution in AIGER file format used in the reactive synthesis competition.
  */
-public class AigerEncoding<A: Automaton>: SingleParamaterSearch where A: SafetyAcceptance {
+public class AigerSmtEncoding<A: Automaton>: SingleParamaterSearch where A: SafetyAcceptance {
 
     public typealias Parameter = NumberOfAndGatesInAIGER
 
