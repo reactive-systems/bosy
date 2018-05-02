@@ -107,12 +107,13 @@ func optimizeSolution(specification: SynthesisSpecification, player: Player, saf
     do {
         var options = BoSyOptions()
         options.solver = .cryptominisat
-        let optimizer = AigerSmtEncoding(options: options, automaton: safetyAutomaton, specification: specification, stateBits: Int(solution.pointee.num_latches))
+        let optimizer = AigerInputSymbolicEncoding(options: options, automaton: safetyAutomaton, specification: specification, stateBits: Int(solution.pointee.num_latches))
 
         var bound = NumberOfAndGatesInAIGER(value: Int(solution.pointee.num_ands))
         var solution: AigerSolution? = nil
         while bound.value >= 0, try optimizer.solve(forBound: bound) {
             solution = optimizer.extractSolution() as? AigerSolution
+            assert(solution != nil)
             bound = NumberOfAndGatesInAIGER(value: bound.value - 1)
             currentlySmallestSolution = solution?.aiger
         }

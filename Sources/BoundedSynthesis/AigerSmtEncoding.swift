@@ -115,7 +115,7 @@ public class AigerSmtEncoding<A: Automaton>: SingleParamaterSearch where A: Safe
 
     /**
      * Returns an SMT query that is satisfiable iff there is an AIGER solution
-     * with `bound` states.
+     * with `bound` AND gates.
      */
     func getEncoding(forBound bound: NumberOfAndGatesInAIGER) throws -> String {
         precondition(specification.semantics == .mealy)
