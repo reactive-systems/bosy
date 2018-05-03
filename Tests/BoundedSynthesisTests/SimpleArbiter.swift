@@ -265,6 +265,48 @@ class SimpleArbiterTest: XCTestCase {
         }
         XCTAssertTrue(try modelCheckAiger(specification: specification, implementation: aigerRepresentation), "model checkig AIGER implementation failed")
     }
+
+    func testAigerSmtBackend() throws {
+        guard let specification = SynthesisSpecification.fromJson(string: jsonSpec) else {
+            XCTFail()
+            return
+        }
+        let automaton = try CoBüchiAutomaton.from(ltl: !specification.ltl)
+        let encoding = AigerSmtEncoding(options: options, automaton: automaton, specification: specification, stateBits: 2)
+        XCTAssertFalse(try encoding.solve(forBound: NumberOfAndGatesInAIGER(value: 0)))
+        XCTAssertTrue(try encoding.solve(forBound: NumberOfAndGatesInAIGER(value: 1)))
+        guard let transitionSystem = encoding.extractSolution() else {
+            XCTFail()
+            return
+        }
+        // Check AIGER implementation
+        guard let aigerRepresentation = (transitionSystem as? AigerRepresentable)?.aiger else {
+            XCTFail()
+            return
+        }
+        XCTAssertTrue(try modelCheckAiger(specification: specification, implementation: aigerRepresentation), "model checkig AIGER implementation failed")
+    }
+
+    func testAigerInputSymbolicBackend() throws {
+        guard let specification = SynthesisSpecification.fromJson(string: jsonSpec) else {
+            XCTFail()
+            return
+        }
+        let automaton = try CoBüchiAutomaton.from(ltl: !specification.ltl)
+        let encoding = AigerInputSymbolicEncoding(options: options, automaton: automaton, specification: specification, stateBits: 2)
+        XCTAssertFalse(try encoding.solve(forBound: NumberOfAndGatesInAIGER(value: 0)))
+        XCTAssertTrue(try encoding.solve(forBound: NumberOfAndGatesInAIGER(value: 1)))
+        guard let transitionSystem = encoding.extractSolution() else {
+            XCTFail()
+            return
+        }
+        // Check AIGER implementation
+        guard let aigerRepresentation = (transitionSystem as? AigerRepresentable)?.aiger else {
+            XCTFail()
+            return
+        }
+        XCTAssertTrue(try modelCheckAiger(specification: specification, implementation: aigerRepresentation), "model checkig AIGER implementation failed")
+    }
     
     static var allTests : [(String, (SimpleArbiterTest) -> () throws -> Void)] {
         return [

@@ -381,6 +381,9 @@ public class AigerInputSymbolicEncoding<A: Automaton>: SingleParamaterSearch whe
         let boundednessCheck = BoundednessVisitor()
         assert(qbf.accept(visitor: boundednessCheck))
 
+        let removeComparable = RemoveComparableVisitor(bound: 1 << self.stateBits)
+        qbf = qbf.accept(visitor: removeComparable)
+
         return qbf
     }
 
