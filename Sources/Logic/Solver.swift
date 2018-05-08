@@ -498,12 +498,7 @@ struct QuAbS: CertifyingQbfSolver {
         tempFile.fileHandle.write(Data(encodedFormula.utf8))
         
         let task = Process()
-
-        #if os(macOS)
-        task.launchPath = "./Tools/quabscm-mac"
-        #else
-        task.launchPath = "./Tools/quabscm"
-        #endif
+        task.launchPath = "./Tools/quabs"
         task.arguments = ["-c", tempFile.path.asString]
         
         let stdoutPipe = Pipe()
