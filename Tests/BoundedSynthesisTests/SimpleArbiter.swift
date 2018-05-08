@@ -288,6 +288,9 @@ class SimpleArbiterTest: XCTestCase {
     }
 
     func testAigerInputSymbolicBackend() throws {
+        options.solver = .rareqs
+        options.qbfPreprocessor = .bloqqer
+        options.qbfCertifier = .quabs
         guard let specification = SynthesisSpecification.fromJson(string: jsonSpec) else {
             XCTFail()
             return

@@ -106,7 +106,9 @@ func synthesizeSolution(specification: SynthesisSpecification, player: Player, s
 func optimizeSolution(specification: SynthesisSpecification, player: Player, safetyAutomaton: SafetyAutomaton<CoBüchiAutomaton.CounterState>, solution: UnsafeMutablePointer<aiger>) -> AigerSolution? {
     do {
         var options = BoSyOptions()
-        options.solver = .cryptominisat
+        options.solver = .rareqs
+        options.qbfPreprocessor = .bloqqer
+        options.qbfCertifier = .quabs
         let optimizer = AigerInputSymbolicEncoding(options: options, automaton: safetyAutomaton, specification: specification, stateBits: Int(solution.pointee.num_latches))
 
         var bound = NumberOfAndGatesInAIGER(value: Int(solution.pointee.num_ands))

@@ -42,7 +42,7 @@ public class AigerInputSymbolicEncoding<A: Automaton>: SingleParamaterSearch whe
         constraintTimer?.stop()
         //print(instance)
 
-        guard let solver = SolverInstance.rareqs.instance as? QbfSolver else {
+        guard let solver = options.solver?.instance as? QbfSolver else {
             throw BoSyEncodingError.SolvingFailed("solver creation failed")
         }
 
@@ -78,7 +78,7 @@ public class AigerInputSymbolicEncoding<A: Automaton>: SingleParamaterSearch whe
         }
         //print(instance)
 
-        guard let solver = SolverInstance.rareqs.instance as? QbfSolver else {
+        guard let solver = options.solver?.instance as? QbfSolver else {
             return nil
         }
 
@@ -426,7 +426,7 @@ public class AigerInputSymbolicEncoding<A: Automaton>: SingleParamaterSearch whe
      * Encodes the constraint that exactly one proposition is true
      */
     func exactlyOneOf(_ propositions: [Proposition]) -> Logic {
-        let atLeastOne = propositions.reduce(Literal.False, { disjunct, prop in
+        let atLeastOne: Logic = propositions.reduce(Literal.False, { disjunct, prop in
             disjunct | prop
         })
         let atMostOne: Logic = propositions.enumerated().reduce(Literal.True as Logic, {
