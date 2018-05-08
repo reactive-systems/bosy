@@ -110,14 +110,25 @@ func optimizeSolution(specification: SynthesisSpecification, player: Player, saf
         options.qbfPreprocessor = .bloqqer
         options.qbfCertifier = .quabs
         let optimizer = AigerInputSymbolicEncoding(options: options, automaton: safetyAutomaton, specification: specification, stateBits: Int(solution.pointee.num_latches))
+        //let optimizer = AigerSmtEncoding(options: options, automaton: safetyAutomaton, specification: specification, stateBits: Int(solution.pointee.num_latches))
 
-        var bound = NumberOfAndGatesInAIGER(value: Int(solution.pointee.num_ands))
+        var high = Int(solution.pointee.num_ands) - 1
+        var low = 0
         var solution: AigerSolution? = nil
-        while bound.value >= 0, try optimizer.solve(forBound: bound) {
-            solution = optimizer.extractSolution() as? AigerSolution
-            assert(solution != nil)
-            bound = NumberOfAndGatesInAIGER(value: bound.value - 1)
-            currentlySmallestSolution = solution?.aiger
+        while low <= high {
+            let mid = low + (high - low) / 2
+            if try optimizer.solve(forBound: NumberOfAndGatesInAIGER(value: mid)) {
+                // found smaller solution
+                high = mid - 1
+
+                // extract solution
+                solution = optimizer.extractSolution() as? AigerSolution
+                assert(solution != nil)
+                currentlySmallestSolution = solution?.aiger
+            } else {
+                // no solution
+                low = mid + 1
+            }
         }
         return solution
 
