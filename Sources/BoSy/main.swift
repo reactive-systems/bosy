@@ -11,6 +11,7 @@ import BoundedSynthesis
 import TransitionSystem
 import LTL
 import CAiger
+import Logic
 
 var cancelled = false
 
@@ -53,7 +54,7 @@ class TerminationCondition {
     }
 }
 
-func search(specification: SynthesisSpecification, player: Player) -> SafetyAutomaton<CoBüchiAutomaton.CounterState>? {
+func search(specification: SynthesisSpecification, player: Player, options: BoSyOptions) -> SafetyAutomaton<CoBüchiAutomaton.CounterState>? {
     do {
         let automaton = try CoBüchiAutomaton.from(ltl: !specification.ltl)
         Logger.default().info("automaton contains \(automaton.states.count) states")
@@ -74,12 +75,8 @@ func search(specification: SynthesisSpecification, player: Player) -> SafetyAuto
     }
 }
 
-func synthesizeSolution(specification: SynthesisSpecification, player: Player, safetyAutomaton: SafetyAutomaton<CoBüchiAutomaton.CounterState>) -> UnsafeMutablePointer<aiger>? {
+func synthesizeSolution(specification: SynthesisSpecification, player: Player, safetyAutomaton: SafetyAutomaton<CoBüchiAutomaton.CounterState>, options: BoSyOptions) -> UnsafeMutablePointer<aiger>? {
     do {
-        var options = BoSyOptions()
-        options.qbfCertifier = .quabs
-        options.qbfPreprocessor = .bloqqer
-        options.solver = .rareqs
         let synthesizer = InputSymbolicEncoding(options: options, automaton: safetyAutomaton, specification: specification, synthesize: true)
         var f = false
         guard let states = try synthesizer.searchMinimalExponential(cancelled: &f) else {
@@ -103,12 +100,8 @@ func synthesizeSolution(specification: SynthesisSpecification, player: Player, s
     }
 }
 
-func optimizeSolution(specification: SynthesisSpecification, player: Player, safetyAutomaton: SafetyAutomaton<CoBüchiAutomaton.CounterState>, solution: UnsafeMutablePointer<aiger>) -> AigerSolution? {
+func optimizeSolution(specification: SynthesisSpecification, player: Player, safetyAutomaton: SafetyAutomaton<CoBüchiAutomaton.CounterState>, solution: UnsafeMutablePointer<aiger>, options: BoSyOptions) -> AigerSolution? {
     do {
-        var options = BoSyOptions()
-        options.solver = .rareqs
-        options.qbfPreprocessor = .bloqqer
-        options.qbfCertifier = .quabs
         let optimizer = AigerInputSymbolicEncoding(options: options, automaton: safetyAutomaton, specification: specification, stateBits: Int(solution.pointee.num_latches))
         //let optimizer = AigerSmtEncoding(options: options, automaton: safetyAutomaton, specification: specification, stateBits: Int(solution.pointee.num_latches))
 
@@ -159,6 +152,19 @@ signal(SIGTERM) {
     s in termination()
 }
 
+extension SolverInstance: ArgumentKind {
+    public init(argument: String) throws {
+        switch SolverInstance(rawValue: argument) {
+        case .some(let instance):
+            self = instance
+        default:
+            throw ArgumentConversionError.unknown(value: argument)
+        }
+    }
+
+    public static var completion: ShellCompletion = .unspecified
+}
+
 do {
     // MARK: - argument parsing
     let parser = ArgumentParser(commandName: "BoSy", usage: "[options] specification", overview: "BoSy is a reactive synthesis tool from temporal specifications.")
@@ -169,6 +175,7 @@ do {
     let verbosityOption = parser.add(option: "--verbose", shortName: "-v", kind: Bool.self, usage: "enable verbose output")
     let optimizeOption = parser.add(option: "--optimize", kind: Bool.self, usage: "optimize parameter")
     let syntcompOption = parser.add(option: "--syntcomp", kind: Bool.self, usage: "enable mode that is tailored to the rules of the reactive synthesis competition (and useless otherwise)")
+    let certifierOption = parser.add(option: "--qbfCertifier", kind: SolverInstance.self)
 
     let arguments = Array(CommandLine.arguments.dropFirst())
     let parsed = try parser.parse(arguments)
@@ -201,6 +208,11 @@ do {
     let syntcomp = parsed.get(syntcompOption) ?? false
     let optimize = parsed.get(optimizeOption) ?? syntcomp  // always optimize in syntcomp mode
 
+    var options = BoSyOptions()
+    options.qbfPreprocessor = .bloqqer
+    options.solver = .rareqs
+    options.qbfCertifier = parsed.get(certifierOption) ?? .quabs
+
     Logger.default().verbosity = verbose ? .debug : .info
 
     if syntcomp {
@@ -216,7 +228,7 @@ do {
 
     // search for system strategy
     DispatchQueue(label: "system").async {
-        if let safety = search(specification: specification, player: .system) {
+        if let safety = search(specification: specification, player: .system, options: options) {
             winner = .system
             safetyAutomaton = safety
             termination.realizabilityDone(success: true)
@@ -227,7 +239,7 @@ do {
 
     // search for environment strategy
     DispatchQueue(label: "environment").async {
-        if let safety = search(specification: specification.dualized, player: .environment) {
+        if let safety = search(specification: specification.dualized, player: .environment, options: options) {
             winner = .environment
             safetyAutomaton = safety
             termination.realizabilityDone(success: true)
@@ -260,7 +272,7 @@ do {
 
     cancelled = true
 
-    guard let solution = synthesizeSolution(specification: w == .system ? specification : specification.dualized, player: w, safetyAutomaton: automaton) else {
+    guard let solution = synthesizeSolution(specification: w == .system ? specification : specification.dualized, player: w, safetyAutomaton: automaton, options: options) else {
         fatalError()
     }
 
@@ -272,7 +284,7 @@ do {
 
     currentlySmallestSolution = solution
 
-    if let optimized = optimizeSolution(specification: w == .system ? specification : specification.dualized, player: w, safetyAutomaton: automaton, solution: solution) {
+    if let optimized = optimizeSolution(specification: w == .system ? specification : specification.dualized, player: w, safetyAutomaton: automaton, solution: solution, options: options) {
         aiger_write_to_file(optimized.aiger, aiger_ascii_mode, stdout)
         w == .system ? print("result: realizable") : print("result: unrealizable")
         exit(0)
