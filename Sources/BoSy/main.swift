@@ -133,6 +133,7 @@ func optimizeSolution(specification: SynthesisSpecification, player: Player, saf
 }
 
 var currentlySmallestSolution: UnsafeMutablePointer<aiger>? = nil
+var winner: Player? = nil
 
 func termination() {
     Logger.default().info("got signal, terminating...")
@@ -141,6 +142,7 @@ func termination() {
         exit(1)
     }
     Logger.default().info("found solution! printing to stdout...")
+    print(winner! == .system ? "REALIZABLE" : "UNREALIZABLE")
     aiger_write_to_file(solution, aiger_ascii_mode, stdout)
     exit(0)
 }
@@ -216,14 +218,13 @@ do {
     Logger.default().verbosity = verbose ? .debug : .info
 
     if syntcomp {
-        //Logger.default().verbosity = .warning
+        Logger.default().verbosity = .warning
     }
 
     // MARK: - concurrent execution of search strategy
 
     let termination = TerminationCondition(realizabilityWorker: 2)
 
-    var winner: Player? = nil
     var safetyAutomaton: SafetyAutomaton<CoBüchiAutomaton.CounterState>? = nil
 
     // search for system strategy
@@ -251,18 +252,18 @@ do {
     termination.wait()
 
     guard let w = winner else {
-        print("result: unknown")
+        print("UNKNOWN")
         exit(0)
     }
 
     guard synthesize else {
-        print("result:", w == .system ? "realizable" : "unrealizable")
+        print(w == .system ? "REALIZABLE" : "UNREALIZABLE")
         exit(0)
     }
 
     if syntcomp && w == .environment {
         // in syntcomp, we do not need to synthesize counter-strategies
-        print("result:", w == .system ? "realizable" : "unrealizable")
+        print(w == .system ? "REALIZABLE" : "UNREALIZABLE")
         exit(0)
     }
 
@@ -277,20 +278,20 @@ do {
     }
 
     if !optimize {
+        print(w == .system ? "REALIZABLE" : "UNREALIZABLE")
         aiger_write_to_file(solution, aiger_ascii_mode, stdout)
-        w == .system ? print("result: realizable") : print("result: unrealizable")
         exit(0)
     }
 
     currentlySmallestSolution = solution
 
     if let optimized = optimizeSolution(specification: w == .system ? specification : specification.dualized, player: w, safetyAutomaton: automaton, solution: solution, options: options) {
+        print(w == .system ? "REALIZABLE" : "UNREALIZABLE")
         aiger_write_to_file(optimized.aiger, aiger_ascii_mode, stdout)
-        w == .system ? print("result: realizable") : print("result: unrealizable")
         exit(0)
     } else {
+        print(w == .system ? "REALIZABLE" : "UNREALIZABLE")
         aiger_write_to_file(solution, aiger_ascii_mode, stdout)
-        w == .system ? print("result: realizable") : print("result: unrealizable")
         exit(0)
     }
 
