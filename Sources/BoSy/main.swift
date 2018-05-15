@@ -208,7 +208,7 @@ do {
     let synthesize = parsed.get(synthesizeOption) ?? false
     let verbose = parsed.get(verbosityOption) ?? false
     let syntcomp = parsed.get(syntcompOption) ?? false
-    let optimize = parsed.get(optimizeOption) ?? syntcomp  // always optimize in syntcomp mode
+    let optimize = parsed.get(optimizeOption) ?? false
 
     var options = BoSyOptions()
     options.qbfPreprocessor = .bloqqer
