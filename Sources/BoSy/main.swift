@@ -54,7 +54,7 @@ class TerminationCondition {
     }
 }
 
-func search(specification: SynthesisSpecification, player: Player, options: BoSyOptions) -> SafetyAutomaton<CoBüchiAutomaton.CounterState>? {
+func search(specification: SynthesisSpecification, player: Player, options: BoSyOptions, synthesize: Bool) -> SafetyAutomaton<CoBüchiAutomaton.CounterState>? {
     do {
         let automaton = try CoBüchiAutomaton.from(ltl: !specification.ltl)
         Logger.default().info("automaton contains \(automaton.states.count) states")
@@ -67,7 +67,22 @@ func search(specification: SynthesisSpecification, player: Player, options: BoSy
             return nil
         }
         Logger.default().info("found solution with rejecting counter \(rejectingCounter)")
-        return automaton.reduceToSafety(bound: rejectingCounter.value)
+
+        let safetyAutomaton = automaton.reduceToSafety(bound: rejectingCounter.value)
+
+        if synthesize {
+            Logger.default().info("extract game based solution")
+            guard let solution = backend.extractSolution() else {
+                return safetyAutomaton
+            }
+            guard let aiger_solution = (solution as? AigerRepresentable)?.aiger else {
+                Logger.default().error("could not encode solution as AIGER")
+                return nil
+            }
+            currentlySmallestSolution = aiger_solution.minimized
+        }
+
+        return safetyAutomaton
     } catch {
         Logger.default().error("search for winning strategy failed")
         Logger.default().error("\(error)")
@@ -91,8 +106,7 @@ func synthesizeSolution(specification: SynthesisSpecification, player: Player, s
             Logger.default().error("could not encode solution as AIGER")
             return nil
         }
-        let minimized = aiger_solution.minimized
-        return minimized
+        return aiger_solution.minimized
     } catch {
         Logger.default().error("synthesizing winning strategy failed")
         Logger.default().error("\(error)")
@@ -229,7 +243,7 @@ do {
 
     // search for system strategy
     DispatchQueue(label: "system").async {
-        if let safety = search(specification: specification, player: .system, options: options) {
+        if let safety = search(specification: specification, player: .system, options: options, synthesize: synthesize) {
             winner = .system
             safetyAutomaton = safety
             termination.realizabilityDone(success: true)
@@ -240,7 +254,7 @@ do {
 
     // search for environment strategy
     DispatchQueue(label: "environment").async {
-        if let safety = search(specification: specification.dualized, player: .environment, options: options) {
+        if let safety = search(specification: specification.dualized, player: .environment, options: options, synthesize: synthesize && !syntcomp) {
             winner = .environment
             safetyAutomaton = safety
             termination.realizabilityDone(success: true)
