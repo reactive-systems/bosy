@@ -148,8 +148,19 @@ func optimizeSolution(specification: SynthesisSpecification, player: Player, saf
 
 var currentlySmallestSolution: UnsafeMutablePointer<aiger>? = nil
 var winner: Player? = nil
+// ensure that termination handler is only called once
+let terminationHandlerLock = NSLock()
+var terminationHandler = false
 
 func termination() {
+    terminationHandlerLock.lock()
+    if terminationHandler {
+        terminationHandlerLock.unlock()
+        return
+    }
+    terminationHandler = true
+    terminationHandlerLock.unlock()
+
     Logger.default().info("got signal, terminating...")
     guard let solution = currentlySmallestSolution else {
         Logger.default().info("did not find solution")
@@ -227,7 +238,7 @@ do {
     var options = BoSyOptions()
     options.qbfPreprocessor = .bloqqer
     options.solver = .rareqs
-    options.qbfCertifier = parsed.get(certifierOption) ?? .quabs
+    options.qbfCertifier = parsed.get(certifierOption) ?? .cadet
 
     Logger.default().verbosity = verbose ? .debug : .info
 
