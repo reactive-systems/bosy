@@ -49,6 +49,7 @@ do {
     let minBoundOption = parser.add(option: "--min-bound", kind: Int.self, usage: "Specify the initial bound (default 1)")
     let synthesizeOption = parser.add(option: "--synthesize", kind: Bool.self, usage: "Synthesize implementation after realizability check")
     let environmentPaths = parser.add(option: "--paths", kind: Int.self, usage: "Number of paths the environment can use for counterexample strategy (default 2)")
+    let dqbfOption = parser.add(option: "--dqbf", kind: Bool.self, usage: "Use DQBF encoding")
 
     let args = Array(CommandLine.arguments.dropFirst())
     let result = try parser.parse(args)
@@ -57,6 +58,7 @@ do {
     let initialBound = result.get(minBoundOption) ?? 1
     let synthesize = result.get(synthesizeOption) ?? false
     let environmentBound = result.get(environmentPaths) ?? 2
+    let dqbf = result.get(dqbfOption) ?? false
 
     let specification = try parseSpecification(fileName: result.get(specificationFile))
 
@@ -91,11 +93,22 @@ do {
 
         Logger.default().info("Hyper automaton contains \(automaton.states.count) states")
 
-        let encoding = HyperSmtEncoding(
+        var encoding: BoSyEncoding
+        if dqbf {
+            var option = BoSyOptions()
+            option.solver = SolverInstance.idq
+            encoding = HyperStateSymbolicEncoding(
+                options: option,
+                linearAutomaton: linearAutomaton,
+                hyperAutomaton: automaton,
+                specification: specification)
+        } else {
+            encoding = HyperSmtEncoding(
                 options: BoSyOptions(),
                 linearAutomaton: linearAutomaton,
                 hyperAutomaton: automaton,
                 specification: specification)
+        }
         
         for i in initialBound... {
             if try encoding.solve(forBound: i) {

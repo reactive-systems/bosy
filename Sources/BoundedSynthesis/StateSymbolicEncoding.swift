@@ -20,18 +20,18 @@ struct StateSymbolicEncoding: BoSyEncoding {
     func getEncoding(forBound bound: Int) -> Logic? {
         
         let states = 0..<bound
+        let numBits = numBitsNeeded(bound)
         
         var preconditions: [Logic] = []
         var matrix: [Logic] = []
         
-        let statePropositions: [Proposition] = (0..<numBitsNeeded(states.count)).map({ bit in Proposition("s\(bit)") })
-        let nextStatePropositions: [Proposition] = (0..<numBitsNeeded(states.count)).map({ bit in Proposition("sp\(bit)") })
-        let tauPropositions: [Proposition] = (0..<numBitsNeeded(states.count)).map({ bit in tau(bit: bit) })
+        let statePropositions: [Proposition] = (0..<numBits).map({ bit in Proposition("s\(bit)") })
+        let nextStatePropositions: [Proposition] = (0..<numBits).map({ bit in Proposition("sp\(bit)") })
+        let tauPropositions: [Proposition] = (0..<numBits).map({ bit in tau(bit: bit) })
         let inputPropositions: [Proposition] = self.specification.inputs.map(Proposition.init)
         let outputPropositions: [Proposition] = self.specification.outputs.map(Proposition.init)
         let tauApplications: [FunctionApplication] = tauPropositions.map({ FunctionApplication(function: $0, application: statePropositions + inputPropositions) })
-        
-        let numBits = numBitsNeeded(bound)
+
         for i in bound ..< (1 << numBits) {
             preconditions.append(!explicitToSymbolic(base: "s", value: i, bits: numBits))
             preconditions.append(!explicitToSymbolic(base: "sp", value: i, bits: numBits))

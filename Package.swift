@@ -9,18 +9,18 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-package-manager.git", from: "0.1.0"),
-        .package(url: "https://github.com/ltentrup/CAiger.git", from: "0.1.0"),
-        .package(url: "https://github.com/ltentrup/SafetySynth.git", from: "0.3.0"),
-        .package(url: "https://github.com/ltentrup/CUDD.git", from: "0.2.0"),
+        .package(url: "https://github.com/ltentrup/CAiger.git", from: "0.1.3"),
+        .package(url: "https://github.com/ltentrup/SafetySynth.git", from: "0.3.1"),
+        .package(url: "https://github.com/ltentrup/CUDD.git", from: "0.2.4"),
     ],
     targets: [
-        .target(name: "BoSy", dependencies: ["Automata", "LTL", "Logic", "Utils", "TransitionSystem", "Specification", "BoundedSynthesis"]),
-        .target(name: "BoundedSynthesis", dependencies: ["Automata", "LTL", "Logic", "Utils", "TransitionSystem", "Specification", "SafetyGameSolver", "CUDD"]),
+        .target(name: "BoSy", dependencies: ["BoundedSynthesis"]),
+        .target(name: "BoundedSynthesis", dependencies: ["Automata", "LTL", "TransitionSystem", "SafetyGameSolver"]),
         .testTarget(name: "BoundedSynthesisTests", dependencies: ["BoundedSynthesis"]),
-        .target(name: "TransitionSystem", dependencies: ["Logic", "Utils", "Specification", "SafetySynth"]),
-        .target(name: "Automata", dependencies: ["Logic", "Utils", "Utility"]),
+        .target(name: "TransitionSystem", dependencies: ["Specification"]),
+        .target(name: "Automata", dependencies: ["Logic"]),
         .testTarget(name: "AutomataTests", dependencies: ["Automata"]),
-        .target(name: "Specification", dependencies: ["Logic", "Utils", "Utility"]),
+        .target(name: "Specification", dependencies: ["Logic"]),
         .target(name: "Logic", dependencies: ["Utils", "CAiger", "CUDD", "Utility"]),
         .testTarget(name: "LogicTests", dependencies: ["Logic"]),
         .target(name: "LTL"),
@@ -29,6 +29,6 @@ let package = Package(
         .testTarget(name: "UtilsTests", dependencies: ["Utils"]),
         
         // BoSyHyper
-        .target(name: "BoSyHyper", dependencies: ["Utility", "Automata", "LTL", "Logic", "Utils", "TransitionSystem", "Specification", "BoundedSynthesis"]),
+        .target(name: "BoSyHyper", dependencies: ["BoundedSynthesis"]),
     ]
 )

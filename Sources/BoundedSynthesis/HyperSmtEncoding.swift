@@ -162,7 +162,7 @@ public class HyperSmtEncoding: BoSyEncoding {
         let hyperltl = specification.hyperPrenex
         let pathVariables = hyperltl.pathVariables
         guard pathVariables.count > 1 else {
-            fatalError()
+            fatalError("HyperLTL specifications should have at least 2 path variables")
         }
 
         // lambdas

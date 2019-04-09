@@ -82,8 +82,8 @@ if let semantics = options.semantics {
 private func buildAutomaton(player: Player) -> CoBüchiAutomaton? {
     Logger.default().debug("start building automaton for player \(player)")
     if options.monolithic || player == .environment || specification.assumptions.count > 0 {
-        let assumptionString = specification.assumptions.flatMap( { $0.ltl3ba } ).joined(separator: " && ")
-        let guaranteeString = specification.guarantees.flatMap( { $0.ltl3ba } ).joined(separator: " && ")
+        let assumptionString = specification.assumptions.compactMap( { $0.ltl3ba } ).joined(separator: " && ")
+        let guaranteeString = specification.guarantees.compactMap( { $0.ltl3ba } ).joined(separator: " && ")
         
         let ltlSpec: String
         if player == .system {
