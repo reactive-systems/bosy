@@ -298,17 +298,18 @@ public class HyperStateSymbolicEncoding: BoSyEncoding {
         constraintTimer?.stop()
         //print(instance)
 
-        let dqdimacsVisitor = DQDIMACSVisitor(formula: instance)
+        /*let dqdimacsVisitor = DQDIMACSVisitor(formula: instance)
         let encodedFormula = dqdimacsVisitor.description
         print(encodedFormula)
-        exit(1)
+        exit(1)*/
 
         guard let solver = options.solver?.instance as? DqbfSolver else {
             throw BoSyEncodingError.SolvingFailed("solver creation failed")
         }
 
         let solvingTimer = options.statistics?.startTimer(phase: .solving)
-        guard let result = solver.solve(formula: instance) else {
+        let preprocessor: QbfPreprocessor? = options.qbfPreprocessor.map({ $0.getInstance(preserveAssignments: false) })
+        guard let result = solver.solve(formula: instance, preprocessor: preprocessor) else {
             throw BoSyEncodingError.SolvingFailed("solver failed on instance")
         }
         solvingTimer?.stop()

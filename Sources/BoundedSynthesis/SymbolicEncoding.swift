@@ -195,7 +195,8 @@ struct SymbolicEncoding: BoSyEncoding {
         }
         
         let solvingTimer = options.statistics?.startTimer(phase: .solving)
-        guard let result = solver.solve(formula: instance) else {
+        let preprocessor: QbfPreprocessor? = options.qbfPreprocessor.map({ $0.getInstance(preserveAssignments: false) })
+        guard let result = solver.solve(formula: instance, preprocessor: preprocessor) else {
             throw BoSyEncodingError.SolvingFailed("solver failed on instance")
         }
         solvingTimer?.stop()

@@ -26,6 +26,7 @@ public enum SolverInstance: String {
     // DQBF solver
     case idq = "idq"
     case hqs = "hqs"
+    case dcaqe = "dcaqe"
     
     // FO solver
     case eprover = "eprover"
@@ -55,6 +56,8 @@ public enum SolverInstance: String {
             return iDQ()
         case .hqs:
             return HQS()
+        case .dcaqe:
+            return DCAQE()
         case .eprover:
             return Eprover()
         case .vampire:
@@ -76,6 +79,7 @@ public enum SolverInstance: String {
         .quabs,
         .idq,
         .hqs,
+        .dcaqe,
         .eprover,
         .vampire,
         .z3,
@@ -137,7 +141,7 @@ public protocol SmtSolver: Solver {
 }
 
 public protocol DqbfSolver: Solver {
-    func solve(formula: Logic) -> SolverResult?
+    func solve(formula: Logic, preprocessor: QbfPreprocessor?) -> SolverResult?
 }
 
 private enum SolverHelper {
@@ -634,7 +638,7 @@ extension UnsafeMutablePointer where Pointee == aiger {
 }
 
 struct iDQ: DqbfSolver {
-    func solve(formula: Logic) -> SolverResult? {
+    func solve(formula: Logic, preprocessor: QbfPreprocessor?) -> SolverResult? {
         // encode formula
         let dqdimacsVisitor = DQDIMACSVisitor(formula: formula)
         let encodedFormula = dqdimacsVisitor.description
@@ -665,10 +669,17 @@ struct iDQ: DqbfSolver {
 }
 
 struct HQS: DqbfSolver {
-    func solve(formula: Logic) -> SolverResult? {
+    func solve(formula: Logic, preprocessor: QbfPreprocessor?) -> SolverResult? {
         // encode formula
         let dqdimacsVisitor = DQDIMACSVisitor(formula: formula)
-        let encodedFormula = dqdimacsVisitor.description
+        var encodedFormula = dqdimacsVisitor.description
+
+        if let preprocessor = preprocessor {
+            guard let preprocessedFormula = preprocessor.preprocess(qbf: encodedFormula) else {
+                return nil
+            }
+            encodedFormula = preprocessedFormula
+        }
         
         // write to disk
         guard let tempFile = try? TemporaryFile(suffix: ".dqdimacs") else {
@@ -695,11 +706,51 @@ struct HQS: DqbfSolver {
     }
 }
 
+struct DCAQE: DqbfSolver {
+    func solve(formula: Logic, preprocessor: QbfPreprocessor?) -> SolverResult? {
+        // encode formula
+        let dqdimacsVisitor = DQDIMACSVisitor(formula: formula)
+        var encodedFormula = dqdimacsVisitor.description
+
+        if let preprocessor = preprocessor {
+            guard let preprocessedFormula = preprocessor.preprocess(qbf: encodedFormula) else {
+                return nil
+            }
+            encodedFormula = preprocessedFormula
+        }
+
+        // write to disk
+        guard let tempFile = try? TemporaryFile(suffix: ".dqdimacs") else {
+            return nil
+        }
+        tempFile.fileHandle.write(Data(encodedFormula.utf8))
+
+        // start task and extract stdout
+        do {
+            let result = try Basic.Process.popen(arguments: ["./Tools/dcaqe", tempFile.path.asString])
+            let stdout = try result.utf8Output()
+
+            if stdout.contains("c Unsatisfiable") {
+                return .unsat
+            } else if stdout.contains("c Satisfiable") {
+                return .sat
+            }
+            return nil
+
+        } catch {
+            Logger.default().error("execution of dcaqe failed")
+            return nil
+        }
+    }
+}
+
 struct Eprover: DqbfSolver {
-    func solve(formula: Logic) -> SolverResult? {
+    func solve(formula: Logic, preprocessor: QbfPreprocessor?) -> SolverResult? {
         // encode formula
         let dqdimacsVisitor = TPTP3Visitor(formula: formula)
         let encodedFormula = dqdimacsVisitor.description
+
+        assert(preprocessor == nil)
         
         // write to disk
         guard let tempFile = try? TemporaryFile(suffix: ".tptp3") else {
@@ -727,10 +778,12 @@ struct Eprover: DqbfSolver {
 }
 
 struct Vampire: DqbfSolver {
-    func solve(formula: Logic) -> SolverResult? {
+    func solve(formula: Logic, preprocessor: QbfPreprocessor?) -> SolverResult? {
         // encode formula
         let dqdimacsVisitor = TPTP3Visitor(formula: formula)
         let encodedFormula = dqdimacsVisitor.description
+
+        assert(preprocessor == nil)
         
         // write to disk
         guard let tempFile = try? TemporaryFile(suffix: ".tptp3") else {
