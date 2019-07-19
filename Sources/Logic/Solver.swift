@@ -1,6 +1,5 @@
 import Foundation
 import Basic
-import Utility
 
 import Utils
 
@@ -214,7 +213,7 @@ struct PicoSAT: SatSolver {
         
         // start task and extract stdout
         do {
-            let result = try Basic.Process.popen(arguments: ["./Tools/picosat-solver", tempFile.path.asString])
+            let result = try Basic.Process.popen(arguments: ["./Tools/picosat-solver", tempFile.path.pathString])
             let stdout = try result.utf8Output()
 
             guard let solverResult = SolverHelper.result(from: result.exitStatus) else {
@@ -248,7 +247,7 @@ struct CryptoMiniSat: SatSolver {
         
         // start task and extract stdout
         do {
-            let result = try Basic.Process.popen(arguments: ["./Tools/cryptominisat5", "--verb=0", tempFile.path.asString])
+            let result = try Basic.Process.popen(arguments: ["./Tools/cryptominisat5", "--verb=0", tempFile.path.pathString])
             let stdout = try result.utf8Output()
 
             guard let solverResult = SolverHelper.result(from: result.exitStatus) else {
@@ -289,7 +288,7 @@ struct RAReQS: QbfSolver {
         
         // start task and extract stdout
         do {
-            let result = try Basic.Process.popen(arguments: ["./Tools/rareqs", tempFile.path.asString])
+            let result = try Basic.Process.popen(arguments: ["./Tools/rareqs", tempFile.path.pathString])
             let stdout = try result.utf8Output()
 
             guard let solverResult = SolverHelper.result(from: result.exitStatus) else {
@@ -330,7 +329,7 @@ struct DepQBF: QbfSolver {
         
         // start task and extract stdout
         do {
-            let result = try Basic.Process.popen(arguments: ["./Tools/depqbf", "--qdo", tempFile.path.asString])
+            let result = try Basic.Process.popen(arguments: ["./Tools/depqbf", "--qdo", tempFile.path.pathString])
             let stdout = try result.utf8Output()
 
             guard let solverResult = SolverHelper.result(from: result.exitStatus) else {
@@ -364,8 +363,8 @@ struct Bloqqer: QbfPreprocessor {
         tempFile.fileHandle.write(Data(qbf.utf8))
 
         let arguments = preserveAssignments ?
-                        ["./Tools/bloqqer", "--partial-assignment=1", "--keep=1", tempFile.path.asString] :
-                        ["./Tools/bloqqer-031", "--keep=1", tempFile.path.asString]
+                        ["./Tools/bloqqer", "--partial-assignment=1", "--keep=1", tempFile.path.pathString] :
+                        ["./Tools/bloqqer-031", "--keep=1", tempFile.path.pathString]
 
         do {
             let result = try Basic.Process.popen(arguments: arguments)
@@ -389,8 +388,8 @@ struct HQSPre: QbfPreprocessor {
         }
 
         do {
-            try Basic.Process.popen(arguments: ["./Tools/hqspre-linux", "-o", outFile.path.asString, tempFile.path.asString])
-            return try? String(contentsOfFile: outFile.path.asString, encoding: String.Encoding.utf8)
+            try Basic.Process.popen(arguments: ["./Tools/hqspre-linux", "-o", outFile.path.pathString, tempFile.path.pathString])
+            return try? String(contentsOfFile: outFile.path.pathString, encoding: String.Encoding.utf8)
 
         } catch {
             Logger.default().error("execution of hqspre failed")
@@ -420,7 +419,7 @@ struct CAQE: QbfSolver, CertifyingQbfSolver {
         
         // start task and extract stdout
         do {
-            let result = try Basic.Process.popen(arguments: ["./Tools/caqem", "--partial-assignments", "--expansion-refinement=1", tempFile.path.asString])
+            let result = try Basic.Process.popen(arguments: ["./Tools/caqem", "--partial-assignments", "--expansion-refinement=1", tempFile.path.pathString])
             let stdout = try result.utf8Output()
 
             guard let solverResult = SolverHelper.result(from: result.exitStatus) else {
@@ -450,7 +449,7 @@ struct CAQE: QbfSolver, CertifyingQbfSolver {
 
         let task = Process()
         task.launchPath = "./Tools/caqem"
-        task.arguments = ["-c", tempFile.path.asString]
+        task.arguments = ["-c", tempFile.path.pathString]
         
         let stdoutPipe = Pipe()
         let stderrPipe = Pipe()
@@ -503,7 +502,7 @@ struct QuAbS: CertifyingQbfSolver {
         
         let task = Process()
         task.launchPath = "./Tools/quabs"
-        task.arguments = ["-c", tempFile.path.asString]
+        task.arguments = ["-c", tempFile.path.pathString]
         
         let stdoutPipe = Pipe()
         let stderrPipe = Pipe()
@@ -556,7 +555,7 @@ struct CADET: CertifyingQbfSolver {
         
         let task = Process()
         task.launchPath = "./Tools/cadet"
-        task.arguments = ["-c", "stdout", tempFile.path.asString]
+        task.arguments = ["-c", "stdout", tempFile.path.pathString]
         
         let stdoutPipe = Pipe()
         let stderrPipe = Pipe()
@@ -608,9 +607,9 @@ extension UnsafeMutablePointer where Pointee == aiger {
         guard let outputTempFile = try? TemporaryFile(suffix: ".aig") else {
             return nil
         }
-        aiger_open_and_write_to_file(self, inputTempFile.path.asString)
+        aiger_open_and_write_to_file(self, inputTempFile.path.pathString)
         
-        var abcCommand = "read \(inputTempFile.path.asString); strash; refactor -zl; rewrite -zl;"
+        var abcCommand = "read \(inputTempFile.path.pathString); strash; refactor -zl; rewrite -zl;"
         if self.pointee.num_ands < 1_000_000 {
             abcCommand += " strash; refactor -zl; rewrite -zl;"
         }
@@ -620,7 +619,7 @@ extension UnsafeMutablePointer where Pointee == aiger {
         if self.pointee.num_ands < 200_000 {
             abcCommand += " dfraig; rewrite -zl; dfraig;"
         }
-        abcCommand += " write \(outputTempFile.path.asString);"
+        abcCommand += " write \(outputTempFile.path.pathString);"
 
         do {
             try Basic.Process.checkNonZeroExit(arguments: ["./Tools/abc", "-q", abcCommand])
@@ -629,7 +628,7 @@ extension UnsafeMutablePointer where Pointee == aiger {
             return nil
         }
         
-        let result = aiger_open_and_read_from_file(minimized, outputTempFile.path.asString)
+        let result = aiger_open_and_read_from_file(minimized, outputTempFile.path.pathString)
         assert(result == nil)
         
         return minimized
@@ -651,7 +650,7 @@ struct iDQ: DqbfSolver {
         
         // start task and extract stdout
         do {
-            let result = try Basic.Process.popen(arguments: ["./Tools/idq", tempFile.path.asString])
+            let result = try Basic.Process.popen(arguments: ["./Tools/idq", tempFile.path.pathString])
             let stdout = try result.utf8Output()
 
             if stdout.contains("UNSAT") {
@@ -689,7 +688,7 @@ struct HQS: DqbfSolver {
         
         // start task and extract stdout
         do {
-            let result = try Basic.Process.popen(arguments: ["./Tools/hqs-linux", tempFile.path.asString])
+            let result = try Basic.Process.popen(arguments: ["./Tools/hqs-linux", tempFile.path.pathString])
             let stdout = try result.utf8Output()
 
             if stdout.contains("UNSAT") {
@@ -727,7 +726,7 @@ struct DCAQE: DqbfSolver {
 
         // start task and extract stdout
         do {
-            let result = try Basic.Process.popen(arguments: ["./Tools/dcaqe", tempFile.path.asString])
+            let result = try Basic.Process.popen(arguments: ["./Tools/dcaqe", tempFile.path.pathString])
             let stdout = try result.utf8Output()
 
             if stdout.contains("c Unsatisfiable") {
@@ -760,7 +759,7 @@ struct Eprover: DqbfSolver {
         
         // start task and extract stdout
         do {
-            let result = try Basic.Process.popen(arguments: ["./Tools/eprover", "--auto", "--tptp3-format", tempFile.path.asString])
+            let result = try Basic.Process.popen(arguments: ["./Tools/eprover", "--auto", "--tptp3-format", tempFile.path.pathString])
             let stdout = try result.utf8Output()
 
             if stdout.contains("SZS status Satisfiable") {
@@ -793,7 +792,7 @@ struct Vampire: DqbfSolver {
         
         // start task and extract stdout
         do {
-            let result = try Basic.Process.popen(arguments: ["./Tools/vampire", "--mode", "casc", "-t","1200", tempFile.path.asString])
+            let result = try Basic.Process.popen(arguments: ["./Tools/vampire", "--mode", "casc", "-t","1200", tempFile.path.pathString])
             let stdout = try result.utf8Output()
 
             if stdout.contains("SZS status Satisfiable") || stdout.contains("Termination reason: Satisfiable") {

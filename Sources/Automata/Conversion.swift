@@ -1,6 +1,6 @@
 import Foundation
 import Basic
-import Utility
+import SPMUtility
 
 import Logic
 import Utils

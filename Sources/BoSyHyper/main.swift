@@ -1,7 +1,7 @@
 
 import Foundation
 import Basic
-import Utility
+import SPMUtility
 
 import Specification
 import Utils

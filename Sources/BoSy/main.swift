@@ -2,7 +2,7 @@ import Foundation
 import Dispatch
 
 import Basic
-import Utility
+import SPMUtility
 
 import Utils
 import Specification
