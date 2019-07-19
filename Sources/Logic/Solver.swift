@@ -419,7 +419,7 @@ struct CAQE: QbfSolver, CertifyingQbfSolver {
         
         // start task and extract stdout
         do {
-            let result = try Basic.Process.popen(arguments: ["./Tools/caqem", "--partial-assignments", "--expansion-refinement=1", tempFile.path.pathString])
+            let result = try Basic.Process.popen(arguments: ["./Tools/caqe", "--qdo", tempFile.path.pathString])
             let stdout = try result.utf8Output()
 
             guard let solverResult = SolverHelper.result(from: result.exitStatus) else {
