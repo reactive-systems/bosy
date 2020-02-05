@@ -41,8 +41,9 @@ curl -sSL https://get.haskellstack.org/ | sh
 #### macOS
 
 ```
-brew tap homebrew/science
-brew install libbuddy haskell-stack
+xcode-select --install
+brew tap brewsci/science
+brew install libbuddy haskell-stack cmake
 ```
 
 

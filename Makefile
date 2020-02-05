@@ -1,6 +1,6 @@
 .PHONY: default debug release test tools required-tools optional-tools all clean distclean
-.INTERMEDIATE: Tools/ltl3ba-1.1.3.tar.gz Tools/bloqqer-037-8660cb9-151127.tar.gz Tools/bloqqer-031-7a176af-110509.tar.gz Tools/cadet-bin.tar.gz Tools/caqe-bin.tar.gz Tools/cryptominisat-5.0.1.tar.gz Tools/cvc4-1.5.tar.gz Tools/depqbf-5.01.tar.gz Tools/spot-2.8.1.tar.gz Tools/z3-4.5.0.tar.gz Tools/rareqs-1.1.src.tgz Tools/picosat-965.tar.gz Tools/idq-1.0.tar.gz Tools/vampire.zip Tools/E.tgz Tools/NuSMV-2.6.0.tar.gz Tools/aiger-1.9.9.tar.gz
-.SECONDARY: Tools/abc-hg/abc Tools/abc-hg Tools/bloqqer-031-7a176af-110509 Tools/bloqqer-031-7a176af-110509/bloqqer Tools/bloqqer-037-8660cb9-151127 Tools/bloqqer-037-8660cb9-151127/bloqqer Tools/ltl3ba Tools/ltl3ba-1.1.3 Tools/ltl3ba-1.1.3/ltl3ba Tools/cryptominisat-5.0.1 Tools/cryptominisat-5.0.1/build Tools/depqbf-version-5.01/depqbf Tools/depqbf-version-5.01 Tools/quabs-git Tools/spot-2.8.1 Tools/cvc4-1.5 Tools/cvc4-1.5/builds/bin/cvc4 Tools/z3-4.5.0/build/z3 Tools/z3-4.5.0 Tools/rareqs-1.1 Tools/syfco-git Tools/syfco-git/syfco Tools/picosat-965 Tools/picosat Tools/idq-1.0 Tools/idq-1.0/idq Tools/NuSMV-2.6.0 Tools/NuSMV-2.6.0/NuSMV/build/bin/NuSMV Tools/NuSMV-2.6.0/NuSMV/build/bin/ltl2smv Tools/aiger-1.9.9 Tools/aiger-1.9.9/aigbmc Tools/aiger-1.9.9/smvtoaig Tools/aiger-ltl-model-checker Tools/aiger-ltl-model-checker/combine-aiger
+.INTERMEDIATE: Tools/ltl3ba-1.1.3.tar.gz Tools/bloqqer-037-8660cb9-151127.tar.gz Tools/bloqqer-031-7a176af-110509.tar.gz Tools/cadet-bin.tar.gz Tools/caqe-bin.tar.gz Tools/cryptominisat-5.6.8.tar.gz Tools/cvc4-1.5.tar.gz Tools/depqbf-5.01.tar.gz Tools/spot-2.8.5.tar.gz Tools/z3-4.8.7.tar.gz Tools/rareqs-1.1.src.tgz Tools/picosat-965.tar.gz Tools/idq-1.0.tar.gz Tools/vampire.zip Tools/E.tgz Tools/NuSMV-2.6.0.tar.gz Tools/aiger-1.9.9.tar.gz
+.SECONDARY: Tools/abc-hg/abc Tools/abc-hg Tools/bloqqer-031-7a176af-110509 Tools/bloqqer-031-7a176af-110509/bloqqer Tools/bloqqer-037-8660cb9-151127 Tools/bloqqer-037-8660cb9-151127/bloqqer Tools/ltl3ba Tools/ltl3ba-1.1.3 Tools/ltl3ba-1.1.3/ltl3ba Tools/cryptominisat-5.6.8 Tools/cryptominisat-5.6.8/build Tools/depqbf-version-5.01/depqbf Tools/depqbf-version-5.01 Tools/quabs-git Tools/spot-2.8.5 Tools/cvc4-1.5 Tools/cvc4-1.5/builds/bin/cvc4 Tools/z3-4.8.7/build/z3 Tools/z3-4.8.7 Tools/rareqs-1.1 Tools/syfco-git Tools/syfco-git/syfco Tools/picosat-965 Tools/picosat Tools/idq-1.0 Tools/idq-1.0/idq Tools/NuSMV-2.6.0 Tools/NuSMV-2.6.0/NuSMV/build/bin/NuSMV Tools/NuSMV-2.6.0/NuSMV/build/bin/ltl2smv Tools/aiger-1.9.9 Tools/aiger-1.9.9/aigbmc Tools/aiger-1.9.9/smvtoaig Tools/aiger-ltl-model-checker Tools/aiger-ltl-model-checker/combine-aiger
 
 default: release
 
@@ -24,11 +24,11 @@ clean-source-tools:
 	rm -rf Tools/ltl3ba-1.1.3
 	rm -rf Tools/bloqqer-037-8660cb9-151127
 	rm -rf Tools/bloqqer-031-7a176af-110509
-	rm -rf Tools/cryptominisat-5.0.1
+	rm -rf Tools/cryptominisat-5.6.8
 	rm -rf Tools/depqbf-version-5.01
-	rm -rf Tools/spot-2.8.1
+	rm -rf Tools/spot-2.8.5
 	rm -rf Tools/cvc4-1.5
-	rm -rf Tools/z3-4.5.0
+	rm -rf Tools/z3-4.8.7
 	rm -rf Tools/rareqs-1.1
 	rm -rf Tools/quabs-git
 	rm -rf Tools/syfco-git
@@ -166,20 +166,20 @@ Tools/aiger-ltl-model-checker:
 	cd Tools ; git clone https://github.com/reactive-systems/aiger-ltl-model-checker.git
 
 # cryptominisat
-Tools/cryptominisat5: Tools/cryptominisat-5.0.1/build
-	cp Tools/cryptominisat-5.0.1/build/cryptominisat5_simple Tools/cryptominisat5
+Tools/cryptominisat5: Tools/cryptominisat-5.6.8/build
+	cp Tools/cryptominisat-5.6.8/build/cryptominisat5_simple Tools/cryptominisat5
 
-Tools/cryptominisat-5.0.1/build: Tools/cryptominisat-5.0.1
-	mkdir Tools/cryptominisat-5.0.1/build
-	cd Tools/cryptominisat-5.0.1/build ; cmake -DCMAKE_BUILD_TYPE=Release -DSTATICCOMPILE=ON ..
-	cd Tools/cryptominisat-5.0.1/build ; make -j4
+Tools/cryptominisat-5.6.8/build: Tools/cryptominisat-5.6.8
+	mkdir Tools/cryptominisat-5.6.8/build
+	cd Tools/cryptominisat-5.6.8/build ; cmake -DCMAKE_BUILD_TYPE=Release -DSTATICCOMPILE=ON -DENABLE_PYTHON_INTERFACE=OFF ..
+	cd Tools/cryptominisat-5.6.8/build ; make -j4
 
-Tools/cryptominisat-5.0.1: Tools/cryptominisat-5.0.1.tar.gz
-	cd Tools ; tar xzf cryptominisat-5.0.1.tar.gz
+Tools/cryptominisat-5.6.8: Tools/cryptominisat-5.6.8.tar.gz
+	cd Tools ; tar xzf cryptominisat-5.6.8.tar.gz
 
-Tools/cryptominisat-5.0.1.tar.gz: Tools/.f
-	cd Tools ; curl -OL https://github.com/msoos/cryptominisat/archive/5.0.1.tar.gz
-	mv Tools/5.0.1.tar.gz Tools/cryptominisat-5.0.1.tar.gz
+Tools/cryptominisat-5.6.8.tar.gz: Tools/.f
+	cd Tools ; curl -OL https://github.com/msoos/cryptominisat/archive/5.6.8.tar.gz
+	mv Tools/5.6.8.tar.gz Tools/cryptominisat-5.6.8.tar.gz
 
 # cvc4
 Tools/cvc4: Tools/cvc4-1.5/builds/bin/cvc4
@@ -230,16 +230,16 @@ Tools/vampire.zip: Tools/.f
 	cd Tools ; curl -OL http://forsyte.at/wp-content/uploads/vampire.zip
 
 # spot/ltl2tgba
-Tools/ltl2tgba: Tools/spot-2.8.1
-	cd Tools/spot-2.8.1; ./configure --disable-python --enable-static --disable-shared
-	cd Tools/spot-2.8.1; make
-	cp Tools/spot-2.8.1/bin/ltl2tgba Tools/
+Tools/ltl2tgba: Tools/spot-2.8.5
+	cd Tools/spot-2.8.5; ./configure --disable-python --enable-static --disable-shared
+	cd Tools/spot-2.8.5; make
+	cp Tools/spot-2.8.5/bin/ltl2tgba Tools/
 
-Tools/spot-2.8.1: Tools/spot-2.8.1.tar.gz
-	cd Tools; tar xzf spot-2.8.1.tar.gz
+Tools/spot-2.8.5: Tools/spot-2.8.5.tar.gz
+	cd Tools; tar xzf spot-2.8.5.tar.gz
 
-Tools/spot-2.8.1.tar.gz: Tools/.f
-	cd Tools; curl -OL http://www.lrde.epita.fr/dload/spot/spot-2.8.1.tar.gz
+Tools/spot-2.8.5.tar.gz: Tools/.f
+	cd Tools; curl -OL http://www.lrde.epita.fr/dload/spot/spot-2.8.5.tar.gz
 
 # ltl3ba
 Tools/ltl3ba: Tools/ltl3ba-1.1.3/ltl3ba
@@ -330,7 +330,7 @@ Tools/quabs-git/release/quabs: Tools/quabs-git
 	cd Tools/quabs-git/release ; cmake -DCMAKE_BUILD_TYPE=Release .. && make
 
 Tools/quabs-git: Tools/.f
-	cd Tools ; git clone --recurse-submodules https://github.com/ltentrup/quabs.git quabs-git
+	cd Tools ; git clone --recurse-submodules https://github.com/reactive-systems/quabs.git quabs-git
 
 # rareqs
 Tools/rareqs: Tools/rareqs-1.1
@@ -358,17 +358,17 @@ Tools/syfco-git: Tools/.f
 	cd Tools ; git clone https://github.com/reactive-systems/syfco.git syfco-git
 
 # z3
-Tools/z3: Tools/z3-4.5.0/build/z3
-	cp Tools/z3-4.5.0/build/z3 Tools/z3
+Tools/z3: Tools/z3-4.8.7/build/z3
+	cp Tools/z3-4.8.7/build/z3 Tools/z3
 
-Tools/z3-4.5.0/build/z3: Tools/z3-4.5.0
-	cd Tools/z3-4.5.0 ; ./configure
-	make -C Tools/z3-4.5.0/build
+Tools/z3-4.8.7/build/z3: Tools/z3-4.8.7
+	cd Tools/z3-4.8.7 ; ./configure
+	make -C Tools/z3-4.8.7/build
 
-Tools/z3-4.5.0: Tools/z3-4.5.0.tar.gz
-	cd Tools ; tar xzf z3-4.5.0.tar.gz
-	cd Tools ; mv z3-z3-4.5.0 z3-4.5.0
+Tools/z3-4.8.7: Tools/z3-4.8.7.tar.gz
+	cd Tools ; tar xzf z3-4.8.7.tar.gz
+	cd Tools ; mv z3-z3-4.8.7 z3-4.8.7
 
-Tools/z3-4.5.0.tar.gz: Tools/.f
-	cd Tools ; curl -OL https://github.com/Z3Prover/z3/archive/z3-4.5.0.tar.gz
+Tools/z3-4.8.7.tar.gz: Tools/.f
+	cd Tools ; curl -OL https://github.com/Z3Prover/z3/archive/z3-4.8.7.tar.gz
 
