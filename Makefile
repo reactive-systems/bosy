@@ -48,6 +48,7 @@ required-tools: \
 	Tools/abc \
 	Tools/bloqqer \
 	Tools/bloqqer-031 \
+	Tools/cadet \
 	Tools/cryptominisat5 \
 	Tools/ltl2tgba \
 	Tools/ltl3ba \
@@ -60,7 +61,6 @@ required-tools: \
 optional-tools: \
 	Tools/aigbmc \
 	Tools/smvtoaig \
-	Tools/cadet \
 	Tools/caqem \
 	Tools/combine-aiger \
 	Tools/cvc4 \
