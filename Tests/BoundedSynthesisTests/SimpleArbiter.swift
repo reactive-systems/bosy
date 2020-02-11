@@ -2,7 +2,7 @@
 import XCTest
 
 import Basic
-import Utility
+//import Utility
 
 import Specification
 import LTL
@@ -72,18 +72,18 @@ func modelCheckAiger(specification: SynthesisSpecification, implementation: Unsa
     tempFile.fileHandle.write(Data(smvSecification.utf8))
 
 
-    try Basic.Process.checkNonZeroExit(arguments: ["./Tools/smvtoaig", "-L", "Tools/ltl2smv", tempFile.path.asString, monitorFile.path.asString])
+    try Basic.Process.checkNonZeroExit(arguments: ["./Tools/smvtoaig", "-L", "Tools/ltl2smv", tempFile.path.pathString, monitorFile.path.pathString])
     
-    aiger_open_and_write_to_file(implementation, implementationFile.path.asString)
+    aiger_open_and_write_to_file(implementation, implementationFile.path.pathString)
 
-    let combiner = Basic.Process(arguments: ["./Tools/combine-aiger", monitorFile.path.asString, implementationFile.path.asString])
+    let combiner = Basic.Process(arguments: ["./Tools/combine-aiger", monitorFile.path.pathString, implementationFile.path.pathString])
     try combiner.launch()
     let combinationResult = try combiner.waitUntilExit()
-    let sequence: [UInt8] = try combinationResult.output.dematerialize().map(UInt8.init)
+    let sequence: [UInt8] = try combinationResult.output.dematerialize()
 
     combinedFile.fileHandle.write(Data(bytes: sequence))
 
-    let modelCheckOutput = try Basic.Process.checkNonZeroExit(arguments: ["./Tools/aigbmc", combinedFile.path.asString])
+    let modelCheckOutput = try Basic.Process.checkNonZeroExit(arguments: ["./Tools/aigbmc", combinedFile.path.pathString])
 
     if modelCheckOutput.hasPrefix("1") {
         // found counterexample
@@ -174,7 +174,7 @@ class SimpleArbiterTest: XCTestCase {
         }
         let tempFile = try TemporaryFile(suffix: ".smv")
         tempFile.fileHandle.write(Data(smvRepresentation.utf8))
-        XCTAssertTrue(modelCheckSMV(file: tempFile.path.asString))
+        XCTAssertTrue(modelCheckSMV(file: tempFile.path.pathString))
         
         // Check AIGER implementation
         guard let aigerRepresentation = (transitionSystem as? AigerRepresentable)?.aiger else {
@@ -205,7 +205,7 @@ class SimpleArbiterTest: XCTestCase {
         }
         let tempFile = try TemporaryFile(suffix: ".smv")
         tempFile.fileHandle.write(Data(smvRepresentation.utf8))
-        XCTAssertTrue(modelCheckSMV(file: tempFile.path.asString))
+        XCTAssertTrue(modelCheckSMV(file: tempFile.path.pathString))
         
         // Check AIGER implementation
         guard let aigerRepresentation = (transitionSystem as? AigerRepresentable)?.aiger else {
@@ -236,7 +236,7 @@ class SimpleArbiterTest: XCTestCase {
         }
         let tempFile = try TemporaryFile(suffix: ".smv")
         tempFile.fileHandle.write(Data(smvRepresentation.utf8))
-        XCTAssertTrue(modelCheckSMV(file: tempFile.path.asString))
+        XCTAssertTrue(modelCheckSMV(file: tempFile.path.pathString))
         
         // Check AIGER implementation
         guard let aigerRepresentation = (transitionSystem as? AigerRepresentable)?.aiger else {

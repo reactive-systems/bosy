@@ -106,7 +106,7 @@ public class AigerInputSymbolicEncoding<A: Automaton>: SingleParamaterSearch whe
         let numInputs = specification.inputs.count
         let numLatches = self.stateBits
         let numAndGates = self.solutionBound!.value
-        let maxVariable = numInputs + numLatches + numAndGates + 1
+        //let maxVariable = numInputs + numLatches + numAndGates + 1
 
         for latch in 0..<numLatches {
             for variable in 0...(numInputs + numLatches + numAndGates) {
@@ -121,7 +121,7 @@ public class AigerInputSymbolicEncoding<A: Automaton>: SingleParamaterSearch whe
             }
         }
 
-        for (i, output) in specification.outputs.enumerated() {
+        for (_, output) in specification.outputs.enumerated() {
             for variable in 0...(numInputs + numLatches + numAndGates) {
                 let negated = completeAssignment[Proposition("neg_\(output)")]! == Literal.True
                 let prop = Proposition("\(output)_\(variable)")

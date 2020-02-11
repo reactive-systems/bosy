@@ -228,7 +228,7 @@ public class HyperSmtEncoding: BoSyEncoding {
 
             if let condition = hyperAutomaton.safetyConditions[q] {
                 let assertion = FunctionApplication(function: lambdaHyper(q), application: pstates) --> condition.accept(visitor: replacer)
-                smt.append("(assert (forall (\(pstates.map({ "(\($0) S)" }).joined(separator: " ")) \(inputs.flatMap({ $0.value }).map({ "(\($0) Bool)" }).joined(separator: " "))) \(assertion.accept(visitor: printer))))\n")
+                smt.append("(assert (forall (\(pstates.map({ "(\($0) S)" }).joined(separator: " ")) \(inputs.compactMap({ $0.value }).map({ "(\($0) Bool)" }).joined(separator: " "))) \(assertion.accept(visitor: printer))))\n")
             }
             guard let outgoing = hyperAutomaton.transitions[q] else {
                 continue
@@ -237,7 +237,7 @@ public class HyperSmtEncoding: BoSyEncoding {
             for (qPrime, guardCondition) in outgoing {
                 let transitionCondition = requireHyperTransition(q: q, qPrime: qPrime, rejectingStates: hyperAutomaton.rejectingStates, variables: pathVariables, inputs: inputs)
                 let assertion = (FunctionApplication(function: lambdaHyper(q), application: pstates) & guardCondition.accept(visitor: replacer)) --> transitionCondition
-                smt.append("(assert (forall (\(pstates.map({ "(\($0) S)" }).joined(separator: " ")) \(inputs.flatMap({ $0.value }).map({ "(\($0) Bool)" }).joined(separator: " "))) \(assertion.accept(visitor: printer))))\n")
+                smt.append("(assert (forall (\(pstates.map({ "(\($0) S)" }).joined(separator: " ")) \(inputs.compactMap({ $0.value }).map({ "(\($0) Bool)" }).joined(separator: " "))) \(assertion.accept(visitor: printer))))\n")
             }
         }
     }
@@ -324,7 +324,7 @@ public class HyperSmtEncoding: BoSyEncoding {
                     return nil
                 }
                 let transition = i.map({ v, val in val == Literal.True ? v : !v }).reduce(Literal.True, &)
-                guard let target = Int(proposition.name.substring(from: proposition.name.index(after: proposition.name.startIndex)), radix: 10) else {
+                guard let target = Int(proposition.name[ proposition.name.index(after: proposition.name.startIndex)...], radix: 10) else {
                     return nil
                 }
                 solution.addTransition(from: source, to: target, withGuard: transition)

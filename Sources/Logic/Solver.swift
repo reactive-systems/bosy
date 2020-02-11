@@ -153,7 +153,7 @@ private enum SolverHelper {
             assignments += String(line[line.index(after: line.startIndex)..<line.endIndex])
                 .trimmingCharacters(in: NSCharacterSet.whitespacesAndNewlines)
                 .components(separatedBy: " ")
-                .flatMap({ Int($0) })
+                .compactMap({ Int($0) })
         }
         return assignments
     }

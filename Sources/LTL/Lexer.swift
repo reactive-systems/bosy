@@ -122,11 +122,10 @@ public enum LTLToken: CustomStringConvertible, Equatable, Hashable {
         }
     }
     
-    // Hashable
-    public var hashValue: Int {
-        return description.hashValue
+    // Hashable    
+    public func hash(into hasher: inout Hasher){
+        hasher.combine(description)
     }
-    
     
     var precedence: LTLOperatorPrecedence {
         switch self {

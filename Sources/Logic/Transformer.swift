@@ -233,7 +233,7 @@ public class QDIMACSVisitor: DIMACSVisitor {
 
     public override func visit(quantifier: Quantifier) -> T {
         quantifier.variables.forEach({ variable in propositions[variable] = newId() })
-        let variables = quantifier.variables.flatMap({ variable in propositions[variable] })
+        let variables = quantifier.variables.compactMap({ variable in propositions[variable] })
         quantifiers.append((quantifier.type == .Exists ? "e " : "a ") + variables.map(String.init).joined(separator: " ") + " 0")
         let result = quantifier.scope.accept(visitor: self)
         if result != 0 {
@@ -295,7 +295,7 @@ public class DQDIMACSVisitor: QDIMACSVisitor {
     public override func visit(quantifier: Quantifier) -> T {
         if quantifier.type == .Forall {
             quantifier.variables.forEach({ variable in propositions[variable] = newId() })
-            let variables = quantifier.variables.flatMap({ variable in propositions[variable] })
+            let variables = quantifier.variables.compactMap({ variable in propositions[variable] })
             quantifiers.append("a " + variables.map(String.init).joined(separator: " ") + " 0")
         }
         let result = quantifier.scope.accept(visitor: self)
@@ -307,7 +307,7 @@ public class DQDIMACSVisitor: QDIMACSVisitor {
             // TODO: have to build an additional constraint that maps different application to the same function
             
             var functionConstraints: [Logic] = []
-            var contexts = self.contexts.map({ key, val in key })
+            let contexts = self.contexts.map({ key, val in key })
             for i in 0..<contexts.count {
                 for j in i+1..<contexts.count {
                     let context1 = contexts[i]
@@ -334,7 +334,7 @@ public class DQDIMACSVisitor: QDIMACSVisitor {
                     continue
                 }
                 let parameter: [Proposition] = application.application as! [Proposition]
-                let dependencies = parameter.flatMap({ variable in propositions[variable] })
+                let dependencies = parameter.compactMap({ variable in propositions[variable] })
                 quantifiers.append("d \(function) " + dependencies.map(String.init).joined(separator: " ") + " 0")
             }
         }
@@ -416,7 +416,7 @@ public class QCIRVisitor: ReturnConstantVisitor<Int>, CustomStringConvertible {
     }
     public override func visit(quantifier: Quantifier) -> T {
         quantifier.variables.forEach({ variable in propositions[variable] = newId() })
-        let variables = quantifier.variables.flatMap({ variable in propositions[variable] })
+        let variables = quantifier.variables.compactMap({ variable in propositions[variable] })
         quantifiers.append((quantifier.type == .Exists ? "exists(" : "forall(") + variables.map(String.init).joined(separator: ", ") + ")")
         let result = quantifier.scope.accept(visitor: self)
         if result != 0 {

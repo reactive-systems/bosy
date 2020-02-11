@@ -301,6 +301,11 @@ public struct BinaryOperator: Logic, Hashable {
         return type.hashValue ^ operands.reduce(0, { hash, op in hash ^ op.hashValue })
     }
     
+    public func hash(into hasher: inout Hasher){
+        hasher.combine(type)
+        operands.forEach({val in hasher.combine(val.hashValue)})
+    }
+    
     public func eval(assignment: BooleanAssignment) -> Logic {
         let evaluatedOperands = operands.map({ $0.eval(assignment: assignment) })
         switch type {
@@ -527,8 +532,8 @@ public struct Proposition: Logic, Equatable, Hashable {
         return "\(name)"
     }
     
-    public var hashValue: Int {
-        return name.hashValue
+    public func hash(into hasher: inout Hasher){
+        hasher.combine(name)
     }
     
     public func eval(assignment: BooleanAssignment) -> Logic {
@@ -613,8 +618,9 @@ public struct FunctionApplication: Logic, Hashable {
         return "\(function)(\(appl))"
     }
     
-    public var hashValue: Int {
-        return function.hashValue ^ application.reduce(0, { val, prop in val ^ prop.hashValue })
+    public func hash(into hasher: inout Hasher){
+        hasher.combine(function)
+        application.forEach({val in hasher.combine(val.hashValue)})
     }
     
     public func eval(assignment: BooleanAssignment) -> Logic {
@@ -1076,7 +1082,7 @@ class ScalarScanner {
         self.index = scalars.startIndex
     }
     
-    func advance(by offset: String.UnicodeScalarView.IndexDistance, skipWhitespace: Bool = true) {
+    func advance(by offset: Int, skipWhitespace: Bool = true) {
         index = scalars.index(index, offsetBy: offset)
         if !skipWhitespace {
             return

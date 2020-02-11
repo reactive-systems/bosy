@@ -2,7 +2,7 @@
 import XCTest
 
 import Basic
-import Utility
+//import Utility
 
 import Specification
 import LTL
@@ -50,7 +50,7 @@ class WrongLTLPrintTest: XCTestCase {
         }
         let tempFile = try TemporaryFile(suffix: ".smv")
         tempFile.fileHandle.write(Data(smvRepresentation.utf8))
-        XCTAssertTrue(modelCheckSMV(file: tempFile.path.asString))
+        XCTAssertTrue(modelCheckSMV(file: tempFile.path.pathString))
 
         // Check AIGER implementation
         guard let aigerRepresentation = (transitionSystem as? AigerRepresentable)?.aiger else {

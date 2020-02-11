@@ -90,10 +90,10 @@ public class CoBüchiAutomaton: Automaton, SafetyAcceptance, CoBüchiAcceptance 
             return lhs.state == rhs.state && lhs.counter == rhs.counter
         }
 
-        public var hashValue: Int {
-            return state.hashValue ^ counter.hashValue
+        public func hash(into hasher: inout Hasher){
+            hasher.combine(state)
+            hasher.combine(counter)
         }
-
         public var description: String {
             return "[\(state),\(counter)]"
         }

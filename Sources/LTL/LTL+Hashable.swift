@@ -1,9 +1,10 @@
 
 extension LTLFunction: Hashable {
-    public var hashValue: Int {
-        return symbol.hashValue ^ arity.hashValue
+    public func hash(into hasher: inout Hasher){
+        hasher.combine(symbol)
+        hasher.combine(arity)
     }
-
+    
     public static func ==(lhs: LTLFunction, rhs: LTLFunction) -> Bool {
         return lhs.symbol == rhs.symbol && lhs.arity == rhs.arity
     }
@@ -19,9 +20,9 @@ extension LTLPathVariable: Hashable {
     public static func ==(lhs: LTLPathVariable, rhs: LTLPathVariable) -> Bool {
         return lhs.name == rhs.name
     }
-
-    public var hashValue: Int {
-        return name.hashValue
+    
+    public func hash(into hasher: inout Hasher){
+        hasher.combine(name)
     }
 }
 

@@ -43,7 +43,7 @@ class TerminationCondition {
 
     func wait() {
         lock.lock()
-        if !condition {
+        while !condition {
             lock.wait()
         }
         lock.unlock()

@@ -2,7 +2,7 @@
 import XCTest
 
 import Basic
-import Utility
+//import Utility
 
 import Specification
 import LTL
