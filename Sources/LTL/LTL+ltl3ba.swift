@@ -1,13 +1,11 @@
 
 
 extension LTL {
-
     /**
      * Allows printing of LTL formula in ltl3ba compatible format
      */
     public var ltl3ba: String? {
-
-        var ltl3baOperatorMapping: [LTLFunction:String] = [:]
+        var ltl3baOperatorMapping: [LTLFunction: String] = [:]
         ltl3baOperatorMapping[.tt] = "true"
         ltl3baOperatorMapping[.ff] = "false"
         ltl3baOperatorMapping[.negation] = "!"
@@ -23,10 +21,10 @@ extension LTL {
         ltl3baOperatorMapping[.globally] = "G"
 
         switch self {
-        case .atomicProposition(let ap):
+        case let .atomicProposition(ap):
             return ap.name
-        case .application(let function, parameters: let parameters):
-            switch (function.arity) {
+        case let .application(function, parameters: parameters):
+            switch function.arity {
             case 0:
                 // true and false
                 guard let translated = ltl3baOperatorMapping[function] else {
@@ -63,6 +61,4 @@ extension LTL {
             return nil
         }
     }
-
 }
-

@@ -4,12 +4,11 @@ import XCTest
 import Logic
 
 class AutomatonTest: XCTestCase {
-
     func testSafetyReduction() {
         let a = Proposition("a")
         let b = Proposition("b")
-        let transitions = ["init" : ["init" : a, "reject": !a], "reject": ["reject": Literal.True]]
-        let safetyConditions: [String : Logic] = ["init" : b]
+        let transitions = ["init": ["init": a, "reject": !a], "reject": ["reject": Literal.True]]
+        let safetyConditions: [String: Logic] = ["init": b]
         let coBüchi = CoBüchiAutomaton(initialStates: ["init"], states: ["init", "reject"], transitions: transitions, safetyConditions: safetyConditions, rejectingStates: ["reject"])
 
         let safety0 = coBüchi.reduceToSafety(bound: 0)
@@ -20,7 +19,7 @@ class AutomatonTest: XCTestCase {
         XCTAssertEqual(safety1.states.count, 2)
         XCTAssertEqual(safety1.safetyConditions.count, 2)
     }
-    
+
     func testCoBüchiDot() {
         let expected = [
             "digraph graphname {",
@@ -35,16 +34,17 @@ class AutomatonTest: XCTestCase {
             "\t\"sq_1\" -> \"sq_1\" [label=\"b\"];",
             "\tbad[shape=rectangle,label=\"bad\"];",
             "\t\"sq_0\" -> bad [label=\"¬b\"];",
-            "}"
+            "}",
         ].joined(separator: "\n")
         let actual = CoBüchiAutomaton(
-                         initialStates: ["q_0"],
-                         states: ["q_0", "q_1"],
-                         transitions: ["q_0": ["q_0" : Proposition("a"), "q_1" : Proposition("b")],
-                                       "q_1": ["q_0" : Proposition("a"), "q_1" : Proposition("b")]],
-                         safetyConditions: ["q_0" : Proposition("b")],
-                         rejectingStates: ["q_0"])
-        
+            initialStates: ["q_0"],
+            states: ["q_0", "q_1"],
+            transitions: ["q_0": ["q_0": Proposition("a"), "q_1": Proposition("b")],
+                          "q_1": ["q_0": Proposition("a"), "q_1": Proposition("b")]],
+            safetyConditions: ["q_0": Proposition("b")],
+            rejectingStates: ["q_0"]
+        )
+
         XCTAssertEqual(expected, actual.dot)
     }
 
@@ -61,23 +61,22 @@ class AutomatonTest: XCTestCase {
             "\t\"sq_1\" -> \"sq_1\" [label=\"b\"];",
             "\tbad[shape=rectangle,label=\"bad\"];",
             "\t\"sq_0\" -> bad [label=\"¬b\"];",
-            "}"
-            ].joined(separator: "\n")
+            "}",
+        ].joined(separator: "\n")
         let actual = SafetyAutomaton(
             initialStates: ["q_0"],
             states: ["q_0", "q_1"],
-            transitions: ["q_0": ["q_0" : Proposition("a"), "q_1" : Proposition("b")],
-                          "q_1": ["q_0" : Proposition("a"), "q_1" : Proposition("b")]],
-            safetyConditions: ["q_0" : Proposition("b")]
+            transitions: ["q_0": ["q_0": Proposition("a"), "q_1": Proposition("b")],
+                          "q_1": ["q_0": Proposition("a"), "q_1": Proposition("b")]],
+            safetyConditions: ["q_0": Proposition("b")]
         )
-        
+
         XCTAssertEqual(expected, actual.dot)
     }
 
-    static var allTests : [(String, (AutomatonTest) -> () throws -> Void)] {
-        return [
+    static var allTests: [(String, (AutomatonTest) -> () throws -> Void)] {
+        [
             ("testSafetyReduction", testSafetyReduction),
-
         ]
     }
 }

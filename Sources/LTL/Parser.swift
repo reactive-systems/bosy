@@ -1,18 +1,18 @@
 struct LTLParser {
     var lexer: LTLLexer
     var current: LTLToken
-    var symbolTable: [String:LTLAtomicProposition]
-    var paths: [String:LTLPathVariable]
-    
+    var symbolTable: [String: LTLAtomicProposition]
+    var paths: [String: LTLPathVariable]
+
     init(lexer: LTLLexer) {
         self.lexer = lexer
-        self.current = .Proposition("dummy")
-        self.symbolTable = [:]
-        self.paths = [:]
+        current = .Proposition("dummy")
+        symbolTable = [:]
+        paths = [:]
     }
-    
+
     mutating func parse() throws -> LTL {
-        current = try self.lexer.next()
+        current = try lexer.next()
         return try parseQuantifiedExpression()
     }
 
@@ -35,13 +35,12 @@ struct LTLParser {
         assert(current == .dot)
         current = try lexer.next()
 
-
         guard let ltlQuant = quant.ltlQuant else {
             fatalError()
         }
         var boundPathVariables: [LTLPathVariable] = []
         for element in parameters {
-            guard case .Proposition(let name) = element else {
+            guard case let .Proposition(name) = element else {
                 fatalError()
             }
             let pathVariable = LTLPathVariable(name: name)
@@ -55,7 +54,7 @@ struct LTLParser {
         let body = try parseQuantifiedExpression()
 
         // remove bound path variables
-        paths = paths.filter({ (key, value) in !boundPathVariables.contains(value) })
+        paths = paths.filter { _, value in !boundPathVariables.contains(value) }
 
         return .pathQuantifier(ltlQuant, parameters: boundPathVariables, body: body)
     }
@@ -63,7 +62,7 @@ struct LTLParser {
     mutating func parseParameterList() throws -> [LTLToken] {
         var list: [LTLToken] = []
         while current != .dot {
-            guard case .Proposition(_) = current else {
+            guard case .Proposition = current else {
                 throw ParserError.ExpectToken(LTLToken.Proposition(""))
             }
             list.append(current)
@@ -71,11 +70,11 @@ struct LTLParser {
         }
         return list
     }
-    
+
     mutating func parseBinaryExpression(minPrecedence: LTLOperatorPrecedence) throws -> LTL {
         var lhs = try parseUnaryExpression()
-        
-        while current.isBinaryOperator && current.precedence >= minPrecedence {
+
+        while current.isBinaryOperator, current.precedence >= minPrecedence {
             let op = current
             current = try lexer.next()
             let rhs = try parseBinaryExpression(minPrecedence: op.precedence.next())
@@ -84,10 +83,10 @@ struct LTLParser {
             }
             lhs = .application(fun, parameters: [lhs, rhs])
         }
-        
+
         return lhs
     }
-    
+
     mutating func parseUnaryExpression() throws -> LTL {
         if current.isUnaryOperator {
             let op = current
@@ -96,21 +95,20 @@ struct LTLParser {
                 fatalError()
             }
             return .application(fun, parameters: [try parseUnaryExpression()])
-        }
-        else {
+        } else {
             return try parsePrimaryExpression()
         }
     }
-    
+
     mutating func parsePrimaryExpression() throws -> LTL {
         switch current {
-        case .Proposition(let name):
+        case let .Proposition(name):
             current = try lexer.next()
             let proposition = symbolTable[name, default: LTLAtomicProposition(name: name)]
             if current == .LBracket {
                 // path variable
                 current = try lexer.next()
-                guard case .Proposition(let path) = current else {
+                guard case let .Proposition(path) = current else {
                     throw ParserError.ExpectToken(LTLToken.Proposition(""))
                 }
                 guard let pathVariable = paths[path] else {

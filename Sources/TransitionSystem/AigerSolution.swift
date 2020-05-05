@@ -20,4 +20,3 @@ public class AigerSolution: TransitionSystem, AigerRepresentable {
         aiger_reset(aiger)
     }
 }
-

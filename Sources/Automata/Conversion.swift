@@ -1,14 +1,14 @@
 import Foundation
-import Basic
-import SPMUtility
+import TSCBasic
+import TSCUtility
 
 import Logic
-import Utils
 import LTL
+import Utils
 
 public enum LTL2AutomatonConverter: String {
-    case ltl3ba = "ltl3ba"
-    case spot   = "spot"
+    case ltl3ba
+    case spot
 
     func convert(ltl: LTL) throws -> CoBüchiAutomaton {
         switch self {
@@ -23,11 +23,10 @@ public enum LTL2AutomatonConverter: String {
 }
 
 func convertWithLtl3ba(ltl: LTL) throws -> CoBüchiAutomaton {
-
     guard let ltl3baFormatted = ltl.ltl3ba else {
         throw "cannot transform LTL to ltl3ba format"
     }
-    let neverClaim = try Basic.Process.checkNonZeroExit(arguments: ["./Tools/ltl3ba", "-f", "(\(ltl3baFormatted))"])
+    let neverClaim = try TSCBasic.Process.checkNonZeroExit(arguments: ["./Tools/ltl3ba", "-f", "(\(ltl3baFormatted))"])
     return try parseSpinNeverClaim(neverClaim: neverClaim)
 }
 
@@ -41,7 +40,7 @@ func convertWithSpot(ltl: LTL, hoaf: Bool = false) throws -> CoBüchiAutomaton {
     } else {
         arguments.append("--spin")
     }
-    let output = try Basic.Process.checkNonZeroExit(arguments: arguments)
+    let output = try TSCBasic.Process.checkNonZeroExit(arguments: arguments)
     if hoaf {
         return try parse(hoaf: output)
     } else {
@@ -52,25 +51,25 @@ func convertWithSpot(ltl: LTL, hoaf: Bool = false) throws -> CoBüchiAutomaton {
 func parseSpinNeverClaim(neverClaim: String) throws -> CoBüchiAutomaton {
     var states: Set<String> = Set()
     var rejectingStates: Set<String> = Set()
-    var initialState: String? = nil
-    var transitions: [String : [String: Logic]] = [:]
+    var initialState: String?
+    var transitions: [String: [String: Logic]] = [:]
 
-    var lastState: String? = nil
+    var lastState: String?
 
-    //print(neverClaim)
+    // print(neverClaim)
 
     func normalizeStateName(_ name: String) -> String {
-        return name.replacingOccurrences(of: "_init", with: "").replacingOccurrences(of: "accept_", with: "")
+        name.replacingOccurrences(of: "_init", with: "").replacingOccurrences(of: "accept_", with: "")
     }
 
-    //print("parse never claim")
+    // print("parse never claim")
     for var line in neverClaim.components(separatedBy: "\n") {
         line = line.trimmingCharacters(in: NSCharacterSet.whitespacesAndNewlines)
         if line.hasPrefix("never") || line.hasPrefix("}") || line.hasPrefix("if") || line.hasPrefix("fi") {
             continue
         } else if line.hasSuffix(":") {
             // state
-            let origName = String(line[line.startIndex..<line.index(before: line.endIndex)])
+            let origName = String(line[line.startIndex ..< line.index(before: line.endIndex)])
             let name = normalizeStateName(String(origName))
             transitions[name] = [:]
             lastState = name
@@ -107,11 +106,11 @@ func parseSpinNeverClaim(neverClaim: String) throws -> CoBüchiAutomaton {
     guard let initial = initialState else {
         throw "could not extract initial state from never claim"
     }
-    var automaton =  CoBüchiAutomaton(initialStates: [initial],
-                                       states: states,
-                                       transitions: transitions,
-                                       safetyConditions: [:],
-                                       rejectingStates: rejectingStates)
+    var automaton = CoBüchiAutomaton(initialStates: [initial],
+                                     states: states,
+                                     transitions: transitions,
+                                     safetyConditions: [:],
+                                     rejectingStates: rejectingStates)
     automaton.removeRejectingSinks()
     automaton.calculateSCC()
     return automaton
@@ -125,19 +124,19 @@ private func parse(hoaf: String) throws -> CoBüchiAutomaton {
     var states: Set<String> = Set()
     var rejectingStates: Set<String> = Set()
     var initialStates: Set<String> = Set()
-    var transitions: [String : [String: Logic]] = [:]
+    var transitions: [String: [String: Logic]] = [:]
     var ap: [String] = []
 
-    var lastState: String? = nil
+    var lastState: String?
 
     func toState(_ n: Int) -> String {
-        return "s\(n)"
+        "s\(n)"
     }
 
     func parseAP(_ line: String) -> [String] {
         var aps: [String] = []
 
-        var ap: String? = nil
+        var ap: String?
         for character in line {
             if character == "\"" {
                 if let apValue = ap {
@@ -154,9 +153,9 @@ private func parse(hoaf: String) throws -> CoBüchiAutomaton {
     }
 
     func getTransition(_ line: String) -> (Logic, String)? {
-        var formula: String? = nil
-        var proposition: Int? = nil
-        var target: Int? = nil
+        var formula: String?
+        var proposition: Int?
+        var target: Int?
         for character in line {
             if character == "[" {
                 formula = ""
@@ -169,15 +168,14 @@ private func parse(hoaf: String) throws -> CoBüchiAutomaton {
             } else if target == nil {
                 if character == "t" {
                     formula = "1"
-                }
-                else if ["!", "|", "&", " "].contains(character) {
+                } else if ["!", "|", "&", " "].contains(character) {
                     if let prop = proposition {
                         formula?.append(ap[prop])
                         proposition = nil
                     }
                     formula?.append(character)
                 } else {
-                    assert(("0"..."9").contains(character))
+                    assert(("0" ... "9").contains(character))
                     guard let number = Int(String(character)) else {
                         return nil
                     }
@@ -187,7 +185,7 @@ private func parse(hoaf: String) throws -> CoBüchiAutomaton {
                         proposition = number
                     }
                 }
-            } else if ("0"..."9").contains(character) {
+            } else if ("0" ... "9").contains(character) {
                 if let targetValue = target {
                     target = targetValue * 10 + Int(String(character))!
                 }
@@ -208,7 +206,7 @@ private func parse(hoaf: String) throws -> CoBüchiAutomaton {
     var isBody = false
     for var line in hoaf.components(separatedBy: "\n") {
         line = line.trimmingCharacters(in: NSCharacterSet.whitespacesAndNewlines)
-        //print(line)
+        // print(line)
         if line.hasPrefix("acc-name:") {
             if line != "acc-name: Buchi" {
                 throw "wrong acceptance condition found in HOAF"
@@ -221,7 +219,7 @@ private func parse(hoaf: String) throws -> CoBüchiAutomaton {
             guard let number = Int(line.components(separatedBy: " ")[1]) else {
                 throw "wrong formating of states in HOAF"
             }
-            (0..<number).forEach({ states.insert(toState($0)) })
+            (0 ..< number).forEach { states.insert(toState($0)) }
         } else if line.hasPrefix("Start:") {
             guard let number = Int(line.components(separatedBy: " ")[1]) else {
                 throw "wrong formating of states in HOAF"
@@ -231,18 +229,18 @@ private func parse(hoaf: String) throws -> CoBüchiAutomaton {
             ap = parseAP(line)
         } else if line.hasPrefix("--BODY--") {
             isBody = true
-        } else if isBody && line.hasPrefix("State:") {
+        } else if isBody, line.hasPrefix("State:") {
             let parts = line.components(separatedBy: " ")
             guard let number = Int(parts[1]) else {
                 throw "wrong formating of states in HOAF"
             }
             lastState = toState(number)
-            if parts.count > 2 && !parts[parts.endIndex.advanced(by: -1)].hasPrefix("\"") {
+            if parts.count > 2, !parts[parts.endIndex.advanced(by: -1)].hasPrefix("\"") {
                 // is rejecting
                 rejectingStates.insert(toState(number))
             }
             transitions[toState(number)] = [:]
-        } else if isBody && line.hasPrefix("[") {
+        } else if isBody, line.hasPrefix("[") {
             // transitions
             assert(lastState != nil)
 
@@ -252,11 +250,11 @@ private func parse(hoaf: String) throws -> CoBüchiAutomaton {
             transitions[lastState!]?[targetState] = transitionGuard
         }
     }
-    var automaton =  CoBüchiAutomaton(initialStates: initialStates,
-                                       states: states,
-                                       transitions: transitions,
-                                       safetyConditions: [:],
-                                       rejectingStates: rejectingStates)
+    var automaton = CoBüchiAutomaton(initialStates: initialStates,
+                                     states: states,
+                                     transitions: transitions,
+                                     safetyConditions: [:],
+                                     rejectingStates: rejectingStates)
     automaton.removeRejectingSinks()
     automaton.calculateSCC()
     return automaton

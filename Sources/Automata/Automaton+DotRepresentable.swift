@@ -63,4 +63,3 @@ extension SafetyAutomaton {
         return "digraph graphname {\n\(dot.joined(separator: "\n"))\n}"
     }
 }
-

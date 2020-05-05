@@ -7,13 +7,11 @@ enum BoSyEncodingError: Error {
 }
 
 public protocol BoSyEncoding {
-    
     mutating func solve(forBound bound: Int) throws -> Bool
     func extractSolution() -> TransitionSystem?
-    
 }
 
-public protocol SingleParamaterSearch: class {
+public protocol SingleParamaterSearch: AnyObject {
     associatedtype Parameter: SynthesisParameter
 
     /**
@@ -23,12 +21,11 @@ public protocol SingleParamaterSearch: class {
 }
 
 extension SingleParamaterSearch {
-
     /**
      * Linear search for the smallest bound such that the synthesis problem has a solution.
      */
     public func searchMinimalLinear(cancelled: inout Bool) throws -> Parameter? {
-        for i in Parameter.min..<Parameter.max {
+        for i in Parameter.min ..< Parameter.max {
             if cancelled {
                 return nil
             }

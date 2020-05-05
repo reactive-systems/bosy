@@ -3,7 +3,6 @@ import XCTest
 import Utils
 
 class FunctionTest: XCTestCase {
-    
     func testNumBitsNeeded() {
         XCTAssertEqual(numBitsNeeded(0), 0, "bits(0) = 0")
         XCTAssertEqual(numBitsNeeded(1), 1, "bits(1) = 1")
@@ -17,9 +16,9 @@ class FunctionTest: XCTestCase {
         XCTAssertEqual(numBitsNeeded(17), 5, "bits(17) = 5")
         XCTAssertEqual(numBitsNeeded(32), 5, "bits(32) = 5")
     }
-    
-    static var allTests : [(String, (FunctionTest) -> () throws -> Void)] {
-        return [
+
+    static var allTests: [(String, (FunctionTest) -> () throws -> Void)] {
+        [
             ("testNumBitsNeeded", testNumBitsNeeded),
         ]
     }

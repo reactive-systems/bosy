@@ -7,9 +7,6 @@ extension LTL: Codable {
     }
 
     public func encode(to encoder: Encoder) throws {
-        try self.description.encode(to: encoder)
+        try description.encode(to: encoder)
     }
-
-
 }
-

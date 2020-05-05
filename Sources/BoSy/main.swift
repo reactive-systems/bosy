@@ -1,17 +1,17 @@
-import Foundation
 import Dispatch
+import Foundation
 
-import Basic
-import SPMUtility
+import TSCBasic
+import TSCUtility
 
-import Utils
-import Specification
 import Automata
 import BoundedSynthesis
-import TransitionSystem
-import LTL
 import CAiger
 import Logic
+import LTL
+import Specification
+import TransitionSystem
+import Utils
 
 var cancelled = false
 
@@ -50,11 +50,11 @@ class TerminationCondition {
     }
 
     var condition: Bool {
-        return successfulRealizability || remainingRealizabilityWorker == 0
+        successfulRealizability || remainingRealizabilityWorker == 0
     }
 }
 
-func search(specification: SynthesisSpecification, player: Player, options: BoSyOptions, synthesize: Bool) -> SafetyAutomaton<CoBüchiAutomaton.CounterState>? {
+func search(specification: SynthesisSpecification, player: Player, options _: BoSyOptions, synthesize: Bool) -> SafetyAutomaton<CoBüchiAutomaton.CounterState>? {
     do {
         let automaton = try CoBüchiAutomaton.from(ltl: !specification.ltl)
         Logger.default().info("automaton contains \(automaton.states.count) states")
@@ -90,7 +90,7 @@ func search(specification: SynthesisSpecification, player: Player, options: BoSy
     }
 }
 
-func synthesizeSolution(specification: SynthesisSpecification, player: Player, safetyAutomaton: SafetyAutomaton<CoBüchiAutomaton.CounterState>, options: BoSyOptions) -> UnsafeMutablePointer<aiger>? {
+func synthesizeSolution(specification: SynthesisSpecification, player _: Player, safetyAutomaton: SafetyAutomaton<CoBüchiAutomaton.CounterState>, options: BoSyOptions) -> UnsafeMutablePointer<aiger>? {
     do {
         let synthesizer = InputSymbolicEncoding(options: options, automaton: safetyAutomaton, specification: specification, synthesize: true)
         var f = false
@@ -114,14 +114,14 @@ func synthesizeSolution(specification: SynthesisSpecification, player: Player, s
     }
 }
 
-func optimizeSolution(specification: SynthesisSpecification, player: Player, safetyAutomaton: SafetyAutomaton<CoBüchiAutomaton.CounterState>, solution: UnsafeMutablePointer<aiger>, options: BoSyOptions) -> AigerSolution? {
+func optimizeSolution(specification: SynthesisSpecification, player _: Player, safetyAutomaton: SafetyAutomaton<CoBüchiAutomaton.CounterState>, solution: UnsafeMutablePointer<aiger>, options: BoSyOptions) -> AigerSolution? {
     do {
         let optimizer = AigerInputSymbolicEncoding(options: options, automaton: safetyAutomaton, specification: specification, stateBits: Int(solution.pointee.num_latches))
-        //let optimizer = AigerSmtEncoding(options: options, automaton: safetyAutomaton, specification: specification, stateBits: Int(solution.pointee.num_latches))
+        // let optimizer = AigerSmtEncoding(options: options, automaton: safetyAutomaton, specification: specification, stateBits: Int(solution.pointee.num_latches))
 
         var high = Int(solution.pointee.num_ands) - 1
         var low = 0
-        var solution: AigerSolution? = nil
+        var solution: AigerSolution?
         while low <= high {
             let mid = low + (high - low) / 2
             if try optimizer.solve(forBound: NumberOfAndGatesInAIGER(value: mid)) {
@@ -146,8 +146,8 @@ func optimizeSolution(specification: SynthesisSpecification, player: Player, saf
     }
 }
 
-var currentlySmallestSolution: UnsafeMutablePointer<aiger>? = nil
-var winner: Player? = nil
+var currentlySmallestSolution: UnsafeMutablePointer<aiger>?
+var winner: Player?
 // ensure that termination handler is only called once
 let terminationHandlerLock = NSLock()
 var terminationHandler = false
@@ -173,16 +173,17 @@ func termination() {
 }
 
 signal(SIGINT) {
-    s in termination()
+    _ in termination()
 }
+
 signal(SIGTERM) {
-    s in termination()
+    _ in termination()
 }
 
 extension SolverInstance: ArgumentKind {
     public init(argument: String) throws {
         switch SolverInstance(rawValue: argument) {
-        case .some(let instance):
+        case let .some(instance):
             self = instance
         default:
             throw ArgumentConversionError.unknown(value: argument)
@@ -194,6 +195,7 @@ extension SolverInstance: ArgumentKind {
 
 do {
     // MARK: - argument parsing
+
     let parser = ArgumentParser(commandName: "BoSy", usage: "[options] specification", overview: "BoSy is a reactive synthesis tool from temporal specifications.")
     let specificationFile = parser.add(positional: "specification", kind: String.self, optional: true, usage: "a file containing the specification in BoSy format", completion: .filename)
     let readStdinOption = parser.add(option: "--read-from-stdin", shortName: "-in", kind: Bool.self, usage: "read specification from standard input")
@@ -206,7 +208,6 @@ do {
 
     let arguments = Array(CommandLine.arguments.dropFirst())
     let parsed = try parser.parse(arguments)
-
 
     // either --stdin was given or specification file
     let specification: SynthesisSpecification
@@ -250,7 +251,7 @@ do {
 
     let termination = TerminationCondition(realizabilityWorker: 2)
 
-    var safetyAutomaton: SafetyAutomaton<CoBüchiAutomaton.CounterState>? = nil
+    var safetyAutomaton: SafetyAutomaton<CoBüchiAutomaton.CounterState>?
 
     // search for system strategy
     DispatchQueue(label: "system").async {
@@ -286,7 +287,7 @@ do {
         exit(0)
     }
 
-    if syntcomp && w == .environment {
+    if syntcomp, w == .environment {
         // in syntcomp, we do not need to synthesize counter-strategies
         print(w == .system ? "REALIZABLE" : "UNREALIZABLE")
         exit(0)
@@ -320,9 +321,7 @@ do {
         exit(0)
     }
 
-
 } catch {
     print(error)
     exit(1)
 }
-

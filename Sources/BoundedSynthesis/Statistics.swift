@@ -1,6 +1,5 @@
-import Foundation
 import Dispatch
-
+import Foundation
 
 public enum Phase: CustomStringConvertible {
     case parsing
@@ -9,16 +8,16 @@ public enum Phase: CustomStringConvertible {
     case constraintGeneration
     case solving
     case solutionExtraction
-    
+
     public static let allValues: [Phase] = [
         .parsing,
         .ltl2automaton,
         .automatonOptimizations,
         .constraintGeneration,
         .solving,
-        .solutionExtraction
+        .solutionExtraction,
     ]
-    
+
     // Conformance to CustomStringConvertible
     public var description: String {
         switch self {
@@ -38,42 +37,39 @@ public enum Phase: CustomStringConvertible {
     }
 }
 
-
-
 public class BoSyStatistics: CustomStringConvertible {
-    
-    var durations: [Phase:[Double]] = [:]
-    
+    var durations: [Phase: [Double]] = [:]
+
     public struct Timer {
         let statistics: BoSyStatistics
         let phase: Phase
-        let begin: UInt64  // nanoseconds
-        
+        let begin: UInt64 // nanoseconds
+
         public func stop() {
             let end = DispatchTime.now().uptimeNanoseconds
             let time = Double(end - begin) / 1_000_000_000
             statistics.add(phase: phase, duration: time)
         }
     }
-    
+
     public func startTimer(phase: Phase) -> Timer {
-        return Timer(
+        Timer(
             statistics: self,
             phase: phase,
             begin: DispatchTime.now().uptimeNanoseconds
         )
     }
-    
+
     func add(phase: Phase, duration: Double) {
         var measurements: [Double] = durations[phase] ?? []
         measurements.append(duration)
         durations[phase] = measurements
     }
-    
+
     // Conformance to CustomStringConvertible
     public var description: String {
         var stat = "\nStatistics\n"
-        let maximalName = Phase.allValues.map({ $0.description.count }).reduce(0, { max($0 ,$1) })
+        let maximalName = Phase.allValues.map { $0.description.count }.reduce(0) { max($0, $1) }
         for phase in Phase.allValues {
             guard let measurements = durations[phase] else {
                 continue

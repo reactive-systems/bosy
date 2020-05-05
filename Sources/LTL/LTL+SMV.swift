@@ -1,12 +1,10 @@
 
 extension LTL {
-    
     /**
      * Allows printing of LTL formula in SMV compatible format
      */
     public var smv: String? {
-
-        var smvOperatorMapping: [LTLFunction:String] = [:]
+        var smvOperatorMapping: [LTLFunction: String] = [:]
         smvOperatorMapping[.tt] = "TRUE"
         smvOperatorMapping[.ff] = "FALSE"
         smvOperatorMapping[.negation] = "!"
@@ -21,10 +19,10 @@ extension LTL {
         smvOperatorMapping[.globally] = "G"
 
         switch self {
-        case .atomicProposition(let ap):
+        case let .atomicProposition(ap):
             return ap.name
-        case .application(let function, parameters: let parameters):
-            switch (function.arity) {
+        case let .application(function, parameters: parameters):
+            switch function.arity {
             case 0:
                 // true and false
                 guard let smvName = smvOperatorMapping[function] else {
@@ -62,4 +60,3 @@ extension LTL {
         }
     }
 }
-

@@ -1,16 +1,12 @@
-import Foundation
-//import Dispatch
-
-import Utils
 import Automata
+import BoundedSynthesis
+import Foundation
+import LTL
 import Specification
 import TransitionSystem
-import BoundedSynthesis
-import LTL
+import Utils
 
 import CAiger
-
-
 
 var options = BoSyOptions()
 
@@ -41,11 +37,11 @@ if let specificationFile = options.specificationFile {
 } else {
     // Read from stdin
     let standardInput = FileHandle.standardInput
-    
+
     Logger.default().debug("reading from stdin")
-    
+
     let input = StreamHelper.readAllAvailableData(from: standardInput)
-    
+
     guard let specficationString = String(data: input, encoding: String.Encoding.utf8) else {
         print("error: cannot read input from stdin")
         exit(1)
@@ -77,15 +73,15 @@ if let semantics = options.semantics {
     specification.semantics = semantics
 }
 
-//Logger.default().info("inputs: \(specification.inputs), outputs: \(specification.outputs)")
-//Logger.default().info("assumptions: \(specification.assumptions), guarantees: \(specification.guarantees)")
+// Logger.default().info("inputs: \(specification.inputs), outputs: \(specification.outputs)")
+// Logger.default().info("assumptions: \(specification.assumptions), guarantees: \(specification.guarantees)")
 
 private func buildAutomaton(player: Player) -> CoBüchiAutomaton? {
     Logger.default().debug("start building automaton for player \(player)")
     if options.monolithic || player == .environment || specification.assumptions.count > 0 {
         let assumption: LTL = specification.assumptions.reduce(LTL.tt, &&)
         let guarantee: LTL = specification.guarantees.reduce(LTL.tt, &&)
-        
+
         let ltlSpec: LTL
         if player == .system {
             ltlSpec = specification.assumptions.count == 0 ? !guarantee : !(assumption => guarantee)
@@ -93,7 +89,7 @@ private func buildAutomaton(player: Player) -> CoBüchiAutomaton? {
             assert(player == .environment)
             ltlSpec = specification.assumptions.count == 0 ? guarantee : assumption => guarantee
         }
-        
+
         let automatonTimer = options.statistics?.startTimer(phase: .ltl2automaton)
         guard let automaton = try? CoBüchiAutomaton.from(ltl: ltlSpec, using: options.converter) else {
             Logger.default().error("could not construct automaton")
@@ -105,7 +101,7 @@ private func buildAutomaton(player: Player) -> CoBüchiAutomaton? {
     } else {
         assert(specification.assumptions.count == 0)
         assert(player == .system)
-        
+
         var automata: [CoBüchiAutomaton] = []
         for guarantee in specification.guarantees {
             let automatonTimer = options.statistics?.startTimer(phase: .ltl2automaton)
@@ -116,14 +112,14 @@ private func buildAutomaton(player: Player) -> CoBüchiAutomaton? {
             automatonTimer?.stop()
             automata.append(automaton)
         }
-        
+
         Logger.default().debug("building automaton for player \(player) succeeded")
-        
+
         return CoBüchiAutomaton(automata: automata)
     }
 }
 
-func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -> ()) {
+func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -> Void) {
     Logger.default().debug("start search strategy (strategy: \"\(strategy)\", player: \"\(player)\", synthesize: \(synthesize))")
     return {
         guard let automaton = buildAutomaton(player: player) else {
@@ -133,7 +129,7 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
         Logger.default().info("automaton contains \(automaton.states.count) states")
 
         let synthesize = synthesize && !(player == .environment && options.syntcomp2017rules)
-        
+
         var search = SolutionSearch(options: options, specification: specification, automaton: automaton, searchStrategy: strategy, player: player, backend: options.backend, initialBound: options.minBound, synthesize: synthesize)
 
         if search.hasSolution(limit: options.maxBound ?? Int.max) {
@@ -179,7 +175,7 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
                 }
                 print(verilog)
             case .all:
-                var result: [String:String] = [:]
+                var result: [String: String] = [:]
                 guard let dotSolution = solution as? DotRepresentable else {
                     Logger.default().error("could not encode solution as dot")
                     return
@@ -213,11 +209,10 @@ func search(strategy: SearchStrategy, player: Player, synthesize: Bool) -> (() -
     }
 }
 
-//search(strategy: options.searchStrategy, player: .system, synthesize: options.synthesize)()
+// search(strategy: options.searchStrategy, player: .system, synthesize: options.synthesize)()
 
 let condition = NSCondition()
 var finished = false
-
 
 let searchSystem = search(strategy: options.searchStrategy, player: .system, synthesize: options.synthesize)
 let searchEnvironment = search(strategy: options.searchStrategy, player: .environment, synthesize: options.synthesize)
@@ -226,35 +221,38 @@ let doSearchSystem = options.player.contains(.system)
 let doSearchEnvironment = options.player.contains(.environment)
 
 #if os(Linux)
-let thread1 = Thread() {
-    searchSystem()
-    condition.lock()
-    finished = true
-    condition.broadcast()
-    condition.unlock()
-}
-let thread2 = Thread() {
-    searchEnvironment()
-    condition.lock()
-    finished = true
-    condition.broadcast()
-    condition.unlock()
-}
-if doSearchSystem {
-    thread1.start()
-}
-if doSearchEnvironment {
-    thread2.start()
-}
+    let thread1 = Thread {
+        searchSystem()
+        condition.lock()
+        finished = true
+        condition.broadcast()
+        condition.unlock()
+    }
+
+    let thread2 = Thread {
+        searchEnvironment()
+        condition.lock()
+        finished = true
+        condition.broadcast()
+        condition.unlock()
+    }
+
+    if doSearchSystem {
+        thread1.start()
+    }
+
+    if doSearchEnvironment {
+        thread2.start()
+    }
+
 #else
     class ThreadedExecution: Thread {
-        
-        let function: () -> ()
-        
-        init(function: @escaping (() -> ())) {
+        let function: () -> Void
+
+        init(function: @escaping (() -> Void)) {
             self.function = function
         }
-        
+
         override func main() {
             function()
             condition.lock()
@@ -263,22 +261,23 @@ if doSearchEnvironment {
             condition.unlock()
         }
     }
-if doSearchSystem {
-    ThreadedExecution(function: searchSystem).start()
-}
-if doSearchEnvironment {
-    ThreadedExecution(function: searchEnvironment).start()
-}
+
+    if doSearchSystem {
+        ThreadedExecution(function: searchSystem).start()
+    }
+
+    if doSearchEnvironment {
+        ThreadedExecution(function: searchEnvironment).start()
+    }
 #endif
 
 condition.lock()
 if !finished {
     condition.wait()
 }
+
 condition.unlock()
 
 if let statistics = options.statistics {
     print(statistics.description)
 }
-
-

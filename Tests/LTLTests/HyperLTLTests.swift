@@ -1,8 +1,7 @@
-import XCTest
 @testable import LTL
+import XCTest
 
 class HyperLTLTests: XCTestCase {
-
     let pi1 = LTLPathVariable(name: "pi1")
     let pi2 = LTLPathVariable(name: "pi2")
 
@@ -49,7 +48,6 @@ class HyperLTLTests: XCTestCase {
         let bpi2: LTL = .pathProposition(b, pi2)
         let body = api1 && bpi2
 
-
         XCTAssertEqual(parsed.ltlBody, body)
     }
 
@@ -62,4 +60,3 @@ class HyperLTLTests: XCTestCase {
         XCTAssertEqual(prenex.pathVariables.count, 2)
     }
 }
-

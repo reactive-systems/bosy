@@ -1,16 +1,16 @@
 
 import Foundation
-import Basic
-import SPMUtility
+import TSCBasic
+import TSCUtility
 
-import Specification
-import Utils
-import LTL
 import Automata
 import BoundedSynthesis
-import TransitionSystem
 import CAiger
 import Logic
+import LTL
+import Specification
+import TransitionSystem
+import Utils
 
 // MARK: - argument parsing
 
@@ -64,11 +64,10 @@ do {
 
     let linear = specification.ltl
     let hyperltl = specification.hyperPrenex
-    //print("linear", linear)
-    //print("hyper", hyperltl)
+    // print("linear", linear)
+    // print("hyper", hyperltl)
 
     if !searchEnvironment {
-
         // build automaton for linear
         guard let linearAutomaton = try? CoBüchiAutomaton.from(ltl: !linear, using: .spot) else {
             Logger.default().error("could not construct automaton")
@@ -93,15 +92,17 @@ do {
                 options: option,
                 linearAutomaton: linearAutomaton,
                 hyperAutomaton: automaton,
-                specification: specification)
+                specification: specification
+            )
         } else {
             encoding = HyperSmtEncoding(
                 options: BoSyOptions(),
                 linearAutomaton: linearAutomaton,
                 hyperAutomaton: automaton,
-                specification: specification)
+                specification: specification
+            )
         }
-        
+
         for i in initialBound... {
             if try encoding.solve(forBound: i) {
                 print("realizable")
@@ -109,19 +110,19 @@ do {
                 if !synthesize {
                     exit(0)
                 }
-                
+
                 guard let solution = encoding.extractSolution() else {
                     fatalError()
                 }
                 print((solution as! DotRepresentable).dot)
-                
+
                 guard let aiger_solution = (solution as? AigerRepresentable)?.aiger else {
                     Logger.default().error("could not encode solution as AIGER")
                     exit(1)
                 }
                 let minimized = aiger_solution.minimized
                 aiger_write_to_file(minimized, aiger_ascii_mode, stdout)
-                
+
                 exit(0)
             }
         }
@@ -141,25 +142,24 @@ do {
         }
 
         var counterPaths: [LTLPathVariable] = []
-        for i in 1...environmentBound {
+        for i in 1 ... environmentBound {
             counterPaths.append(LTLPathVariable(name: "env\(i)"))
         }
 
-        let outputPropositions: [LTLAtomicProposition] = specification.outputs.map({ LTLAtomicProposition(name: $0) })
-        let inputPropositions: [LTLAtomicProposition] = specification.inputs.map({ LTLAtomicProposition(name: $0) })
-
+        let outputPropositions: [LTLAtomicProposition] = specification.outputs.map { LTLAtomicProposition(name: $0) }
+        let inputPropositions: [LTLAtomicProposition] = specification.inputs.map { LTLAtomicProposition(name: $0) }
 
         var equalOutputs: [LTL] = []
         var equalInputs: [LTL] = []
 
         for (i, path1) in counterPaths.enumerated() {
-            for path2 in counterPaths[(i+1)...] {
-                equalOutputs += outputPropositions.map({ ap in LTL.pathProposition(ap, path1) <=> LTL.pathProposition(ap, path2) })
-                equalInputs += inputPropositions.map({ ap in LTL.pathProposition(ap, path1) <=> LTL.pathProposition(ap, path2) })
+            for path2 in counterPaths[(i + 1)...] {
+                equalOutputs += outputPropositions.map { ap in LTL.pathProposition(ap, path1) <=> LTL.pathProposition(ap, path2) }
+                equalInputs += inputPropositions.map { ap in LTL.pathProposition(ap, path1) <=> LTL.pathProposition(ap, path2) }
             }
         }
-        let outputEqual: LTL = equalOutputs.reduce(LTL.tt, { val, res in val && res })
-        let inputEqual: LTL = equalInputs.reduce(LTL.tt, { val, res in val && res })
+        let outputEqual: LTL = equalOutputs.reduce(LTL.tt) { val, res in val && res }
+        let inputEqual: LTL = equalInputs.reduce(LTL.tt) { val, res in val && res }
         let deterministic: LTL
         switch specification.semantics {
         case .mealy:
@@ -174,7 +174,7 @@ do {
         let pi = pathVariables[0]
         let piPrime = pathVariables[1]
         for (i, path1) in counterPaths.enumerated() {
-            for path2 in counterPaths[(i+1)...] {
+            for path2 in counterPaths[(i + 1)...] {
                 environmentSpec &= body.replacePathProposition(mapping: [pi: path1, piPrime: path2])
             }
         }
@@ -191,8 +191,8 @@ do {
         Logger.default().info("Automaton contains \(specificationAutomaton.states.count) states")
 
         let ltlSpecification = SynthesisSpecification(semantics: specification.semantics.swapped,
-                                                      inputs: outputPropositions.reduce([], { res, val in res + counterPaths.map({ pi in LTL.pathProposition(val, pi).description }) }),
-                                                      outputs: inputPropositions.reduce([], { res, val in res + counterPaths.map({ pi in LTL.pathProposition(val, pi).description }) }),
+                                                      inputs: outputPropositions.reduce([]) { res, val in res + counterPaths.map { pi in LTL.pathProposition(val, pi).description } },
+                                                      outputs: inputPropositions.reduce([]) { res, val in res + counterPaths.map { pi in LTL.pathProposition(val, pi).description } },
                                                       assumptions: [],
                                                       guarantees: [environmentSpec])
 
@@ -227,10 +227,6 @@ do {
             }
         }
     }
-
-
-
-
 
 } catch {
     print(error)

@@ -7,8 +7,8 @@ public enum StreamHelper {
         repeat {
             readData = handle.availableData
             data.append(readData)
-        } while (readData.count > 0)
-        
+        } while readData.count > 0
+
         return data
     }
 }

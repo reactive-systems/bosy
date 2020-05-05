@@ -1,27 +1,27 @@
 
 extension LTLFunction: Hashable {
-    public func hash(into hasher: inout Hasher){
+    public func hash(into hasher: inout Hasher) {
         hasher.combine(symbol)
         hasher.combine(arity)
     }
-    
-    public static func ==(lhs: LTLFunction, rhs: LTLFunction) -> Bool {
-        return lhs.symbol == rhs.symbol && lhs.arity == rhs.arity
+
+    public static func == (lhs: LTLFunction, rhs: LTLFunction) -> Bool {
+        lhs.symbol == rhs.symbol && lhs.arity == rhs.arity
     }
 }
 
 extension LTLAtomicProposition: Equatable {
-    public static func ==(lhs: LTLAtomicProposition, rhs: LTLAtomicProposition) -> Bool {
-        return lhs.name == rhs.name
+    public static func == (lhs: LTLAtomicProposition, rhs: LTLAtomicProposition) -> Bool {
+        lhs.name == rhs.name
     }
 }
 
 extension LTLPathVariable: Hashable {
-    public static func ==(lhs: LTLPathVariable, rhs: LTLPathVariable) -> Bool {
-        return lhs.name == rhs.name
+    public static func == (lhs: LTLPathVariable, rhs: LTLPathVariable) -> Bool {
+        lhs.name == rhs.name
     }
-    
-    public func hash(into hasher: inout Hasher){
+
+    public func hash(into hasher: inout Hasher) {
         hasher.combine(name)
     }
 }
@@ -29,17 +29,16 @@ extension LTLPathVariable: Hashable {
 extension LTL: Equatable {
     public static func == (lhs: LTL, rhs: LTL) -> Bool {
         switch (lhs, rhs) {
-        case (.atomicProposition(let lhs), .atomicProposition(let rhs)):
+        case let (.atomicProposition(lhs), .atomicProposition(rhs)):
             return lhs == rhs
-        case (.pathProposition(let lhs, let lhsPath), .pathProposition(let rhs, let rhsPath)):
+        case let (.pathProposition(lhs, lhsPath), .pathProposition(rhs, rhsPath)):
             return lhs == rhs && lhsPath == rhsPath
-        case (.application(let lhsFun, let lhsParameters), .application(let rhsFun, parameters: let rhsParameters)):
+        case let (.application(lhsFun, lhsParameters), .application(rhsFun, parameters: rhsParameters)):
             return lhsFun == rhsFun && lhsParameters == rhsParameters
-        case (.pathQuantifier(let lhsQuant, let lhsParamaters, let lhsBody), .pathQuantifier(let rhsQuant, parameters: let rhsParameters, body: let rhsBody)):
+        case let (.pathQuantifier(lhsQuant, lhsParamaters, lhsBody), .pathQuantifier(rhsQuant, parameters: rhsParameters, body: rhsBody)):
             return lhsQuant == rhsQuant && lhsParamaters == rhsParameters && lhsBody == rhsBody
         default:
             return false
         }
     }
 }
-

@@ -1,8 +1,7 @@
-import XCTest
 @testable import LTL
+import XCTest
 
 class LTLTests: XCTestCase {
-
     let a = LTLAtomicProposition(name: "a")
     let b = LTLAtomicProposition(name: "b")
 
@@ -13,30 +12,30 @@ class LTLTests: XCTestCase {
         let expected = LTL.application(.globally, parameters: [.application(.finally, parameters: [.atomicProposition(a)])])
         XCTAssertEqual(parsed, expected)
     }
-    
+
     func testSimpleParenthesis() throws {
         let parsed = try LTL.parse(fromString: "(a)")
         let expected = LTL.atomicProposition(a)
         XCTAssertEqual(parsed, expected)
     }
-    
+
     func testBinaryOperator() throws {
         let parsed = try LTL.parse(fromString: "(a && b)")
         let expected = LTL.application(.and, parameters: [.atomicProposition(a), .atomicProposition(b)])
         XCTAssertEqual(parsed, expected)
-        
+
         let alternative1 = try LTL.parse(fromString: "(a & b)")
         XCTAssertEqual(parsed, alternative1)
         let alternative2 = try LTL.parse(fromString: "(a /\\ b)")
         XCTAssertEqual(parsed, alternative2)
-        
+
         XCTAssertThrowsError(try LTL.parse(fromString: "(a &&& b)"))
     }
-    
+
     func testMissingParenthesis() throws {
         XCTAssertThrowsError(try LTL.parse(fromString: "(a"))
     }
-    
+
     func testPropositionsWithUnderscore() throws {
         let parsed = try LTL.parse(fromString: "(a_1)")
         let expected = LTL.atomicProposition(LTLAtomicProposition(name: "a_1"))
@@ -51,12 +50,12 @@ class LTLTests: XCTestCase {
         let expected = LTL.pathQuantifier(.exists,
                                           parameters: [pi1, pi2],
                                           body: .application(.and, parameters: [
-                                            .pathProposition(a, pi1),
-                                            .pathProposition(a, pi2)
+                                              .pathProposition(a, pi1),
+                                              .pathProposition(a, pi2),
                                           ]))
         XCTAssertEqual(parsed, expected)
     }
-    
+
     func testNNF() {
         let parsed = try! LTL.parse(fromString: "!(a & b)")
         let expected = try! LTL.parse(fromString: "!a | !b")
@@ -68,13 +67,13 @@ class LTLTests: XCTestCase {
         let expected = try! LTL.parse(fromString: "true U a")
         XCTAssertEqual(parsed.normalized, expected)
     }
-    
+
     func testNormalizeGlobally() {
         let parsed = try! LTL.parse(fromString: "G a")
         let expected = try! LTL.parse(fromString: "false R a")
         XCTAssertEqual(parsed.normalized, expected)
     }
-    
+
     func testNormalizeEquality() {
         let parsed = try! LTL.parse(fromString: "a <-> b")
         let expected = try! LTL.parse(fromString: "(a & b) | (!a & !b)")
@@ -87,9 +86,9 @@ class LTLTests: XCTestCase {
         let expected = try! LTL.parse(fromString: "!a | !b")
         XCTAssertTrue(expected.isNNF)
     }
-    
-    static var allTests : [(String, (LTLTests) -> () throws -> Void)] {
-        return [
+
+    static var allTests: [(String, (LTLTests) -> () throws -> Void)] {
+        [
             ("testSimple", testSimple),
             ("testSimpleParenthesis", testSimpleParenthesis),
             ("testBinaryOperator", testBinaryOperator),
@@ -98,54 +97,54 @@ class LTLTests: XCTestCase {
             ("testNNF", testNNF),
             ("testNormalizeEventually", testNormalizeEventually),
             ("testNormalizeGlobally", testNormalizeGlobally),
-            ("testNormalizeEquality", testNormalizeEquality)
+            ("testNormalizeEquality", testNormalizeEquality),
         ]
     }
 }
 
-class LTL3BATests : XCTestCase {
+class LTL3BATests: XCTestCase {
     let trueLit = LTL.application(LTLFunction.tt, parameters: [])
     let falseLit = LTL.application(LTLFunction.ff, parameters: [])
-    
+
     func testLiteralTrue() {
         let expected = "true"
         let actual = trueLit.ltl3ba!
-        
+
         XCTAssertEqual(expected, actual)
     }
-    
+
     func testLiteralFalse() {
         let expected = "false"
         let actual = falseLit.ltl3ba!
-        
+
         XCTAssertEqual(expected, actual)
     }
-    
+
     func testUnaryFunction() {
         let expected = "(G true)"
         let actual = LTL.application(LTLFunction.globally, parameters: [trueLit]).ltl3ba!
-        
+
         XCTAssertEqual(expected, actual)
     }
-    
+
     func testBinaryFunction() {
         let expected = "(true && false)"
         let actual = (trueLit && falseLit).ltl3ba!
-        
+
         XCTAssertEqual(expected, actual)
     }
-    
+
     func testLhsNested() {
         let expected = "((true || false) && true)"
         let actual = ((trueLit || falseLit) && trueLit).ltl3ba!
-        
+
         XCTAssertEqual(expected, actual)
     }
-    
+
     func testRhsNested() {
         let expected = "(true || (false && true))"
         let actual = (trueLit || (falseLit && trueLit)).ltl3ba!
-        
+
         XCTAssertEqual(expected, actual)
     }
 }

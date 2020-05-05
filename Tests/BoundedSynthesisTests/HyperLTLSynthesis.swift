@@ -1,14 +1,12 @@
 
 import XCTest
 
-import Basic
-//import Utility
-
-import Specification
-import LTL
-import Utils
-import TransitionSystem
 import Automata
+import LTL
+import Specification
+import TransitionSystem
+import TSCBasic
+import Utils
 
 import CAiger
 
@@ -30,7 +28,6 @@ import CAiger
  * constraint that can be only satisfied with a system if size 2.
  */
 class HyperLTLSynthesisTest: XCTestCase {
-
     let jsonSpec = "{\"semantics\": \"mealy\", \"inputs\": [\"i_l\", \"i_h\"], \"outputs\": [\"o_l\"], \"assumptions\": [], \"guarantees\": [\"G (o_l || !o_l)\"], \"hyper\": [\"forall pi1 pi2. ( (o_l[pi1] <-> i_h[pi1]) || (X o_l[pi1] <-> i_l[pi1]) ) && ( (o_l[pi1] <-> o_l[pi2]) W !(i_l[pi1] <-> i_l[pi2]) )\"] }"
 
     var options = BoSyOptions()
@@ -65,8 +62,8 @@ class HyperLTLSynthesisTest: XCTestCase {
         XCTAssertTrue(try encoding.solve(forBound: 3))
     }
 
-    static var allTests : [(String, (HyperLTLSynthesisTest) -> () throws -> Void)] {
-        return [
+    static var allTests: [(String, (HyperLTLSynthesisTest) -> () throws -> Void)] {
+        [
             ("testRealizabilitySmt", testRealizabilitySmt),
         ]
     }

@@ -1,10 +1,10 @@
-import Utils
+import Automata
 import CAiger
 import Logic
-import Automata
+import LTL
 import Specification
 import TransitionSystem
-import LTL
+import Utils
 
 /**
  * Bounded Synthesis encoding for synthesizing system strategies given
@@ -12,12 +12,10 @@ import LTL
  * Uses an SMT solver as backend.
  */
 public class HyperStateSymbolicEncoding: BoSyEncoding {
-
     let options: BoSyOptions
     let linearAutomaton: CoBüchiAutomaton
     let hyperAutomaton: CoBüchiAutomaton
     let specification: SynthesisSpecification
-
 
     public init(options: BoSyOptions, linearAutomaton: CoBüchiAutomaton, hyperAutomaton: CoBüchiAutomaton, specification: SynthesisSpecification) {
         self.options = options
@@ -27,25 +25,23 @@ public class HyperStateSymbolicEncoding: BoSyEncoding {
     }
 
     func getEncoding(forBound bound: Int) -> Logic? {
-
-        let states = 0..<bound
+        let states = 0 ..< bound
         let numBits = numBitsNeeded(bound)
 
         var preconditions: [Logic] = []
         var matrix: [Logic] = []
 
-        let statePropositions: [Proposition] = (0..<numBits).map({ bit in Proposition("s\(bit)") })
-        let nextStatePropositions: [Proposition] = (0..<numBits).map({ bit in Proposition("sp\(bit)") })
-        let tauPropositions: [Proposition] = (0..<numBits).map({ bit in tau(bit: bit) })
-        let inputPropositions: [Proposition] = self.specification.inputs.map(Proposition.init)
-        let outputPropositions: [Proposition] = self.specification.outputs.map(Proposition.init)
+        let statePropositions: [Proposition] = (0 ..< numBits).map { bit in Proposition("s\(bit)") }
+        let nextStatePropositions: [Proposition] = (0 ..< numBits).map { bit in Proposition("sp\(bit)") }
+        let tauPropositions: [Proposition] = (0 ..< numBits).map { bit in tau(bit: bit) }
+        let inputPropositions: [Proposition] = specification.inputs.map(Proposition.init)
+        let outputPropositions: [Proposition] = specification.outputs.map(Proposition.init)
 
         for i in bound ..< (1 << numBits) {
             preconditions.append(!explicitToSymbolic(base: "s", value: i, bits: numBits))
             preconditions.append(!explicitToSymbolic(base: "sp", value: i, bits: numBits))
             matrix.append(!explicitToSymbolic(base: "t_", value: i, bits: numBits, parameters: statePropositions + inputPropositions))
         }
-
 
         encodeLinearAutomaton(bound: bound, numBits: numBits, statePropositions: statePropositions, nextStatePropositions: nextStatePropositions, tauPropositions: tauPropositions, inputPropositions: inputPropositions, outputPropositions: outputPropositions, matrix: &matrix)
         let (hyperStates, hyperNextStates, hyperIns) = encodeHyperAutomaton(bound: bound, numBits: numBits, tauPropositions: tauPropositions, matrix: &matrix)
@@ -56,17 +52,16 @@ public class HyperStateSymbolicEncoding: BoSyEncoding {
 
         let formula: Logic = preconditions.reduce(Literal.True, &) --> matrix.reduce(Literal.True, &)
 
-
         let universalQuantified: Logic = Quantifier(.Forall, variables: statePropositions + nextStatePropositions + inputPropositions + hyperStates.reduce([], +) + hyperNextStates.reduce([], +) + hyperIns.reduce([], +), scope: formula)
-        let outputQuantification: Logic = Quantifier(.Exists, variables: outputPropositions, scope: universalQuantified, arity: specification.semantics == .mealy ? numBitsNeeded(states.count) + self.specification.inputs.count : numBitsNeeded(states.count))
-        let tauQuantification: Logic = Quantifier(.Exists, variables: tauPropositions, scope: outputQuantification, arity: numBitsNeeded(states.count) + self.specification.inputs.count)
+        let outputQuantification: Logic = Quantifier(.Exists, variables: outputPropositions, scope: universalQuantified, arity: specification.semantics == .mealy ? numBitsNeeded(states.count) + specification.inputs.count : numBitsNeeded(states.count))
+        let tauQuantification: Logic = Quantifier(.Exists, variables: tauPropositions, scope: outputQuantification, arity: numBitsNeeded(states.count) + specification.inputs.count)
 
-        let lambdaPropositions: [Proposition] = self.linearAutomaton.states.map({ lambdaProposition($0) })
-        let lambdaSharpPropositions: [Proposition] = self.linearAutomaton.states.map({ lambdaSharpProposition($0) })
+        let lambdaPropositions: [Proposition] = linearAutomaton.states.map { lambdaProposition($0) }
+        let lambdaSharpPropositions: [Proposition] = linearAutomaton.states.map { lambdaSharpProposition($0) }
         let lambdaQuantification: Logic = Quantifier(.Exists, variables: lambdaPropositions + lambdaSharpPropositions, scope: tauQuantification, arity: numBitsNeeded(states.count))
 
-        let lambdaHyperPropositions: [Proposition] = self.hyperAutomaton.states.map({ lambdaHyperProposition($0) })
-        let lambdaHyperSharpPropositions: [Proposition] = self.hyperAutomaton.states.map({ lambdaHyperSharpProposition($0) })
+        let lambdaHyperPropositions: [Proposition] = hyperAutomaton.states.map { lambdaHyperProposition($0) }
+        let lambdaHyperSharpPropositions: [Proposition] = hyperAutomaton.states.map { lambdaHyperSharpProposition($0) }
         let lambdaHyperQuantification: Logic = Quantifier(.Exists, variables: lambdaHyperPropositions + lambdaHyperSharpPropositions, scope: lambdaQuantification, arity: numBitsNeeded(states.count) * specification.hyperPrenex.pathVariables.count)
 
         let boundednessCheck = BoundednessVisitor()
@@ -80,9 +75,8 @@ public class HyperStateSymbolicEncoding: BoSyEncoding {
         return result
     }
 
-    func encodeLinearAutomaton(bound: Int, numBits: Int, statePropositions: [Proposition], nextStatePropositions: [Proposition], tauPropositions: [Proposition], inputPropositions: [Proposition], outputPropositions: [Proposition], matrix: inout [Logic]) {
-
-        let tauApplications: [FunctionApplication] = tauPropositions.map({ FunctionApplication(function: $0, application: statePropositions + inputPropositions) })
+    func encodeLinearAutomaton(bound: Int, numBits: Int, statePropositions: [Proposition], nextStatePropositions: [Proposition], tauPropositions: [Proposition], inputPropositions: [Proposition], outputPropositions _: [Proposition], matrix: inout [Logic]) {
+        let tauApplications: [FunctionApplication] = tauPropositions.map { FunctionApplication(function: $0, application: statePropositions + inputPropositions) }
 
         // initial states
         let premise = explicitToSymbolic(base: "s", value: 0, bits: numBits)
@@ -113,7 +107,7 @@ public class HyperStateSymbolicEncoding: BoSyEncoding {
 
             for (qPrime, guardCondition) in outgoing {
                 let transitionCondition = requireTransition(q: q, qPrime: qPrime, bound: bound, rejectingStates: linearAutomaton.rejectingStates, states: statePropositions, nextStates: nextStatePropositions, taus: tauApplications)
-                if guardCondition as? Literal != nil && guardCondition as! Literal == Literal.True {
+                if guardCondition as? Literal != nil, guardCondition as! Literal == Literal.True {
                     conjunct.append(transitionCondition)
                 } else {
                     conjunct.append(guardCondition.accept(visitor: replacer) --> transitionCondition)
@@ -123,7 +117,7 @@ public class HyperStateSymbolicEncoding: BoSyEncoding {
         }
     }
 
-    func requireTransition(q: CoBüchiAutomaton.State, qPrime: CoBüchiAutomaton.State, bound: Int, rejectingStates: Set<CoBüchiAutomaton.State>, states: [Proposition], nextStates: [Proposition], taus: [FunctionApplication]) -> Logic {
+    func requireTransition(q: CoBüchiAutomaton.State, qPrime: CoBüchiAutomaton.State, bound _: Int, rejectingStates: Set<CoBüchiAutomaton.State>, states: [Proposition], nextStates: [Proposition], taus: [FunctionApplication]) -> Logic {
         if linearAutomaton.isStateInNonRejectingSCC(q) || linearAutomaton.isStateInNonRejectingSCC(qPrime) || !linearAutomaton.isInSameSCC(q, qPrime) {
             // no need for comparator constrain
             return tauNextStateAssertion(states: nextStates, taus: taus) --> lambda(qPrime, states: nextStates)
@@ -157,29 +151,28 @@ public class HyperStateSymbolicEncoding: BoSyEncoding {
     }
 
     func lambdaProposition(_ automatonState: CoBüchiAutomaton.State) -> Proposition {
-        return Proposition("l_\(automatonState)")
+        Proposition("l_\(automatonState)")
     }
 
     func lambda(_ automatonState: CoBüchiAutomaton.State, states: [Proposition]) -> FunctionApplication {
-        return FunctionApplication(function: lambdaProposition(automatonState), application: states)
+        FunctionApplication(function: lambdaProposition(automatonState), application: states)
     }
 
     func lambdaSharpProposition(_ automatonState: CoBüchiAutomaton.State) -> Proposition {
-        return Proposition("ls_\(automatonState)")
+        Proposition("ls_\(automatonState)")
     }
 
     func lambdaSharp(_ automatonState: CoBüchiAutomaton.State, states: [Proposition]) -> FunctionApplication {
-        return FunctionApplication(function: lambdaSharpProposition(automatonState), application: states)
+        FunctionApplication(function: lambdaSharpProposition(automatonState), application: states)
     }
 
     func tau(bit: Int) -> Proposition {
-        return Proposition("t_\(bit)")
+        Proposition("t_\(bit)")
     }
 
     func output(_ name: String, forState state: Int) -> String {
-        return "\(name)_\(state)"
+        "\(name)_\(state)"
     }
-
 
     func encodeHyperAutomaton(bound: Int, numBits: Int, tauPropositions: [Proposition], matrix: inout [Logic]) -> (states: [[Proposition]], nextStates: [[Proposition]], inputs: [[Proposition]]) {
         let hyperltl = specification.hyperPrenex
@@ -194,31 +187,31 @@ public class HyperStateSymbolicEncoding: BoSyEncoding {
             fatalError()
         }
 
-        let statePropositions: [[Proposition]] = pathVariables.map({ pvar in (0..<numBits).map({ bit in Proposition("s_\(pvar)_\(bit)") }) })
-        let nextStatePropositions: [[Proposition]] = pathVariables.map({ pvar in (0..<numBits).map({ bit in Proposition("sp_\(pvar)_\(bit)") }) })
+        let statePropositions: [[Proposition]] = pathVariables.map { pvar in (0 ..< numBits).map { bit in Proposition("s_\(pvar)_\(bit)") } }
+        let nextStatePropositions: [[Proposition]] = pathVariables.map { pvar in (0 ..< numBits).map { bit in Proposition("sp_\(pvar)_\(bit)") } }
 
         // initial states
-        let premises = pathVariables.map({ explicitToSymbolic(base: "s_\($0)_", value: 0, bits: numBits) }).reduce(Literal.True, &)
+        let premises = pathVariables.map { explicitToSymbolic(base: "s_\($0)_", value: 0, bits: numBits) }.reduce(Literal.True, &)
         for q in hyperAutomaton.initialStates {
             matrix.append(premises --> lambdaHyper(q, states: statePropositions))
         }
 
         var inputs: [[Proposition]] = []
         for variable in pathVariables {
-            inputs.append(specification.inputs.map({ input in Proposition(LTL.pathProposition(LTLAtomicProposition(name: input), variable).description) }))
+            inputs.append(specification.inputs.map { input in Proposition(LTL.pathProposition(LTLAtomicProposition(name: input), variable).description) })
         }
         print(inputs)
 
         var outputs: [[Proposition]] = []
         for variable in pathVariables {
-            outputs.append( specification.outputs.map({ output in Proposition(LTL.pathProposition(LTLAtomicProposition(name: output), variable).description) }))
+            outputs.append(specification.outputs.map { output in Proposition(LTL.pathProposition(LTLAtomicProposition(name: output), variable).description) })
         }
         print(outputs)
 
-        let tauApplications: [[FunctionApplication]] = pathVariables.enumerated().map({ (i, _) in tauPropositions.map({ FunctionApplication(function: $0, application: statePropositions[i] + inputs[i]) }) })
+        let tauApplications: [[FunctionApplication]] = pathVariables.enumerated().map { i, _ in tauPropositions.map { FunctionApplication(function: $0, application: statePropositions[i] + inputs[i]) } }
 
-        //let pstates: [Proposition] = pathVariables.map({ variable in Proposition("s_\(variable)_") })
-        //print(pstates)
+        // let pstates: [Proposition] = pathVariables.map({ variable in Proposition("s_\(variable)_") })
+        // print(pstates)
 
         for q in hyperAutomaton.states {
             var conjunct: [Logic] = []
@@ -246,7 +239,7 @@ public class HyperStateSymbolicEncoding: BoSyEncoding {
 
             for (qPrime, guardCondition) in outgoing {
                 let transitionCondition = requireHyperTransition(q: q, qPrime: qPrime, bound: bound, rejectingStates: hyperAutomaton.rejectingStates, states: statePropositions, nextStates: nextStatePropositions, taus: tauApplications)
-                if guardCondition as? Literal != nil && guardCondition as! Literal == Literal.True {
+                if guardCondition as? Literal != nil, guardCondition as! Literal == Literal.True {
                     conjunct.append(transitionCondition)
                 } else {
                     conjunct.append(guardCondition.accept(visitor: replacer) --> transitionCondition)
@@ -257,7 +250,7 @@ public class HyperStateSymbolicEncoding: BoSyEncoding {
         return (statePropositions, nextStatePropositions, inputs)
     }
 
-    func requireHyperTransition(q: CoBüchiAutomaton.State, qPrime: CoBüchiAutomaton.State, bound: Int, rejectingStates: Set<CoBüchiAutomaton.State>, states: [[Proposition]], nextStates: [[Proposition]], taus: [[FunctionApplication]]) -> Logic {
+    func requireHyperTransition(q: CoBüchiAutomaton.State, qPrime: CoBüchiAutomaton.State, bound _: Int, rejectingStates: Set<CoBüchiAutomaton.State>, states: [[Proposition]], nextStates: [[Proposition]], taus: [[FunctionApplication]]) -> Logic {
         if hyperAutomaton.isStateInNonRejectingSCC(q) || hyperAutomaton.isStateInNonRejectingSCC(qPrime) || !hyperAutomaton.isInSameSCC(q, qPrime) {
             // no need for comparator constrain
             return tauHyperNextStateAssertion(states: nextStates, taus: taus) --> lambdaHyper(qPrime, states: nextStates)
@@ -269,23 +262,23 @@ public class HyperStateSymbolicEncoding: BoSyEncoding {
 
     func tauHyperNextStateAssertion(states: [[Proposition]], taus: [[FunctionApplication]]) -> Logic {
         assert(states.count == taus.count)
-        return zip(states, taus).map({ (states, taus) in tauNextStateAssertion(states: states, taus: taus) }).reduce(Literal.True, &)
+        return zip(states, taus).map { states, taus in tauNextStateAssertion(states: states, taus: taus) }.reduce(Literal.True, &)
     }
 
     func lambdaHyperProposition(_ automatonState: CoBüchiAutomaton.State) -> Proposition {
-        return Proposition("l_H_\(automatonState)")
+        Proposition("l_H_\(automatonState)")
     }
 
     func lambdaHyper(_ automatonState: CoBüchiAutomaton.State, states: [[Proposition]]) -> FunctionApplication {
-        return FunctionApplication(function: lambdaHyperProposition(automatonState), application: states.reduce([], +))
+        FunctionApplication(function: lambdaHyperProposition(automatonState), application: states.reduce([], +))
     }
 
     func lambdaHyperSharpProposition(_ automatonState: CoBüchiAutomaton.State) -> Proposition {
-        return Proposition("ls_h_\(automatonState)")
+        Proposition("ls_h_\(automatonState)")
     }
 
     func lambdaHyperSharp(_ automatonState: CoBüchiAutomaton.State, states: [[Proposition]]) -> FunctionApplication {
-        return FunctionApplication(function: lambdaHyperSharpProposition(automatonState), application: states.reduce([], +))
+        FunctionApplication(function: lambdaHyperSharpProposition(automatonState), application: states.reduce([], +))
     }
 
     public func solve(forBound bound: Int) throws -> Bool {
@@ -296,19 +289,19 @@ public class HyperStateSymbolicEncoding: BoSyEncoding {
             throw BoSyEncodingError.EncodingFailed("could not build encoding")
         }
         constraintTimer?.stop()
-        //print(instance)
+        // print(instance)
 
-        /*let dqdimacsVisitor = DQDIMACSVisitor(formula: instance)
-        let encodedFormula = dqdimacsVisitor.description
-        print(encodedFormula)
-        exit(1)*/
+        /* let dqdimacsVisitor = DQDIMACSVisitor(formula: instance)
+         let encodedFormula = dqdimacsVisitor.description
+         print(encodedFormula)
+         exit(1) */
 
         guard let solver = options.solver?.instance as? DqbfSolver else {
             throw BoSyEncodingError.SolvingFailed("solver creation failed")
         }
 
         let solvingTimer = options.statistics?.startTimer(phase: .solving)
-        let preprocessor: QbfPreprocessor? = options.qbfPreprocessor.map({ $0.getInstance(preserveAssignments: false) })
+        let preprocessor: QbfPreprocessor? = options.qbfPreprocessor.map { $0.getInstance(preserveAssignments: false) }
         guard let result = solver.solve(formula: instance, preprocessor: preprocessor) else {
             throw BoSyEncodingError.SolvingFailed("solver failed on instance")
         }
@@ -318,6 +311,6 @@ public class HyperStateSymbolicEncoding: BoSyEncoding {
     }
 
     public func extractSolution() -> TransitionSystem? {
-        return nil
+        nil
     }
 }

@@ -7,15 +7,15 @@ public class CoBüchiAutomaton: Automaton, SafetyAcceptance, CoBüchiAcceptance 
 
     public var initialStates: Set<State>
     public var states: Set<State>
-    public var transitions: [State : [State : Logic]]
-    public var safetyConditions: [State : Logic]
+    public var transitions: [State: [State: Logic]]
+    public var safetyConditions: [State: Logic]
     public var rejectingStates: Set<State>
 
     // SCC optimizations
     var scc: [State: Int] = [:]
     var inRejectingScc: [State: Bool] = [:]
 
-    public init(initialStates: Set<State>, states: Set<State>, transitions: [State : [State : Logic]], safetyConditions: [State : Logic], rejectingStates: Set<State>) {
+    public init(initialStates: Set<State>, states: Set<State>, transitions: [State: [State: Logic]], safetyConditions: [State: Logic], rejectingStates: Set<State>) {
         self.initialStates = initialStates
         self.states = states
         self.transitions = transitions
@@ -26,28 +26,28 @@ public class CoBüchiAutomaton: Automaton, SafetyAcceptance, CoBüchiAcceptance 
     public init(automata: [CoBüchiAutomaton]) {
         /// makes sure every state is unique
         func transform(state: State, index: Int) -> State {
-            return "s\(index)_\(state)"
+            "s\(index)_\(state)"
         }
-        self.initialStates = Set<State>()
-        self.states = Set<State>()
-        self.transitions = [:]
-        self.safetyConditions = [:]
-        self.rejectingStates = Set<State>()
+        initialStates = Set<State>()
+        states = Set<State>()
+        transitions = [:]
+        safetyConditions = [:]
+        rejectingStates = Set<State>()
 
         for (i, automaton) in automata.enumerated() {
-            self.initialStates.formUnion(automaton.initialStates.map({ transform(state: $0, index: i) }))
-            self.states.formUnion(automaton.states.map({ transform(state: $0, index: i) }))
+            initialStates.formUnion(automaton.initialStates.map { transform(state: $0, index: i) })
+            states.formUnion(automaton.states.map { transform(state: $0, index: i) })
             for (source, outgoing) in automaton.transitions {
-                var newOutgoing: [State:Logic] = [:]
+                var newOutgoing: [State: Logic] = [:]
                 for (target, guardCondition) in outgoing {
                     newOutgoing[transform(state: target, index: i)] = guardCondition
                 }
-                self.transitions[transform(state: source, index: i)] = newOutgoing
+                transitions[transform(state: source, index: i)] = newOutgoing
             }
             for (source, safetyCondition) in automaton.safetyConditions {
-                self.safetyConditions[transform(state: source, index: i)] = safetyCondition
+                safetyConditions[transform(state: source, index: i)] = safetyCondition
             }
-            self.rejectingStates.formUnion(automaton.rejectingStates.map({ transform(state: $0, index: i) }))
+            rejectingStates.formUnion(automaton.rejectingStates.map { transform(state: $0, index: i) })
         }
     }
 
@@ -58,7 +58,7 @@ public class CoBüchiAutomaton: Automaton, SafetyAcceptance, CoBüchiAcceptance 
             let isRejecting = !rejectingStates.intersection(scc).isEmpty
             for node in scc {
                 self.scc[node] = i
-                self.inRejectingScc[node] = isRejecting
+                inRejectingScc[node] = isRejecting
             }
         }
     }
@@ -86,28 +86,26 @@ public class CoBüchiAutomaton: Automaton, SafetyAcceptance, CoBüchiAcceptance 
         let state: State
         let counter: Int
 
-        public static func ==(lhs: CounterState, rhs: CounterState) -> Bool {
-            return lhs.state == rhs.state && lhs.counter == rhs.counter
+        public static func == (lhs: CounterState, rhs: CounterState) -> Bool {
+            lhs.state == rhs.state && lhs.counter == rhs.counter
         }
 
-        public func hash(into hasher: inout Hasher){
+        public func hash(into hasher: inout Hasher) {
             hasher.combine(state)
             hasher.combine(counter)
         }
-        public var description: String {
-            return "[\(state),\(counter)]"
-        }
 
+        public var description: String {
+            "[\(state),\(counter)]"
+        }
     }
 
     public func reduceToSafety(bound k: Int) -> SafetyAutomaton<CounterState> {
-
-        var queue: [CounterState] = self.initialStates.map({ CounterState(state: $0, counter: 0) })
+        var queue: [CounterState] = self.initialStates.map { CounterState(state: $0, counter: 0) }
         let initialStates = Set<CounterState>(queue)
 
-        var transitions: [CounterState : [CounterState : Logic]] = [:]
-        var safetyConditions: [CounterState : Logic] = [:]
-
+        var transitions: [CounterState: [CounterState: Logic]] = [:]
+        var safetyConditions: [CounterState: Logic] = [:]
 
         var processed = Set<CounterState>()
         while let state = queue.popLast() {
@@ -126,11 +124,11 @@ public class CoBüchiAutomaton: Automaton, SafetyAcceptance, CoBüchiAcceptance 
             }
             for (target, transitionGuard) in outgoing {
                 let next: CounterState
-                if self.isStateInNonRejectingSCC(state.state) || self.isStateInNonRejectingSCC(target) || !self.isInSameSCC(state.state, target) {
+                if isStateInNonRejectingSCC(state.state) || isStateInNonRejectingSCC(target) || !isInSameSCC(state.state, target) {
                     // can reset the counter
                     next = CounterState(state: target, counter: 0)
                 } else {
-                    next = CounterState(state: target, counter: self.rejectingStates.contains(target) ? state.counter + 1 : state.counter)
+                    next = CounterState(state: target, counter: rejectingStates.contains(target) ? state.counter + 1 : state.counter)
                 }
                 if next.counter > k {
                     assert(next.counter == k + 1)
@@ -155,7 +153,8 @@ public class CoBüchiAutomaton: Automaton, SafetyAcceptance, CoBüchiAcceptance 
     }
 
     // MARK: - LTL conversion
+
     public static func from(ltl: LTL, using converter: LTL2AutomatonConverter = .spot) throws -> CoBüchiAutomaton {
-        return try converter.convert(ltl: ltl)
+        try converter.convert(ltl: ltl)
     }
 }

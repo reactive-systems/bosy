@@ -1,13 +1,12 @@
 
 extension LTL: CustomStringConvertible {
-
     public var description: String {
         switch self {
-        case .atomicProposition(let ap):
+        case let .atomicProposition(ap):
             return ap.description
-        case .pathProposition(let ap, let path):
+        case let .pathProposition(ap, path):
             return "\(ap)[\(path)]"
-        case .application(let function, parameters: let parameters):
+        case let .application(function, parameters: parameters):
             switch function.arity {
             case 0:
                 return "\(function)"
@@ -18,7 +17,7 @@ extension LTL: CustomStringConvertible {
             default:
                 fatalError()
             }
-        case .pathQuantifier(let quant, parameters: let parameters, body: let body):
+        case let .pathQuantifier(quant, parameters: parameters, body: body):
             return "\(quant) \(parameters.map(String.init(describing:)).joined(separator: " ")). \(body)"
         }
     }
@@ -26,18 +25,18 @@ extension LTL: CustomStringConvertible {
 
 extension LTLPathVariable: CustomStringConvertible {
     public var description: String {
-        return name
+        name
     }
 }
 
 extension LTLAtomicProposition: CustomStringConvertible {
     public var description: String {
-        return name
+        name
     }
 }
 
 extension LTLFunction: CustomStringConvertible {
     public var description: String {
-        return symbol
+        symbol
     }
 }

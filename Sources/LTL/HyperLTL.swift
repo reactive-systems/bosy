@@ -4,7 +4,6 @@
  * This file contains helper functions to work with quantifiers in LTL
  */
 extension LTL {
-
     public var isHyperLTL: Bool {
         // a HyperLTL formula starts with a quantifier
         guard case .pathQuantifier(_, parameters: _, body: let body) = self else {
@@ -18,9 +17,9 @@ extension LTL {
         case (true, .pathQuantifier(_, parameters: _, body: let body)):
             // we may have an arbitrary long quantifier prefix
             return body._isHyperLTL(header: true)
-        case (_, .application(_, parameters: let parameters)):
+        case let (_, .application(_, parameters: parameters)):
             // and afterwards an application...
-            return parameters.reduce(true, { res, ltl in res && ltl._isHyperLTL(header: false) })
+            return parameters.reduce(true) { res, ltl in res && ltl._isHyperLTL(header: false) }
         case (_, .pathProposition(_, _)):
             // ...or a path proposition
             return true
@@ -40,8 +39,8 @@ extension LTL {
         switch self {
         case .pathQuantifier(_, parameters: _, body: _):
             return true
-        case .application(_, parameters: let paramters):
-            return paramters.reduce(false, { val, paramter in val || paramter.isHyper })
+        case let .application(_, parameters: paramters):
+            return paramters.reduce(false) { val, paramter in val || paramter.isHyper }
         default:
             return false
         }
@@ -67,7 +66,7 @@ extension LTL {
 
     private func _getPathVariables() -> [LTLPathVariable] {
         switch self {
-        case .pathQuantifier(_, parameters: let variables, body: let body):
+        case let .pathQuantifier(_, parameters: variables, body: body):
             return variables + body._getPathVariables()
         default:
             return []
@@ -75,12 +74,12 @@ extension LTL {
     }
 
     public var isUniversal: Bool {
-        //precondition(isNNF)
+        // precondition(isNNF)
         switch self {
         case .pathQuantifier(let quantifier, parameters: _, body: let body):
             return quantifier == .forall && body.isUniversal
-        case .application(_, parameters: let parameters):
-            return parameters.reduce(true, { val, parameter in val && parameter.isUniversal })
+        case let .application(_, parameters: parameters):
+            return parameters.reduce(true) { val, parameter in val && parameter.isUniversal }
         default:
             return true
         }
@@ -92,19 +91,19 @@ extension LTL {
      * This function assumes the formula in negation normal form and does not allow existential quantification.
      */
     public var prenex: LTL {
-        //precondition(isNNF)
+        // precondition(isNNF)
         precondition(isUniversal)
-        guard case .application(.and, parameters: let parameters) = self else {
+        guard case let .application(.and, parameters: parameters) = self else {
             fatalError("not implemented")
         }
         let pathVariables = parameters[0].pathVariables
-        let body = parameters.reduce(.tt, { val, ltl in val && ltl.toPrenex(free: pathVariables, mapping: [:]) })
+        let body = parameters.reduce(.tt) { val, ltl in val && ltl.toPrenex(free: pathVariables, mapping: [:]) }
         return .pathQuantifier(.forall, parameters: pathVariables, body: body)
     }
 
-    private func toPrenex(free: [LTLPathVariable], mapping: [LTLPathVariable:LTLPathVariable]) -> LTL {
+    private func toPrenex(free: [LTLPathVariable], mapping: [LTLPathVariable: LTLPathVariable]) -> LTL {
         switch self {
-        case .pathQuantifier(let quantifier, parameters: let parameters, body: let body):
+        case let .pathQuantifier(quantifier, parameters: parameters, body: body):
             assert(quantifier == .forall)
             var copy = ArraySlice(free)
             var newMapping = mapping
@@ -115,10 +114,10 @@ extension LTL {
                 }
                 newMapping[parameter] = mapped
             }
-            return body.toPrenex(free: copy.map({ $0 }), mapping: newMapping)
-        case .application(let function, parameters: let parameters):
-            return .application(function, parameters: parameters.map({ $0.toPrenex(free: free, mapping: mapping) }))
-        case .pathProposition(let prop, let pathVar):
+            return body.toPrenex(free: copy.map { $0 }, mapping: newMapping)
+        case let .application(function, parameters: parameters):
+            return .application(function, parameters: parameters.map { $0.toPrenex(free: free, mapping: mapping) })
+        case let .pathProposition(prop, pathVar):
             guard let newPathVar = mapping[pathVar] else {
                 fatalError()
             }
@@ -133,10 +132,10 @@ extension LTL {
      */
     public func addPathPropositions(path: LTLPathVariable) -> LTL {
         switch self {
-        case .atomicProposition(let prop):
+        case let .atomicProposition(prop):
             return .pathProposition(prop, path)
-        case .application(let function, parameters: let parameters):
-            return .application(function, parameters: parameters.map({ $0.addPathPropositions(path: path) }))
+        case let .application(function, parameters: parameters):
+            return .application(function, parameters: parameters.map { $0.addPathPropositions(path: path) })
         default:
             fatalError()
         }
@@ -145,15 +144,15 @@ extension LTL {
     /**
      * Replaces path variables in pathPropositions according to given mapping
      */
-    public func replacePathProposition(mapping: [LTLPathVariable:LTLPathVariable]) -> LTL {
+    public func replacePathProposition(mapping: [LTLPathVariable: LTLPathVariable]) -> LTL {
         switch self {
-        case .pathProposition(let prop, let variable):
+        case let .pathProposition(prop, variable):
             guard let newVariable = mapping[variable] else {
                 fatalError("\(variable) not contained in mapping")
             }
             return .pathProposition(prop, newVariable)
-        case .application(let function, parameters: let parameters):
-            return .application(function, parameters: parameters.map({ $0.replacePathProposition(mapping: mapping) }))
+        case let .application(function, parameters: parameters):
+            return .application(function, parameters: parameters.map { $0.replacePathProposition(mapping: mapping) })
         default:
             fatalError()
         }

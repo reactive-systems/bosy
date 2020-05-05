@@ -1,14 +1,12 @@
 
 import XCTest
 
-import Basic
-//import Utility
-
-import Specification
-import LTL
-import Utils
-import TransitionSystem
 import Automata
+import LTL
+import Specification
+import TransitionSystem
+import TSCBasic
+import Utils
 
 import CAiger
 
@@ -23,7 +21,6 @@ import CAiger
  * is unrealizable in all supported backends.
  */
 class DetectorUnrealizableTest: XCTestCase {
-
     let jsonSpec = "{\"semantics\": \"mealy\", \"inputs\": [\"r_0\", \"r_1\"], \"outputs\": [\"g\"], \"assumptions\": [], \"guarantees\": [\"((G ((F (r_0)) && (F (r_1)))) <-> (G (F (g))))\", \"(G (((r_0) && (r_1)) -> (G (! (g)))))\"] }"
 
     var options = BoSyOptions()
@@ -94,9 +91,11 @@ class DetectorUnrealizableTest: XCTestCase {
             XCTFail()
             return
         }
-        let tempFile = try TemporaryFile(suffix: ".smv")
-        tempFile.fileHandle.write(Data(smvRepresentation.utf8))
-        XCTAssertTrue(modelCheckSMV(file: tempFile.path.pathString))
+        try withTemporaryFile(dir: nil, prefix: "", suffix: ".smv", deleteOnClose: true) {
+            (tempFile: TemporaryFile) throws in
+            tempFile.fileHandle.write(Data(smvRepresentation.utf8))
+            XCTAssertTrue(modelCheckSMV(file: tempFile.path.pathString))
+        }
 
         // Check AIGER implementation
         guard let aigerRepresentation = (transitionSystem as? AigerRepresentable)?.aiger else {
@@ -125,9 +124,11 @@ class DetectorUnrealizableTest: XCTestCase {
             XCTFail()
             return
         }
-        let tempFile = try TemporaryFile(suffix: ".smv")
-        tempFile.fileHandle.write(Data(smvRepresentation.utf8))
-        XCTAssertTrue(modelCheckSMV(file: tempFile.path.pathString))
+        try withTemporaryFile(dir: nil, prefix: "", suffix: ".smv", deleteOnClose: true) {
+            (tempFile: TemporaryFile) throws in
+            tempFile.fileHandle.write(Data(smvRepresentation.utf8))
+            XCTAssertTrue(modelCheckSMV(file: tempFile.path.pathString))
+        }
 
         // Check AIGER implementation
         guard let aigerRepresentation = (transitionSystem as? AigerRepresentable)?.aiger else {
@@ -156,9 +157,11 @@ class DetectorUnrealizableTest: XCTestCase {
             XCTFail()
             return
         }
-        let tempFile = try TemporaryFile(suffix: ".smv")
-        tempFile.fileHandle.write(Data(smvRepresentation.utf8))
-        XCTAssertTrue(modelCheckSMV(file: tempFile.path.pathString))
+        try withTemporaryFile(dir: nil, prefix: "", suffix: ".smv", deleteOnClose: true) {
+            (tempFile: TemporaryFile) throws in
+            tempFile.fileHandle.write(Data(smvRepresentation.utf8))
+            XCTAssertTrue(modelCheckSMV(file: tempFile.path.pathString))
+        }
 
         // Check AIGER implementation
         guard let aigerRepresentation = (transitionSystem as? AigerRepresentable)?.aiger else {
@@ -188,8 +191,8 @@ class DetectorUnrealizableTest: XCTestCase {
         XCTAssertTrue(try modelCheckAiger(specification: specification, implementation: aigerRepresentation), "model checkig AIGER implementation failed")
     }
 
-    static var allTests : [(String, (DetectorUnrealizableTest) -> () throws -> Void)] {
-        return [
+    static var allTests: [(String, (DetectorUnrealizableTest) -> () throws -> Void)] {
+        [
             ("testRealizabilityInputSymbolic", testRealizabilityInputSymbolic),
             ("testRealizabilityExplicit", testRealizabilityExplicit),
             ("testRealizabilitySmt", testRealizabilitySmt),
@@ -201,4 +204,3 @@ class DetectorUnrealizableTest: XCTestCase {
         ]
     }
 }
-

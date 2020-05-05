@@ -4,28 +4,27 @@ typealias LTLOperatorPrecedence = Int
 
 extension LTLOperatorPrecedence {
     static let min = 0
-    
+
     func next() -> LTLOperatorPrecedence {
-        return self + 1
+        self + 1
     }
 }
 
 public enum LTLToken: CustomStringConvertible, Equatable, Hashable {
-    
     case Proposition(String)
-    
+
     // Literals
     case True, False
-    
+
     // Boolean operators
     case Not, Or, And, Implies, Equivalent
-    
+
     // Temporal Operators
     case Next, Until, WeakUntil, Release, Eventually, Globally
 
     // Quantifier
     case exists, forall
-    
+
     // Parenthesis
     case LParen, RParen
 
@@ -34,14 +33,14 @@ public enum LTLToken: CustomStringConvertible, Equatable, Hashable {
 
     // dots
     case dot, comma
-    
+
     // End of Input
     case EOI
-    
+
     // CustomStringConvertible
     public var description: String {
         switch self {
-        case .Proposition(let name):
+        case let .Proposition(name):
             return name
         case .True:
             return "true"
@@ -89,11 +88,11 @@ public enum LTLToken: CustomStringConvertible, Equatable, Hashable {
             return "eof"
         }
     }
-    
+
     // Equatable
     public static func == (lhs: LTLToken, rhs: LTLToken) -> Bool {
         switch (lhs, rhs) {
-        case (.Proposition(let lhsName), .Proposition(let rhsName)):
+        case let (.Proposition(lhsName), .Proposition(rhsName)):
             return lhsName == rhsName
         case (.True, .True): return true
         case (.False, .False): return true
@@ -121,12 +120,12 @@ public enum LTLToken: CustomStringConvertible, Equatable, Hashable {
             return false
         }
     }
-    
-    // Hashable    
-    public func hash(into hasher: inout Hasher){
+
+    // Hashable
+    public func hash(into hasher: inout Hasher) {
         hasher.combine(description)
     }
-    
+
     var precedence: LTLOperatorPrecedence {
         switch self {
         case .Equivalent:
@@ -147,7 +146,7 @@ public enum LTLToken: CustomStringConvertible, Equatable, Hashable {
             return -1
         }
     }
-    
+
     var isBinaryOperator: Bool {
         switch self {
         case .Until:
@@ -168,7 +167,7 @@ public enum LTLToken: CustomStringConvertible, Equatable, Hashable {
             return false
         }
     }
-    
+
     var isUnaryOperator: Bool {
         switch self {
         case .Next:
@@ -237,24 +236,22 @@ public enum LTLToken: CustomStringConvertible, Equatable, Hashable {
 }
 
 func ~= (pattern: CharacterSet, value: UnicodeScalar) -> Bool {
-    return pattern.contains(value)
+    pattern.contains(value)
 }
 
 struct LTLLexer {
-    
     var scanner: ScalarScanner<String.UnicodeScalarView>
     var readPastInput: Bool = false
-    
+
     init(scanner: ScalarScanner<String.UnicodeScalarView>) {
         self.scanner = scanner
     }
-    
+
     mutating func next() throws -> LTLToken {
-        
-        while !scanner.finished() && CharacterSet.whitespaces.contains(scanner.current()) {
+        while !scanner.finished(), CharacterSet.whitespaces.contains(scanner.current()) {
             scanner.next()
         }
-        
+
         if scanner.finished() {
             if readPastInput {
                 throw LexerError.UnexpectedEnd
@@ -262,9 +259,8 @@ struct LTLLexer {
             readPastInput = true
             return .EOI
         }
-        
+
         switch scanner.current() {
-        
         // True/False literals
         case "0", "⊥":
             scanner.next()
@@ -272,12 +268,12 @@ struct LTLLexer {
         case "1", "⊤":
             scanner.next()
             return .True
-        
+
         // Not
         case "!", "~", "¬":
             scanner.next()
             return .Not
-        
+
         // And
         case "*", "∧":
             scanner.next()
@@ -292,7 +288,7 @@ struct LTLLexer {
             scanner.next()
             try expect("\\")
             return .And
-        
+
         // Or
         case "+", "∨":
             scanner.next()
@@ -307,7 +303,7 @@ struct LTLLexer {
             scanner.next()
             try expect("/")
             return .Or
-        
+
         // Implication
         case "-":
             scanner.next()
@@ -320,7 +316,7 @@ struct LTLLexer {
             scanner.next()
             try expect(">")
             return .Implies
-        
+
         // Equivelence
         case "<":
             scanner.next()
@@ -329,7 +325,7 @@ struct LTLLexer {
                 scanner.next()
                 return .Eventually
             }
-            
+
             if scanner.current() == "-" {
                 scanner.next()
             } else if scanner.current() == "=" {
@@ -342,29 +338,29 @@ struct LTLLexer {
             }
             try expect(">")
             return .Equivalent
-        
+
         // Next
         case "X":
             scanner.next()
             return .Next
-        // the case "()" is handled below 
-        
+        // the case "()" is handled below
+
         // Globally
         case "G":
             scanner.next()
             return .Globally
-        
+
         // Eventually
         case "F":
             scanner.next()
             return .Eventually
             // the case "<" is handled by implication above
-        
+
         // Until
         case "U":
             scanner.next()
             return .Until
-        
+
         // Release
         case "R":
             scanner.next()
@@ -372,7 +368,7 @@ struct LTLLexer {
         case "V":
             scanner.next()
             return .Release
-        
+
         // Weak Until
         case "W":
             scanner.next()
@@ -428,7 +424,7 @@ struct LTLLexer {
             scanner.next()
             var allowedCharacters = CharacterSet.alphanumerics
             allowedCharacters.insert("_")
-            while !scanner.finished() && allowedCharacters.contains(scanner.current()) {
+            while !scanner.finished(), allowedCharacters.contains(scanner.current()) {
                 proposition.append(String(scanner.current()))
                 scanner.next()
             }
@@ -443,19 +439,18 @@ struct LTLLexer {
             } else {
                 return .Proposition(proposition)
             }
-        
-        default: 
+
+        default:
             throw LexerError.UnknownScalar(scanner.current())
         }
     }
-    
+
     mutating func expect(_ char: UnicodeScalar) throws {
         if scanner.current() != char {
             throw LexerError.ExpectScalar(char)
         }
         scanner.next()
     }
-    
 }
 
 enum LexerError: Error {

@@ -90,11 +90,11 @@ public enum LTL {
      */
     var isWellFormed: Bool {
         switch self {
-        case .atomicProposition(_):
+        case .atomicProposition:
             return true
-        case .pathProposition(_, _):
+        case .pathProposition:
             return true
-        case .application(let function, parameters: let parameters):
+        case let .application(function, parameters: parameters):
             guard parameters.reduce(true, { val, parameter in val && parameter.isWellFormed }) else {
                 return false
             }
@@ -106,7 +106,6 @@ public enum LTL {
 }
 
 extension LTL {
-    
     public static func parse(fromString string: String) throws -> LTL {
         let scanner = ScalarScanner(scalars: string.unicodeScalars)
         let lexer = LTLLexer(scanner: scanner)
@@ -116,19 +115,19 @@ extension LTL {
 
     private func toNegationNormalForm(negated: Bool) -> LTL {
         switch self {
-        case .atomicProposition(_):
+        case .atomicProposition:
             return negated ? !self : self
-        case .pathProposition(_, _):
+        case .pathProposition:
             return negated ? !self : self
-        case .application(let function, parameters: let parameters):
+        case let .application(function, parameters: parameters):
             if function == .negation {
                 return parameters[0].toNegationNormalForm(negated: !negated)
             }
             return .application(
                 negated ? function.negated : function,
-                parameters: parameters.map({ $0.toNegationNormalForm(negated: negated) })
+                parameters: parameters.map { $0.toNegationNormalForm(negated: negated) }
             )
-        case .pathQuantifier(let quantifier, parameters: let parameters, body: let body):
+        case let .pathQuantifier(quantifier, parameters: parameters, body: body):
             return .pathQuantifier(
                 negated ? quantifier.negated : quantifier,
                 parameters: parameters,
@@ -141,7 +140,7 @@ extension LTL {
      * Returns an equivalent LTL formula in negation normal form.
      */
     public var nnf: LTL {
-        return toNegationNormalForm(negated: false)
+        toNegationNormalForm(negated: false)
     }
 
     /**
@@ -149,26 +148,26 @@ extension LTL {
      */
     public var isNNF: Bool {
         switch self {
-        case .atomicProposition(_):
+        case .atomicProposition:
             return true
-        case .pathProposition(_, _):
+        case .pathProposition:
             return true
         case .pathQuantifier(_, parameters: _, body: let body):
             return body.isNNF
-        case .application(.negation, parameters: let parameters):
+        case let .application(.negation, parameters: parameters):
             guard let parameter = parameters.first else {
                 fatalError()
             }
             switch parameter {
-            case .atomicProposition(_):
+            case .atomicProposition:
                 return true
-            case .pathProposition(_, _):
+            case .pathProposition:
                 return true
             default:
                 return false
             }
-        case .application(_, parameters: let parameters):
-            return parameters.reduce(true, { val, parameter in val && parameter.isNNF })
+        case let .application(_, parameters: parameters):
+            return parameters.reduce(true) { val, parameter in val && parameter.isNNF }
         }
     }
 
@@ -178,14 +177,14 @@ extension LTL {
      */
     public var normalized: LTL {
         switch self {
-        case .atomicProposition(_):
+        case .atomicProposition:
             return self
-        case .pathProposition(_, _):
+        case .pathProposition:
             return self
-        case .pathQuantifier(let quantifier, parameters: let parameters, body: let body):
+        case let .pathQuantifier(quantifier, parameters: parameters, body: body):
             return .pathQuantifier(quantifier, parameters: parameters, body: body.normalized)
         case .application(let function, parameters: var parameters):
-            parameters = parameters.map({ $0.normalized })
+            parameters = parameters.map { $0.normalized }
             switch function {
             case .implies:
                 return !parameters[0] || parameters[1]

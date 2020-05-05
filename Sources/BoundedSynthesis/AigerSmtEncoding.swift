@@ -1,16 +1,15 @@
-import Utils
+import Automata
 import CAiger
 import Logic
-import Automata
 import Specification
 import TransitionSystem
+import Utils
 
 /**
  * Bounded Synthesis encoding that encodes the existence of a ralizing
  * solution in AIGER file format used in the reactive synthesis competition.
  */
 public class AigerSmtEncoding<A: Automaton>: SingleParamaterSearch where A: SafetyAcceptance {
-
     public typealias Parameter = NumberOfAndGatesInAIGER
 
     let options: BoSyOptions
@@ -39,14 +38,14 @@ public class AigerSmtEncoding<A: Automaton>: SingleParamaterSearch where A: Safe
         let constraintTimer = options.statistics?.startTimer(phase: .constraintGeneration)
         let instance = try getEncoding(forBound: bound)
         constraintTimer?.stop()
-        //print(instance)
+        // print(instance)
 
         guard let solver = SolverInstance.z3.instance as? SmtSolver else {
             throw BoSyEncodingError.SolvingFailed("solver creation failed")
         }
         self.solver = solver
 
-        //print(instance)
+        // print(instance)
 
         let solvingTimer = options.statistics?.startTimer(phase: .solving)
         guard let result = solver.solve(formula: instance) else {
@@ -55,7 +54,7 @@ public class AigerSmtEncoding<A: Automaton>: SingleParamaterSearch where A: Safe
         solvingTimer?.stop()
 
         if result == .sat {
-            self.solutionBound = bound
+            solutionBound = bound
         }
 
         return result == .sat
@@ -66,34 +65,34 @@ public class AigerSmtEncoding<A: Automaton>: SingleParamaterSearch where A: Safe
         for (i, input) in specification.inputs.enumerated() {
             let aiger_var = UInt32(i + 1) << 1
             aiger_add_input(aiger, aiger_var, input)
-            //print(aiger_var, input)
+            // print(aiger_var, input)
         }
-        for i in 0..<stateBits {
+        for i in 0 ..< stateBits {
             guard let lNext = decodeValue(name: "l\(i)In") else {
                 fatalError("could not get model from SMT solver")
             }
             let aiger_var = UInt32(i + 1 + specification.inputs.count) << 1
             aiger_add_latch(aiger, aiger_var, lNext, "l\(i)")
-            //print(aiger_var, lNext, "l\(i)")
+            // print(aiger_var, lNext, "l\(i)")
         }
         guard let bound = solutionBound?.value else {
             fatalError("solution bound is missing")
         }
-        for i in 0..<bound {
+        for i in 0 ..< bound {
             let aiger_var = UInt32(i + 1 + specification.inputs.count + stateBits) << 1
             guard let lhs = decodeValue(name: "and\(i)Lhs"),
-                  let rhs = decodeValue(name: "and\(i)Rhs") else {
-                    fatalError("could not get model from SMT solver")
+                let rhs = decodeValue(name: "and\(i)Rhs") else {
+                fatalError("could not get model from SMT solver")
             }
             aiger_add_and(aiger, aiger_var, lhs, rhs)
-            //print(aiger_var, lhs, rhs)
+            // print(aiger_var, lhs, rhs)
         }
         for (i, output) in specification.outputs.enumerated() {
             guard let value = decodeValue(name: "o\(i)") else {
                 fatalError("could not get model from SMT solver")
             }
             aiger_add_output(aiger, value, output)
-            //print(value, "o\(i)")
+            // print(value, "o\(i)")
         }
 
         return AigerSolution(aiger: aiger)
@@ -130,16 +129,15 @@ public class AigerSmtEncoding<A: Automaton>: SingleParamaterSearch where A: Safe
 
         Logger.default().debug("aiger max num is \(aigerMaxNum), numAigerBits \(numAigerBits)")
 
-
-        var smt = ""//"(set-logic UFDTLIA)\n"
+        var smt = "" // "(set-logic UFDTLIA)\n"
 
         // aiger variables are encoded as bounded natural numbers
 
-        let smtInputs = specification.inputs.enumerated().map({ i, name in "i\(i)" })
-        let smtLatches = (0..<stateBits).map({ "l\($0)" })
+        let smtInputs = specification.inputs.enumerated().map { i, _ in "i\(i)" }
+        let smtLatches = (0 ..< stateBits).map { "l\($0)" }
 
-        let smtInputsParameter = smtInputs.map({ "(\($0) Bool)" }).joined(separator: " ")
-        let smtLatchesParameter = smtLatches.map({ "(\($0) Bool)" }).joined(separator: " ")
+        let smtInputsParameter = smtInputs.map { "(\($0) Bool)" }.joined(separator: " ")
+        let smtLatchesParameter = smtLatches.map { "(\($0) Bool)" }.joined(separator: " ")
 
         for smtVar in smtLatches {
             smt.append("(declare-const \(smtVar)In Int)\n")
@@ -147,14 +145,14 @@ public class AigerSmtEncoding<A: Automaton>: SingleParamaterSearch where A: Safe
             smt.append("(declare-const \(smtVar)InNeg Bool)\n")
         }
 
-        let smtOutputs = specification.outputs.enumerated().map({ i, name in "o\(i)" })
+        let smtOutputs = specification.outputs.enumerated().map { i, _ in "o\(i)" }
         for smtVar in smtOutputs {
             smt.append("(declare-const \(smtVar) Int)\n")
             smt.append("(assert (<= 0 \(smtVar) \(aigerMaxNum)))\n")
             smt.append("(declare-const \(smtVar)Neg Bool)\n")
         }
 
-        let smtAnds = (0..<bound.value).map({ "and\($0)" })
+        let smtAnds = (0 ..< bound.value).map { "and\($0)" }
         for (i, smtAnd) in smtAnds.enumerated() {
             smt.append("(declare-const \(smtAnd)Lhs Int)\n")
             smt.append("(declare-const \(smtAnd)LhsNeg Bool)\n")
@@ -164,7 +162,6 @@ public class AigerSmtEncoding<A: Automaton>: SingleParamaterSearch where A: Safe
             let aiger_var = i + specification.inputs.count + stateBits
             smt.append("(assert (<= 0 \(smtAnd)Lhs \(aiger_var)))\n")
             smt.append("(assert (<= 0 \(smtAnd)Rhs \(aiger_var)))\n")
-
         }
 
         // build lookup for aiger variables
@@ -185,35 +182,34 @@ public class AigerSmtEncoding<A: Automaton>: SingleParamaterSearch where A: Safe
         }
         for (i, smtInput) in smtInputs.enumerated().reversed() {
             let aiger_var = i + 1
-             dec = "\n(ite (= v \(aiger_var)) \(smtInput) \(dec) )"
+            dec = "\n(ite (= v \(aiger_var)) \(smtInput) \(dec) )"
         }
         dec = "(ite (<= v 0) false \(dec))"
         smt.append("(define-fun-rec dec ( (v Int) \(smtLatchesParameter) \(smtInputsParameter) ) Bool \(dec) )\n")
 
         // lambdas
         for q in automaton.states {
-            smt.append("(declare-fun \(lambda(q)) (\(smtLatches.map({ _ in "Bool" }).joined(separator: " "))) Bool)\n")
+            smt.append("(declare-fun \(lambda(q)) (\(smtLatches.map { _ in "Bool" }.joined(separator: " "))) Bool)\n")
         }
 
         // lambda sharp
         for q in automaton.states {
-            smt.append("(declare-fun \(lambdaSharp(q)) (\(smtLatches.map({ _ in "Bool" }).joined(separator: " "))) Int)\n")
+            smt.append("(declare-fun \(lambdaSharp(q)) (\(smtLatches.map { _ in "Bool" }.joined(separator: " "))) Int)\n")
         }
 
         for state in automaton.initialStates {
-            smt.append("(assert (\(lambda(state)) \(smtLatches.map({ _ in "false" }).joined(separator: " "))))\n")
+            smt.append("(assert (\(lambda(state)) \(smtLatches.map { _ in "false" }.joined(separator: " "))))\n")
         }
 
         let printer = SmtPrinter()
 
         for q in automaton.states {
-
             let replacer = ReplacingPropositionVisitor(replace: {
                 proposition in
-                if let index = self.specification.outputs.index(of: proposition.name) {
+                if let index = self.specification.outputs.firstIndex(of: proposition.name) {
                     let smtOut = smtOutputs[index]
                     return FunctionApplication(function: Proposition("cond_neg"), application: [FunctionApplication(function: Proposition("dec"), application: [Proposition(smtOut)] + smtLatches.map(Proposition.init) + smtInputs.map(Proposition.init)), Proposition(smtOut + "Neg")])
-                } else if let index = self.specification.inputs.index(of: proposition.name) {
+                } else if let index = self.specification.inputs.firstIndex(of: proposition.name) {
                     let smtIn = smtInputs[index]
                     return Proposition(smtIn)
                 } else {
@@ -240,12 +236,12 @@ public class AigerSmtEncoding<A: Automaton>: SingleParamaterSearch where A: Safe
     }
 
     func requireTransition(q: A.State, qPrime: A.State) -> Logic {
-        let smtLatches = (0..<stateBits).map({ "l\($0)" })
-        let smtInputs = specification.inputs.enumerated().map({ i, name in "i\(i)" })
+        let smtLatches = (0 ..< stateBits).map { "l\($0)" }
+        let smtInputs = specification.inputs.enumerated().map { i, _ in "i\(i)" }
 
-        let lambdaNext = FunctionApplication(function: lambda(qPrime), application: smtLatches.map({
+        let lambdaNext = FunctionApplication(function: lambda(qPrime), application: smtLatches.map {
             latch in FunctionApplication(function: Proposition("cond_neg"), application: [FunctionApplication(function: Proposition("dec"), application: [Proposition(latch + "In")] + smtLatches.map(Proposition.init) + smtInputs.map(Proposition.init)), Proposition(latch + "InNeg")])
-        }))
+        })
 
         guard let coBüchi = automaton as? CoBüchiAutomaton else {
             // safety automaton
@@ -257,9 +253,9 @@ public class AigerSmtEncoding<A: Automaton>: SingleParamaterSearch where A: Safe
             return lambdaNext
         } else {
             let lambdaSharpCurrent = FunctionApplication(function: lambdaSharp(q), application: smtLatches.map(Proposition.init))
-            let lambdaSharpNext = FunctionApplication(function: lambdaSharp(qPrime), application: smtLatches.map({
+            let lambdaSharpNext = FunctionApplication(function: lambdaSharp(qPrime), application: smtLatches.map {
                 latch in FunctionApplication(function: Proposition("cond_neg"), application: [FunctionApplication(function: Proposition("dec"), application: [Proposition(latch + "In")] + smtLatches.map(Proposition.init) + smtInputs.map(Proposition.init)), Proposition(latch + "InNeg")])
-            }))
+            })
             return lambdaNext & BooleanComparator(coBüchi.rejectingStates.contains(qPrime as! CoBüchiAutomaton.State) ? .Less : .LessOrEqual,
                                                   lhs: lambdaSharpNext,
                                                   rhs: lambdaSharpCurrent)
@@ -267,11 +263,10 @@ public class AigerSmtEncoding<A: Automaton>: SingleParamaterSearch where A: Safe
     }
 
     func lambda(_ automatonState: A.State) -> Proposition {
-        return Proposition("lambda_\(automatonState)".replacingOccurrences(of: "[", with: "").replacingOccurrences(of: "]", with: "").replacingOccurrences(of: ",", with: ""))
+        Proposition("lambda_\(automatonState)".replacingOccurrences(of: "[", with: "").replacingOccurrences(of: "]", with: "").replacingOccurrences(of: ",", with: ""))
     }
 
     func lambdaSharp(_ automatonState: A.State) -> Proposition {
-        return Proposition("lambdaSharp_\(automatonState)".replacingOccurrences(of: "[", with: "").replacingOccurrences(of: "]", with: "").replacingOccurrences(of: ",", with: ""))
+        Proposition("lambdaSharp_\(automatonState)".replacingOccurrences(of: "[", with: "").replacingOccurrences(of: "]", with: "").replacingOccurrences(of: ",", with: ""))
     }
-
 }

@@ -1,21 +1,21 @@
 import Foundation
-import Basic
-import SPMUtility
+import TSCBasic
+import TSCUtility
 
-import Utils
 import LTL
+import Utils
 
 public enum TransitionSystemType: String, Codable {
-    case mealy = "mealy"
-    case moore = "moore"
-    
+    case mealy
+    case moore
+
     public var swapped: TransitionSystemType {
         switch self {
-            case .mealy: return .moore
-            case .moore: return .mealy
+        case .mealy: return .moore
+        case .moore: return .mealy
         }
     }
-    
+
     public static let allValues: [TransitionSystemType] = [.mealy, .moore]
 }
 
@@ -40,7 +40,7 @@ public struct SynthesisSpecification: Codable {
         self.guarantees = guarantees
         self.hyper = hyper
     }
-    
+
     public var dualized: SynthesisSpecification {
         let dualizedLTL = !ltl
         guard !isHyper else {
@@ -48,11 +48,11 @@ public struct SynthesisSpecification: Codable {
         }
         return SynthesisSpecification(semantics: semantics.swapped, inputs: outputs, outputs: inputs, assumptions: [], guarantees: [dualizedLTL], hyper: [])
     }
-    
+
     public var ltl: LTL {
-        return assumptions.reduce(LTL.tt, &&) => guarantees.reduce(LTL.tt, &&)
+        assumptions.reduce(LTL.tt, &&) => guarantees.reduce(LTL.tt, &&)
     }
-    
+
     public static func fromJson(string: String) -> SynthesisSpecification? {
         Logger.default().debug("parse JSON input file")
 
@@ -70,24 +70,23 @@ public struct SynthesisSpecification: Codable {
     }
 
     public static func from(tlsf: String) -> SynthesisSpecification? {
+        try? withTemporaryFile(dir: nil, prefix: "", suffix: ".tlsf", deleteOnClose: true) {
+            (tempFile: TemporaryFile) throws -> SynthesisSpecification? in
+            tempFile.fileHandle.write(Data(tlsf.utf8))
 
-        guard let tempFile = try? TemporaryFile(suffix: "tlsf") else {
-            return nil
-        }
-        tempFile.fileHandle.write(Data(tlsf.utf8))
-
-        do {
-            let result = try Basic.Process.popen(arguments: ["./Tools/syfco", "--format", "bosy", tempFile.path.pathString])
-            return .fromJson(string: try result.utf8Output())
-        } catch {
-            Logger.default().error("could not transform TLSF to BoSy format using syfco")
-            return nil
+            do {
+                let result = try TSCBasic.Process.popen(arguments: ["./Tools/syfco", "--format", "bosy", tempFile.path.pathString])
+                return .fromJson(string: try result.utf8Output())
+            } catch {
+                Logger.default().error("could not transform TLSF to BoSy format using syfco")
+                return nil
+            }
         }
     }
-    
+
     public var smv: String? {
-        var smv: [String] =  ["MODULE main", "\tVAR"]
-        smv += (inputs + outputs).map({ proposition in "\t\t\(proposition) : boolean;" })
+        var smv: [String] = ["MODULE main", "\tVAR"]
+        smv += (inputs + outputs).map { proposition in "\t\t\(proposition) : boolean;" }
         guard let smvLTLSpec = ltl.normalized.smv else {
             return nil
         }
@@ -107,15 +106,17 @@ public struct SynthesisSpecification: Codable {
 
     public static func from(data: Data) throws -> SynthesisSpecification {
         // parse contents of `data`
-        return try JSONDecoder().decode(SynthesisSpecification.self, from: data)
+        try JSONDecoder().decode(SynthesisSpecification.self, from: data)
     }
 
     public static func from(tlsf: Data) throws -> SynthesisSpecification {
-        let tempFile = try TemporaryFile(suffix: "tlsf")
-        tempFile.fileHandle.write(tlsf)
+        try withTemporaryFile(dir: nil, prefix: "", suffix: ".tlsf", deleteOnClose: true) {
+            (tempFile: TemporaryFile) throws -> SynthesisSpecification in
+            tempFile.fileHandle.write(tlsf)
 
-        let result = try Basic.Process.popen(arguments: ["./Tools/syfco", "--format", "bosy", tempFile.path.pathString])
-        return try .from(data: result.utf8Output().data(using: .utf8)!)
+            let result = try TSCBasic.Process.popen(arguments: ["./Tools/syfco", "--format", "bosy", tempFile.path.pathString])
+            return try .from(data: result.utf8Output().data(using: .utf8)!)
+        }
     }
 
     /**
@@ -142,4 +143,3 @@ public struct SynthesisSpecification: Codable {
         return LTL.application(.and, parameters: hyper).prenex
     }
 }
-

@@ -1,6 +1,6 @@
 import Foundation
-import Basic
-import SPMUtility
+import TSCBasic
+import TSCUtility
 
 import Logic
 import Utils
@@ -8,7 +8,7 @@ import Utils
 public protocol Automaton: GraphRepresentable where State: CustomStringConvertible {
     var initialStates: Set<State> { get set }
     var states: Set<State> { get set }
-    var transitions: [State : [State : Logic]] { get set }
+    var transitions: [State: [State: Logic]] { get set }
 }
 
 extension Automaton {
@@ -18,7 +18,7 @@ extension Automaton {
         for (source, outgoing) in transitions {
             e[source] = []
             for (target, condition) in outgoing {
-                if condition as? Literal != nil && condition as! Literal == Literal.False {
+                if condition as? Literal != nil, condition as! Literal == Literal.False {
                     continue
                 }
                 e[source]?.append(target)
@@ -30,7 +30,7 @@ extension Automaton {
 
 public protocol SafetyAcceptance {
     associatedtype State: Hashable
-    var safetyConditions: [State : Logic] { get set }
+    var safetyConditions: [State: Logic] { get set }
 }
 
 public protocol CoBüchiAcceptance {
@@ -39,7 +39,6 @@ public protocol CoBüchiAcceptance {
 }
 
 extension Automaton where Self: CoBüchiAcceptance & SafetyAcceptance {
-    
     /**
      * Transforms rejecting sink states to safety conditions
      */
@@ -61,9 +60,9 @@ extension Automaton where Self: CoBüchiAcceptance & SafetyAcceptance {
             if literal != Literal.True {
                 continue
             }
-            
-            //print("rejecting sink")
-            
+
+            // print("rejecting sink")
+
             rejectingStates.remove(state)
             states.remove(state)
             transitions.removeValue(forKey: state)

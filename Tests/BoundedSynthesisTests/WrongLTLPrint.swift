@@ -1,19 +1,16 @@
 
 import XCTest
 
-import Basic
-//import Utility
-
-import Specification
-import LTL
-import Utils
-import TransitionSystem
 import Automata
+import LTL
+import Specification
+import TransitionSystem
+import TSCBasic
+import Utils
 
 import CAiger
 
 @testable import BoundedSynthesis
-
 
 /**
  * The instance was solved incorrectly because the intermediate LTL printing had a bug.
@@ -22,7 +19,6 @@ import CAiger
  * Reported by Felix Klein.
  */
 class WrongLTLPrintTest: XCTestCase {
-
     let jsonSpec = "{\"semantics\": \"mealy\", \"inputs\": [\"i\"], \"outputs\": [\"op2\", \"op1\", \"oc2\", \"oc1\"], \"assumptions\": [], \"guarantees\": [\"(((oc1) && (! (oc2))) <-> ((! (oc2)) || (oc1)))\", \"(((op1) && (! (op2))) <-> ((! (op2)) || (op1)))\", \"(G ((i) <-> (oc2)))\", \"(G (op2))\"] }"
 
     var options = BoSyOptions()
@@ -48,9 +44,11 @@ class WrongLTLPrintTest: XCTestCase {
             XCTFail()
             return
         }
-        let tempFile = try TemporaryFile(suffix: ".smv")
-        tempFile.fileHandle.write(Data(smvRepresentation.utf8))
-        XCTAssertTrue(modelCheckSMV(file: tempFile.path.pathString))
+        try withTemporaryFile(dir: nil, prefix: "", suffix: ".smv", deleteOnClose: true) {
+            (tempFile: TemporaryFile) throws in
+            tempFile.fileHandle.write(Data(smvRepresentation.utf8))
+            XCTAssertTrue(modelCheckSMV(file: tempFile.path.pathString))
+        }
 
         // Check AIGER implementation
         guard let aigerRepresentation = (transitionSystem as? AigerRepresentable)?.aiger else {
@@ -60,10 +58,9 @@ class WrongLTLPrintTest: XCTestCase {
         XCTAssertTrue(try modelCheckAiger(specification: specification, implementation: aigerRepresentation))
     }
 
-    static var allTests : [(String, (WrongLTLPrintTest) -> () throws -> Void)] {
-        return [
+    static var allTests: [(String, (WrongLTLPrintTest) -> () throws -> Void)] {
+        [
             ("testSynthesisInputSymbolic", testSynthesisInputSymbolic),
         ]
     }
 }
-
