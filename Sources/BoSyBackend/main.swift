@@ -272,7 +272,7 @@ let doSearchEnvironment = options.player.contains(.environment)
 #endif
 
 condition.lock()
-if !finished {
+while !finished {
     condition.wait()
 }
 
