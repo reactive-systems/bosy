@@ -205,6 +205,7 @@ public class InputSymbolicEncoding<A: Automaton>: BoSyEncoding, SingleParamaterS
             for (proposition, _) in remove {
                 assignments.removeValue(forKey: proposition)
             }
+            self.assignments = assignments
             self.instance = instance // .eval(assignment: assignments)
             solutionBound = bound
             return true
