@@ -60,7 +60,10 @@ extension Automaton where Self: CoBüchiAcceptance & SafetyAcceptance {
             if literal != Literal.True {
                 continue
             }
-
+            if state.description == "init" {
+                safetyConditions[state] = Literal.False
+                continue
+            }
             // print("rejecting sink")
 
             rejectingStates.remove(state)

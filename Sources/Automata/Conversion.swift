@@ -59,7 +59,7 @@ func parseSpinNeverClaim(neverClaim: String) throws -> CoBüchiAutomaton {
     // print(neverClaim)
 
     func normalizeStateName(_ name: String) -> String {
-        name.replacingOccurrences(of: "_init", with: "").replacingOccurrences(of: "accept_", with: "")
+        name.replacingOccurrences(of: "accept_", with: "").replacingOccurrences(of: "_init", with: "")
     }
 
     // print("parse never claim")
