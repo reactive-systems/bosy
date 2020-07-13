@@ -91,7 +91,7 @@ class UCWGame: SafetyGame {
             }
 
             guard let outgoing = safetyAutomaton.transitions[initialState] else {
-                fatalError()
+                continue
             }
             for (target, transitionGuard) in outgoing {
                 let index = safetyAutomatonStates.firstIndex(of: target)!
