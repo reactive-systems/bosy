@@ -44,7 +44,7 @@ public struct ExplicitStateSolution: TransitionSystem {
 
 extension ExplicitStateSolution: AigerRepresentable {
     private func _toAiger() -> UnsafeMutablePointer<aiger>? {
-        let latches = (0 ..< numBitsNeeded(states.count)).map { bit in Proposition("s\(bit)") }
+        let latches = (0 ..< numBitsNeeded(states.count)).map { bit in Proposition("__latch_s\(bit)") }
         let aigerVisitor = AigerVisitor(inputs: specification.inputs.map(Proposition.init), latches: latches)
 
         // indicates when output must be enabled (formula over state bits and inputs)
