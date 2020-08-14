@@ -30,6 +30,8 @@ BoSy is tested on macOS and Ubuntu.
 
 The following packages need to be installed in order to build BoSy with all dependencies.
 
+For CAQE, you also need Rust installed.
+
 #### Ubuntu 16.04
 
 ```bash

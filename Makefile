@@ -61,7 +61,7 @@ required-tools: \
 optional-tools: \
 	Tools/aigbmc \
 	Tools/smvtoaig \
-	Tools/caqem \
+	Tools/caqe \
 	Tools/combine-aiger \
 	Tools/cvc4 \
 	Tools/depqbf \
@@ -146,14 +146,17 @@ Tools/cadet-git: Tools/.f
 	cd Tools ; git clone https://github.com/MarkusRabe/cadet.git cadet-git
 
 # caqe
-Tools/caqem: Tools/caqe-bin
-	cp Tools/caqe-bin/caqem Tools/caqem
+Tools/caqe: Tools/caqe-src/target/release/caqe
+	cp Tools/caqe-4.0.1/target/release/caqe Tools/caqe
+Tools/caqe-src/target/release/caqe: Tools/caqe-src
+	cd Tools/caqe-4.0.1 && cargo build --release
 
-Tools/caqe-bin: Tools/caqe-bin.tar.gz
-	cd Tools ; tar xzf caqe-bin.tar.gz
+Tools/caqe-src: Tools/caqe-src.tar.gz
+	cd Tools && tar xzf caqe-src.tar.gz
 
-Tools/caqe-bin.tar.gz: Tools/.f
-	cd Tools ; curl -OL -G -d dl=1 https://www.dropbox.com/s/8a0c61ua2w6glik/caqe-bin.tar.gz
+Tools/caqe-src.tar.gz:
+	cd Tools && curl -L -G -o caqe-src.tar.gz https://github.com/ltentrup/caqe/archive/4.0.1.tar.gz
+
 
 # combine-aiger
 Tools/combine-aiger: Tools/aiger-ltl-model-checker/combine-aiger
