@@ -33,7 +33,7 @@ The following packages need to be installed in order to build BoSy with all depe
 #### Ubuntu 16.04
 
 ```bash
-apt-get install bison build-essential clang cmake curl flex gcc git libantlr3c-dev libbdd-dev libboost-program-options-dev libicu-dev libreadline-dev mercurial unzip vim-common wget zlib1g-dev
+apt-get install bison build-essential clang cmake curl flex gcc git libantlr3c-dev libbdd-dev libboost-program-options-dev libicu-dev libreadline-dev mercurial unzip vim-common wget zlib1g-dev libsqlite3-dev
 # Haskell stack
 curl -sSL https://get.haskellstack.org/ | sh
 ```
