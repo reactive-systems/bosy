@@ -52,7 +52,11 @@ public class HyperStateSymbolicEncoding: BoSyEncoding {
 
         let formula: Logic = preconditions.reduce(Literal.True, &) --> matrix.reduce(Literal.True, &)
 
-        let universalQuantified: Logic = Quantifier(.Forall, variables: statePropositions + nextStatePropositions + inputPropositions + hyperStates.reduce([], +) + hyperNextStates.reduce([], +) + hyperIns.reduce([], +), scope: formula)
+        var univVars: [Proposition] = statePropositions + nextStatePropositions + inputPropositions
+        univVars += hyperStates.reduce([], +)
+        univVars += hyperNextStates.reduce([], +)
+        univVars += hyperIns.reduce([], +)
+        let universalQuantified: Logic = Quantifier(.Forall, variables: univVars, scope: formula)
         let outputQuantification: Logic = Quantifier(.Exists, variables: outputPropositions, scope: universalQuantified, arity: specification.semantics == .mealy ? numBitsNeeded(states.count) + specification.inputs.count : numBitsNeeded(states.count))
         let tauQuantification: Logic = Quantifier(.Exists, variables: tauPropositions, scope: outputQuantification, arity: numBitsNeeded(states.count) + specification.inputs.count)
 
