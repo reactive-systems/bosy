@@ -43,7 +43,7 @@ public class HyperSmtEncoding: BoSyEncoding {
         smt.append("(declare-datatypes () ((S \(states.map { "(s\($0))" }.joined(separator: " ")))))\n")
 
         // tau
-        smt.append("(declare-fun tau (S \(specification.inputs.map { _ in "Bool" }.joined(separator: " "))) S)\n")
+        smt.append("(declare-fun tau_ (S \(specification.inputs.map { _ in "Bool" }.joined(separator: " "))) S)\n")
 
         switch specification.semantics {
         case .moore:
@@ -59,7 +59,8 @@ public class HyperSmtEncoding: BoSyEncoding {
         encodeLinearAutomaton(smt: &smt)
         encodeHyperAutomaton(smt: &smt)
 
-        // print(smt)
+        print(smt)
+        print()
 
         return smt
     }
@@ -76,18 +77,18 @@ public class HyperSmtEncoding: BoSyEncoding {
         }
 
         // tau
-        smt.append("(declare-fun tau (S \(specification.inputs.map { _ in "Bool" }.joined(separator: " "))) S)\n")
+//        smt.append("(declare-fun tau_ (S \(specification.inputs.map { _ in "Bool" }.joined(separator: " "))) S)\n")
 
-        switch specification.semantics {
-        case .moore:
-            for o in specification.outputs {
-                smt.append("(declare-fun \(o) (S) Bool)\n")
-            }
-        case .mealy:
-            for o in specification.outputs {
-                smt.append("(declare-fun \(o) (S \(specification.inputs.map { _ in "Bool" }.joined(separator: " "))) Bool)\n")
-            }
-        }
+//        switch specification.semantics {
+//        case .moore:
+//            for o in specification.outputs {
+//                smt.append("(declare-fun \(o) (S) Bool)\n")
+//            }
+//        case .mealy:
+//            for o in specification.outputs {
+//                smt.append("(declare-fun \(o) (S \(specification.inputs.map { _ in "Bool" }.joined(separator: " "))) Bool)\n")
+//            }
+//        }
         for state in linearAutomaton.initialStates {
             smt.append("(assert (\(lambda(state)) s0))\n")
         }
@@ -128,7 +129,7 @@ public class HyperSmtEncoding: BoSyEncoding {
 
     func requireTransition(q: CoBüchiAutomaton.State, qPrime: CoBüchiAutomaton.State, rejectingStates: Set<CoBüchiAutomaton.State>) -> Logic {
         let lambdaNext = FunctionApplication(function: lambda(qPrime), application: [
-            FunctionApplication(function: Proposition("tau"), application: [
+            FunctionApplication(function: Proposition("tau_"), application: [
                 Proposition("s"),
             ] + specification.inputs.map(Proposition.init) as [Proposition]),
         ])
@@ -138,7 +139,7 @@ public class HyperSmtEncoding: BoSyEncoding {
         } else {
             return lambdaNext & BooleanComparator(rejectingStates.contains(qPrime) ? .Less : .LessOrEqual,
                                                   lhs: FunctionApplication(function: lambdaSharp(qPrime), application: [
-                                                      FunctionApplication(function: Proposition("tau"), application: [
+                                                      FunctionApplication(function: Proposition("tau_"), application: [
                                                           Proposition("s"),
                                                       ] + specification.inputs.map(Proposition.init) as [Proposition]),
                                                   ]),
@@ -222,7 +223,7 @@ public class HyperSmtEncoding: BoSyEncoding {
 
             if let condition = hyperAutomaton.safetyConditions[q] {
                 let assertion = FunctionApplication(function: lambdaHyper(q), application: pstates) --> condition.accept(visitor: replacer)
-                smt.append("(assert (forall (\(pstates.map { "(\($0) S)" }.joined(separator: " ")) \(inputs.compactMap { $0.value }.map { "(\($0) Bool)" }.joined(separator: " "))) \(assertion.accept(visitor: printer))))\n")
+                smt.append("(assert (forall (\(pstates.map { "(\($0) S)" }.joined(separator: " ")) \(inputs.flatMap { $0.value }.map { "(\($0) Bool)" }.joined(separator: " "))) \(assertion.accept(visitor: printer))))\n")
             }
             guard let outgoing = hyperAutomaton.transitions[q] else {
                 continue
@@ -231,7 +232,7 @@ public class HyperSmtEncoding: BoSyEncoding {
             for (qPrime, guardCondition) in outgoing {
                 let transitionCondition = requireHyperTransition(q: q, qPrime: qPrime, rejectingStates: hyperAutomaton.rejectingStates, variables: pathVariables, inputs: inputs)
                 let assertion = (FunctionApplication(function: lambdaHyper(q), application: pstates) & guardCondition.accept(visitor: replacer)) --> transitionCondition
-                smt.append("(assert (forall (\(pstates.map { "(\($0) S)" }.joined(separator: " ")) \(inputs.compactMap { $0.value }.map { "(\($0) Bool)" }.joined(separator: " "))) \(assertion.accept(visitor: printer))))\n")
+                smt.append("(assert (forall (\(pstates.map { "(\($0) S)" }.joined(separator: " ")) \(inputs.flatMap { $0.value }.map { "(\($0) Bool)" }.joined(separator: " "))) \(assertion.accept(visitor: printer))))\n")
             }
         }
     }
@@ -239,7 +240,7 @@ public class HyperSmtEncoding: BoSyEncoding {
     private func requireHyperTransition(q: CoBüchiAutomaton.State, qPrime: CoBüchiAutomaton.State, rejectingStates: Set<CoBüchiAutomaton.State>, variables: [LTLPathVariable], inputs: [LTLPathVariable: [Proposition]]) -> Logic {
         let lambdaNext = FunctionApplication(function: lambdaHyper(qPrime), application: variables.map {
             variable in
-            FunctionApplication(function: Proposition("tau"), application: [
+            FunctionApplication(function: Proposition("tau_"), application: [
                 Proposition("s_\(variable)_"),
             ] + inputs[variable]!)
         })
@@ -250,7 +251,7 @@ public class HyperSmtEncoding: BoSyEncoding {
             return lambdaNext & BooleanComparator(rejectingStates.contains(qPrime) ? .Less : .LessOrEqual,
                                                   lhs: FunctionApplication(function: lambdaHyperSharp(qPrime), application: variables.map {
                                                       variable in
-                                                      FunctionApplication(function: Proposition("tau"), application: [
+                                                      FunctionApplication(function: Proposition("tau_"), application: [
                                                           Proposition("s_\(variable)_"),
                                                       ] + inputs[variable]!)
                                                   }),
@@ -310,7 +311,7 @@ public class HyperSmtEncoding: BoSyEncoding {
         for source in 0 ..< solutionBound {
             for i in allBooleanAssignments(variables: inputPropositions) {
                 let parameters = inputPropositions.map { i[$0]! }
-                let tauApplication = FunctionApplication(function: Proposition("tau"), application: [Proposition("s\(source)")] as [Logic] + parameters)
+                let tauApplication = FunctionApplication(function: Proposition("tau_"), application: [Proposition("s\(source)")] as [Logic] + parameters)
                 guard let value = solver.getValue(expression: tauApplication.accept(visitor: printer)) else {
                     return nil
                 }
