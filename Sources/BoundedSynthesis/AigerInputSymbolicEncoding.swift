@@ -60,6 +60,7 @@ public class AigerInputSymbolicEncoding<A: Automaton>: SingleParamaterSearch whe
                 assignments.removeValue(forKey: proposition)
             }
             self.instance = instance // .eval(assignment: assignments)
+            self.assignments = assignments
             solutionBound = bound
             return true
         }
