@@ -57,13 +57,13 @@ extension ExplicitStateSolution: AigerRepresentable {
                 outputFunction[output] = (outputFunction[output] ?? Literal.False) | mustBeEnabled
             }
         }
-        // Check that all outputs are defined
         for output in specification.outputs {
-            assert(outputFunction[output] != nil)
-        }
-        for (output, condition) in outputFunction {
-            let aigLiteral = condition.accept(visitor: aigerVisitor)
-            aigerVisitor.addOutput(literal: aigLiteral, name: output)
+            if let condition = outputFunction[output] {
+                let aigLiteral = condition.accept(visitor: aigerVisitor)
+                aigerVisitor.addOutput(literal: aigLiteral, name: output)
+            } else {
+                fatalError("Output \(output) is not defined")
+            }
         }
 
         var latchFunction: [Proposition: Logic] = [:]
