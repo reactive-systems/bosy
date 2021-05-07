@@ -35,7 +35,7 @@ For CAQE, you also need Rust installed.
 #### Ubuntu 16.04
 
 ```bash
-apt-get install bison build-essential clang cmake curl flex gcc git libantlr3c-dev libbdd-dev libboost-program-options-dev libicu-dev libreadline-dev mercurial unzip vim-common wget zlib1g-dev libsqlite3-dev
+apt-get install bison build-essential clang cmake curl flex gcc git libantlr3c-dev libbdd-dev libboost-program-options-dev libicu-dev libreadline-dev mercurial psmisc unzip vim-common wget zlib1g-dev libsqlite3-dev
 # Haskell stack
 curl -sSL https://get.haskellstack.org/ | sh
 ```
