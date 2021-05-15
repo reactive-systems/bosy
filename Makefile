@@ -169,20 +169,21 @@ Tools/aiger-ltl-model-checker:
 	cd Tools ; git clone https://github.com/reactive-systems/aiger-ltl-model-checker.git
 
 # cryptominisat
-Tools/cryptominisat5: Tools/cryptominisat-5.6.8/build
-	cp Tools/cryptominisat-5.6.8/build/cryptominisat5_simple Tools/cryptominisat5
+cms_version=5.7.0
+Tools/cryptominisat5: Tools/cryptominisat-$(cms_version)/build
+	cp Tools/cryptominisat-$(cms_version)/build/cryptominisat5_simple Tools/cryptominisat5
 
-Tools/cryptominisat-5.6.8/build: Tools/cryptominisat-5.6.8
-	mkdir Tools/cryptominisat-5.6.8/build
-	cd Tools/cryptominisat-5.6.8/build ; cmake -DCMAKE_BUILD_TYPE=Release -DSTATICCOMPILE=ON -DENABLE_PYTHON_INTERFACE=OFF ..
-	cd Tools/cryptominisat-5.6.8/build ; make -j4
+Tools/cryptominisat-$(cms_version)/build: Tools/cryptominisat-$(cms_version)
+	mkdir Tools/cryptominisat-$(cms_version)/build
+	cd Tools/cryptominisat-$(cms_version)/build ; cmake -DCMAKE_BUILD_TYPE=Release -DSTATICCOMPILE=ON -DENABLE_PYTHON_INTERFACE=OFF ..
+	cd Tools/cryptominisat-$(cms_version)/build ; make -j4
 
-Tools/cryptominisat-5.6.8: Tools/cryptominisat-5.6.8.tar.gz
-	cd Tools ; tar xzf cryptominisat-5.6.8.tar.gz
+Tools/cryptominisat-$(cms_version): Tools/cryptominisat-$(cms_version).tar.gz
+	cd Tools ; tar xzf cryptominisat-$(cms_version).tar.gz
 
-Tools/cryptominisat-5.6.8.tar.gz: Tools/.f
-	cd Tools ; curl -OL https://github.com/msoos/cryptominisat/archive/5.6.8.tar.gz
-	mv Tools/5.6.8.tar.gz Tools/cryptominisat-5.6.8.tar.gz
+Tools/cryptominisat-$(cms_version).tar.gz: Tools/.f
+	cd Tools ; curl -OL https://github.com/msoos/cryptominisat/archive/$(cms_version).tar.gz
+	mv Tools/$(cms_version).tar.gz Tools/cryptominisat-$(cms_version).tar.gz
 
 # cvc4
 Tools/cvc4: Tools/cvc4-1.5/builds/bin/cvc4
