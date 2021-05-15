@@ -32,14 +32,16 @@ The following packages need to be installed in order to build BoSy with all depe
 
 For CAQE, you also need Rust installed.
 
-#### Ubuntu 16.04
+One may also need to install the `python-is-python3` package.
+#### Ubuntu 20.04
 
 ```bash
-apt-get install bison build-essential clang cmake curl flex gcc git libantlr3c-dev libbdd-dev libboost-program-options-dev libicu-dev libreadline-dev mercurial psmisc unzip vim-common wget zlib1g-dev libsqlite3-dev
+apt-get install bison build-essential clang cmake curl flex gcc git libantlr3c-dev libbdd-dev libboost-program-options-dev libicu-dev libreadline-dev mercurial psmisc unzip vim-common wget zlib1g-dev libsqlite3-dev python3-distutils
+# for rust
+apt-get install rustc cargo
 # Haskell stack
 curl -sSL https://get.haskellstack.org/ | sh
-```
-
+``` 
 #### macOS
 
 ```
