@@ -1,6 +1,24 @@
+#tool versions
+aiger_version=1.9.9
+bloqqer_version=037-8660cb9-151127
+caqe_version=4.0.1
+cms_version=5.7.0
+cvc_major_ver=4
+cvc_minor_ver=1.5
+depqbf_version=5.01
+eprover_version=V_1.9.1
+spot_version=2.8.5
+ltl3ba_version=1.1.3
+idq_version=1.0
+nuSMV_version=2.6.0
+pico_version=965
+rareqs_version=1.1
+z3_version=4.8.7
+
+
 .PHONY: default debug release test tools required-tools optional-tools all clean distclean
-.INTERMEDIATE: Tools/ltl3ba-1.1.3.tar.gz Tools/bloqqer-037-8660cb9-151127.tar.gz Tools/bloqqer-031-7a176af-110509.tar.gz Tools/cadet-bin.tar.gz Tools/caqe-bin.tar.gz Tools/cryptominisat-5.6.8.tar.gz Tools/cvc4-1.5.tar.gz Tools/depqbf-5.01.tar.gz Tools/spot-2.8.5.tar.gz Tools/z3-4.8.7.tar.gz Tools/rareqs-1.1.src.tgz Tools/picosat-965.tar.gz Tools/idq-1.0.tar.gz Tools/vampire.zip Tools/E.tgz Tools/NuSMV-2.6.0.tar.gz Tools/aiger-1.9.9.tar.gz
-.SECONDARY: Tools/abc-hg/abc Tools/abc-hg Tools/bloqqer-031-7a176af-110509 Tools/bloqqer-031-7a176af-110509/bloqqer Tools/bloqqer-037-8660cb9-151127 Tools/bloqqer-037-8660cb9-151127/bloqqer Tools/ltl3ba Tools/ltl3ba-1.1.3 Tools/ltl3ba-1.1.3/ltl3ba Tools/cryptominisat-5.6.8 Tools/cryptominisat-5.6.8/build Tools/depqbf-version-5.01/depqbf Tools/depqbf-version-5.01 Tools/quabs-git Tools/spot-2.8.5 Tools/cvc4-1.5 Tools/cvc4-1.5/builds/bin/cvc4 Tools/z3-4.8.7/build/z3 Tools/z3-4.8.7 Tools/rareqs-1.1 Tools/syfco-git Tools/syfco-git/syfco Tools/picosat-965 Tools/picosat Tools/idq-1.0 Tools/idq-1.0/idq Tools/NuSMV-2.6.0 Tools/NuSMV-2.6.0/NuSMV/build/bin/NuSMV Tools/NuSMV-2.6.0/NuSMV/build/bin/ltl2smv Tools/aiger-1.9.9 Tools/aiger-1.9.9/aigbmc Tools/aiger-1.9.9/smvtoaig Tools/aiger-ltl-model-checker Tools/aiger-ltl-model-checker/combine-aiger
+.INTERMEDIATE: Tools/ltl3ba-$(ltl3ba_version).tar.gz Tools/bloqqer-$(bloqqer_version).tar.gz Tools/bloqqer-031-7a176af-110509.tar.gz Tools/cadet-bin.tar.gz Tools/caqe-bin.tar.gz Tools/cryptominisat-$(cms_version).tar.gz Tools/cvc$(cvc_major_ver)-$(cvc_minor_ver).tar.gz Tools/depqbf-$(depqbf_version).tar.gz Tools/spot-$(spot_version).tar.gz Tools/z3-$(z3_version).tar.gz Tools/rareqs-$(rareqs_version).src.tgz Tools/picosat-$(pico_version).tar.gz Tools/idq-$(idq_version).tar.gz Tools/vampire.zip Tools/E.tgz  Tools/aiger-$(aiger_version).tar.gz
+.SECONDARY: Tools/abc-hg/abc Tools/abc-hg Tools/bloqqer-031-7a176af-110509 Tools/bloqqer-031-7a176af-110509/bloqqer Tools/bloqqer-$(bloqqer_version) Tools/bloqqer-$(bloqqer_version)/bloqqer Tools/ltl3ba Tools/ltl3ba-$(ltl3ba_version) Tools/ltl3ba-$(ltl3ba_version)/ltl3ba Tools/cryptominisat-$(cms_version) Tools/cryptominisat-$(cms_version)/build Tools/depqbf-version-$(depqbf_version)/depqbf Tools/depqbf-version-$(depqbf_version) Tools/quabs-git Tools/spot-$(spot_version) Tools/cvc$(cvc_major_ver)-$(cvc_minor_ver) Tools/cvc$(cvc_major_ver)-$(cvc_minor_ver)/builds/bin/cvc4 Tools/z3-$(z3_version)/build/z3 Tools/z3-$(z3_version) Tools/rareqs-$(rareqs_version) Tools/syfco-git Tools/syfco-git/syfco Tools/picosat-$(pico_version) Tools/picosat Tools/idq-$(idq_version) Tools/idq-$(idq_version)/idq Tools/aiger-$(aiger_version) Tools/aiger-$(aiger_version)/aigbmc Tools/aiger-$(aiger_version)/smvtoaig Tools/aiger-ltl-model-checker Tools/aiger-ltl-model-checker/combine-aiger
 
 default: release
 
@@ -19,23 +37,23 @@ clean:
 	swift package clean
 	
 clean-source-tools:
-	rm -rf Tools/aiger-1.9.9
+	rm -rf Tools/aiger-$(aiger_version)
 	rm -rf Tools/abc-hg
-	rm -rf Tools/ltl3ba-1.1.3
-	rm -rf Tools/bloqqer-037-8660cb9-151127
+	rm -rf Tools/ltl3ba-$(ltl3ba_version)
+	rm -rf Tools/bloqqer-$(bloqqer_version)
 	rm -rf Tools/bloqqer-031-7a176af-110509
-	rm -rf Tools/cryptominisat-5.6.8
-	rm -rf Tools/depqbf-version-5.01
-	rm -rf Tools/spot-2.8.5
-	rm -rf Tools/cvc4-1.5
-	rm -rf Tools/z3-4.8.7
-	rm -rf Tools/rareqs-1.1
+	rm -rf Tools/cryptominisat-$(cms_version)
+	rm -rf Tools/depqbf-version-$(depqbf_version)
+	rm -rf Tools/spot-$(spot_version)
+	rm -rf Tools/cvc$(cvc_major_ver)-$(cvc_minor_ver)
+	rm -rf Tools/z3-$(z3_version)
+	rm -rf Tools/rareqs-$(rareqs_version)
 	rm -rf Tools/quabs-git
 	rm -rf Tools/syfco-git
-	rm -rf Tools/picosat-965
+	rm -rf Tools/picosat-$(pico_version)
 	rm -rf Tools/picosat
-	rm -rf Tools/idq-1.0
-	rm -rf Tools/NuSMV-2.6.0
+	rm -rf Tools/idq-$(idq_version)
+	rm -rf Tools/NuSMV-$(nuSMV_version)
 	rm -rf Tools/aiger-ltl-model-checker
 
 distclean:
@@ -66,8 +84,6 @@ optional-tools: \
 	Tools/cvc4 \
 	Tools/depqbf \
 	Tools/eprover \
-	Tools/ltl2smv \
-	Tools/NuSMV \
 	Tools/picosat-solver \
 	Tools/vampire \
 	Tools/hqs
@@ -87,39 +103,39 @@ Tools/abc-hg: Tools/.f
 	cd Tools ; git clone https://github.com/berkeley-abc/abc.git abc-hg
 
 # aiger
-Tools/smvtoaig: Tools/aiger-1.9.9/smvtoaig
-	cp Tools/aiger-1.9.9/smvtoaig Tools/smvtoaig
+Tools/smvtoaig: Tools/aiger-$(aiger_version)/smvtoaig
+	cp Tools/aiger-$(aiger_version)/smvtoaig Tools/smvtoaig
 
-Tools/aiger-1.9.9/smvtoaig: Tools/aiger-1.9.9
-	cd Tools/aiger-1.9.9 ; ./configure.sh
-	make -C Tools/aiger-1.9.9 smvtoaig
+Tools/aiger-$(aiger_version)/smvtoaig: Tools/aiger-$(aiger_version)
+	cd Tools/aiger-$(aiger_version) ; ./configure.sh
+	make -C Tools/aiger-$(aiger_version) smvtoaig
 
-Tools/aigbmc: Tools/aiger-1.9.9/aigbmc
-	cp Tools/aiger-1.9.9/aigbmc Tools/aigbmc
+Tools/aigbmc: Tools/aiger-$(aiger_version)/aigbmc
+	cp Tools/aiger-$(aiger_version)/aigbmc Tools/aigbmc
 
-Tools/aiger-1.9.9/aigbmc: Tools/aiger-1.9.9 Tools/picosat/picosat.o
-	cd Tools/aiger-1.9.9 ; ./configure.sh
-	make -C Tools/aiger-1.9.9 aigbmc
+Tools/aiger-$(aiger_version)/aigbmc: Tools/aiger-$(aiger_version) Tools/picosat/picosat.o
+	cd Tools/aiger-$(aiger_version) ; ./configure.sh
+	make -C Tools/aiger-$(aiger_version) aigbmc
 
-Tools/aiger-1.9.9: Tools/aiger-1.9.9.tar.gz
-	cd Tools ; tar xzf aiger-1.9.9.tar.gz
+Tools/aiger-$(aiger_version): Tools/aiger-$(aiger_version).tar.gz
+	cd Tools ; tar xzf aiger-$(aiger_version).tar.gz
 
-Tools/aiger-1.9.9.tar.gz: Tools/.f
-	cd Tools ; curl -OL http://fmv.jku.at/aiger/aiger-1.9.9.tar.gz
+Tools/aiger-$(aiger_version).tar.gz: Tools/.f
+	cd Tools ; curl -OL http://fmv.jku.at/aiger/aiger-$(aiger_version).tar.gz
 
 # bloqqer
-Tools/bloqqer: Tools/bloqqer-037-8660cb9-151127/bloqqer
-	cp Tools/bloqqer-037-8660cb9-151127/bloqqer Tools/bloqqer
+Tools/bloqqer: Tools/bloqqer-$(bloqqer_version)/bloqqer
+	cp Tools/bloqqer-$(bloqqer_version)/bloqqer Tools/bloqqer
 
-Tools/bloqqer-037-8660cb9-151127/bloqqer: Tools/bloqqer-037-8660cb9-151127
-	cd Tools/bloqqer-037-8660cb9-151127 ; ./configure
-	make -C Tools/bloqqer-037-8660cb9-151127
+Tools/bloqqer-$(bloqqer_version)/bloqqer: Tools/bloqqer-$(bloqqer_version)
+	cd Tools/bloqqer-$(bloqqer_version) ; ./configure
+	make -C Tools/bloqqer-$(bloqqer_version)
 
-Tools/bloqqer-037-8660cb9-151127: Tools/bloqqer-037-8660cb9-151127.tar.gz
-	cd Tools ; tar xzf bloqqer-037-8660cb9-151127.tar.gz
+Tools/bloqqer-$(bloqqer_version): Tools/bloqqer-$(bloqqer_version).tar.gz
+	cd Tools ; tar xzf bloqqer-$(bloqqer_version).tar.gz
 
-Tools/bloqqer-037-8660cb9-151127.tar.gz: Tools/.f
-	cd Tools ; curl -OL http://fmv.jku.at/bloqqer/bloqqer-037-8660cb9-151127.tar.gz
+Tools/bloqqer-$(bloqqer_version).tar.gz: Tools/.f
+	cd Tools ; curl -OL http://fmv.jku.at/bloqqer/bloqqer-$(bloqqer_version).tar.gz
 
 Tools/bloqqer-031: Tools/bloqqer-031-7a176af-110509/bloqqer
 	cp Tools/bloqqer-031-7a176af-110509/bloqqer Tools/bloqqer-031
@@ -147,15 +163,15 @@ Tools/cadet-git: Tools/.f
 
 # caqe
 Tools/caqe: Tools/caqe-src/target/release/caqe
-	cp Tools/caqe-4.0.1/target/release/caqe Tools/caqe
+	cp Tools/caqe-$(caqe_version)/target/release/caqe Tools/caqe
 Tools/caqe-src/target/release/caqe: Tools/caqe-src
-	cd Tools/caqe-4.0.1 && cargo build --release
+	cd Tools/caqe-$(caqe_version) && cargo build --release
 
 Tools/caqe-src: Tools/caqe-src.tar.gz
 	cd Tools && tar xzf caqe-src.tar.gz
 
 Tools/caqe-src.tar.gz:
-	cd Tools && curl -L -G -o caqe-src.tar.gz https://github.com/ltentrup/caqe/archive/4.0.1.tar.gz
+	cd Tools && curl -L -G -o caqe-src.tar.gz https://github.com/ltentrup/caqe/archive/$(caqe_version).tar.gz
 
 
 # combine-aiger
@@ -169,7 +185,6 @@ Tools/aiger-ltl-model-checker:
 	cd Tools ; git clone https://github.com/reactive-systems/aiger-ltl-model-checker.git
 
 # cryptominisat
-cms_version=5.7.0
 Tools/cryptominisat5: Tools/cryptominisat-$(cms_version)/build
 	cp Tools/cryptominisat-$(cms_version)/build/cryptominisat5_simple Tools/cryptominisat5
 
@@ -186,32 +201,34 @@ Tools/cryptominisat-$(cms_version).tar.gz: Tools/.f
 	mv Tools/$(cms_version).tar.gz Tools/cryptominisat-$(cms_version).tar.gz
 
 # cvc4
-Tools/cvc4: Tools/cvc4-1.5/builds/bin/cvc4
-	cp Tools/cvc4-1.5/builds/bin/cvc4 Tools/cvc4
+Tools/cvc4: Tools/cvc$(cvc_major_ver)-$(cvc_minor_ver)/builds/bin/cvc4
+	cp Tools/cvc$(cvc_major_ver)-$(cvc_minor_ver)/build/bin/cvc4 Tools/cvc4
 
-Tools/cvc4-1.5/builds/bin/cvc4: Tools/cvc4-1.5
-	cd Tools/cvc4-1.5 ; ./configure --enable-static-binary MAC_STATIC_BINARY_MANUAL_OVERRIDE=1 #--best --enable-gpl
-	make -j4 -C Tools/cvc4-1.5
+Tools/cvc$(cvc_major_ver)-$(cvc_minor_ver)/builds/bin/cvc4: Tools/cvc$(cvc_major_ver)-$(cvc_minor_ver)
+	cd Tools/cvc$(cvc_major_ver)-$(cvc_minor_ver) ; ./contrib/get-antlr-3.4
+	cd Tools/cvc$(cvc_major_ver)-$(cvc_minor_ver) ; ./configure.sh production --static --static-binary #--best --enable-gpl
+	make -j4 -C Tools/cvc$(cvc_major_ver)-$(cvc_minor_ver)/build
 
-Tools/cvc4-1.5: Tools/cvc4-1.5.tar.gz
-	cd Tools ; tar xzf cvc4-1.5.tar.gz
+Tools/cvc$(cvc_major_ver)-$(cvc_minor_ver): Tools/cvc$(cvc_major_ver)-$(cvc_minor_ver).tar.gz
+	cd Tools ; tar xzf cvc$(cvc_major_ver)-$(cvc_minor_ver).tar.gz
 
-Tools/cvc4-1.5.tar.gz: Tools/.f
-	cd Tools ; curl -OL http://cvc4.cs.stanford.edu/downloads/builds/src/cvc4-1.5.tar.gz
+Tools/cvc$(cvc_major_ver)-$(cvc_minor_ver).tar.gz: Tools/.f
+	cd Tools ; curl -OL https://github.com/cvc5/cvc5/archive/refs/tags/$(cvc_minor_ver).tar.gz
+	mv Tools/$(cvc_minor_ver).tar.gz Tools/cvc$(cvc_major_ver)-$(cvc_minor_ver).tar.gz
 
 # depqbf
-Tools/depqbf: Tools/depqbf-version-5.01/depqbf
-	cp Tools/depqbf-version-5.01/depqbf Tools/depqbf
+Tools/depqbf: Tools/depqbf-version-$(depqbf_version)/depqbf
+	cp Tools/depqbf-version-$(depqbf_version)/depqbf Tools/depqbf
 
-Tools/depqbf-version-5.01/depqbf: Tools/depqbf-version-5.01
-	make -C Tools/depqbf-version-5.01
+Tools/depqbf-version-$(depqbf_version)/depqbf: Tools/depqbf-version-$(depqbf_version)
+	cd Tools/depqbf-version-$(depqbf_version); ./compile.sh
 
-Tools/depqbf-version-5.01: Tools/depqbf-5.01.tar.gz
-	cd Tools ; tar xzf depqbf-5.01.tar.gz
+Tools/depqbf-version-$(depqbf_version): Tools/depqbf-$(depqbf_version).tar.gz
+	cd Tools ; tar xzf depqbf-$(depqbf_version).tar.gz
 
-Tools/depqbf-5.01.tar.gz: Tools/.f
-	cd Tools ; curl -OL https://github.com/lonsing/depqbf/archive/version-5.01.tar.gz
-	mv Tools/version-5.01.tar.gz Tools/depqbf-5.01.tar.gz
+Tools/depqbf-$(depqbf_version).tar.gz: Tools/.f
+	cd Tools ; curl -OL https://github.com/lonsing/depqbf/archive/version-$(depqbf_version).tar.gz
+	mv Tools/version-$(depqbf_version).tar.gz Tools/depqbf-$(depqbf_version).tar.gz
 
 # eprover
 Tools/eprover: Tools/E
@@ -223,7 +240,7 @@ Tools/E: Tools/E.tgz
 	cd Tools ; tar xzf E.tgz
 
 Tools/E.tgz: Tools/.f
-	cd Tools ; curl -OL http://wwwlehre.dhbw-stuttgart.de/~sschulz/WORK/E_DOWNLOAD/V_1.9.1/E.tgz
+	cd Tools ; curl -OL http://wwwlehre.dhbw-stuttgart.de/~sschulz/WORK/E_DOWNLOAD/$(eprover_version)/E.tgz
 
 # vampire
 Tools/vampire: Tools/Vampires
@@ -234,45 +251,45 @@ Tools/vampire.zip: Tools/.f
 	cd Tools ; curl -OL http://forsyte.at/wp-content/uploads/vampire.zip
 
 # spot/ltl2tgba
-Tools/ltl2tgba: Tools/spot-2.8.5
-	cd Tools/spot-2.8.5; ./configure --disable-python --enable-static --disable-shared
-	cd Tools/spot-2.8.5; make
-	cp Tools/spot-2.8.5/bin/ltl2tgba Tools/
+Tools/ltl2tgba: Tools/spot-$(spot_version)
+	cd Tools/spot-$(spot_version); ./configure --disable-python --enable-static --disable-shared
+	cd Tools/spot-$(spot_version); make
+	cp Tools/spot-$(spot_version)/bin/ltl2tgba Tools/
 
-Tools/spot-2.8.5: Tools/spot-2.8.5.tar.gz
-	cd Tools; tar xzf spot-2.8.5.tar.gz
+Tools/spot-$(spot_version): Tools/spot-$(spot_version).tar.gz
+	cd Tools; tar xzf spot-$(spot_version).tar.gz
 
-Tools/spot-2.8.5.tar.gz: Tools/.f
-	cd Tools; curl -OL http://www.lrde.epita.fr/dload/spot/spot-2.8.5.tar.gz
+Tools/spot-$(spot_version).tar.gz: Tools/.f
+	cd Tools; curl -OL http://www.lrde.epita.fr/dload/spot/spot-$(spot_version).tar.gz
 
 # ltl3ba
-Tools/ltl3ba: Tools/ltl3ba-1.1.3/ltl3ba
-	cp Tools/ltl3ba-1.1.3/ltl3ba Tools/ltl3ba
+Tools/ltl3ba: Tools/ltl3ba-$(ltl3ba_version)/ltl3ba
+	cp Tools/ltl3ba-$(ltl3ba_version)/ltl3ba Tools/ltl3ba
 
-Tools/ltl3ba-1.1.3/ltl3ba: Tools/ltl3ba-1.1.3
-	cd Tools ; make -C ltl3ba-1.1.3
+Tools/ltl3ba-$(ltl3ba_version)/ltl3ba: Tools/ltl3ba-$(ltl3ba_version)
+	cd Tools ; make -C ltl3ba-$(ltl3ba_version)
 
-Tools/ltl3ba-1.1.3: Tools/ltl3ba-1.1.3.tar.gz
-	cd Tools ; tar xzf ltl3ba-1.1.3.tar.gz
+Tools/ltl3ba-$(ltl3ba_version): Tools/ltl3ba-$(ltl3ba_version).tar.gz
+	cd Tools ; tar xzf ltl3ba-$(ltl3ba_version).tar.gz
 	
-Tools/ltl3ba-1.1.3.tar.gz: Tools/.f
-	cd Tools ; curl -OL https://sourceforge.net/projects/ltl3ba/files/ltl3ba/1.1/ltl3ba-1.1.3.tar.gz
+Tools/ltl3ba-$(ltl3ba_version).tar.gz: Tools/.f
+	cd Tools ; curl -OL https://sourceforge.net/projects/ltl3ba/files/ltl3ba/1.1/ltl3ba-$(ltl3ba_version).tar.gz
 
 # idq
-Tools/idq: Tools/idq-1.0/idq
-	cp Tools/idq-1.0/idq Tools/idq
+Tools/idq: Tools/idq-$(idq_version)/idq
+	cp Tools/idq-$(idq_version)/idq Tools/idq
 
-Tools/idq-1.0/idq: Tools/idq-1.0
+Tools/idq-$(idq_version)/idq: Tools/idq-$(idq_version)
 	# patch makefile
-	cd Tools/idq-1.0 ; sed -i -e 's/-static//g' makefile
+	cd Tools/idq-$(idq_version) ; sed -i -e 's/-static//g' makefile
 	# build
-	make -C Tools/idq-1.0
+	make -C Tools/idq-$(idq_version)
 
-Tools/idq-1.0: Tools/idq-1.0.tar.gz
-	cd Tools ; tar xzf idq-1.0.tar.gz
+Tools/idq-$(idq_version): Tools/idq-$(idq_version).tar.gz
+	cd Tools ; tar xzf idq-$(idq_version).tar.gz
 
-Tools/idq-1.0.tar.gz: Tools/.f
-	cd Tools ; curl -OL http://fmv.jku.at/idq/idq-1.0.tar.gz
+Tools/idq-$(idq_version).tar.gz: Tools/.f
+	cd Tools ; curl -OL http://fmv.jku.at/idq/idq-$(idq_version).tar.gz
 
 # hqs
 Tools/hqs: Tools/hqs-bin/hqs
@@ -286,44 +303,46 @@ Tools/hqs-bin.tar.gz: Tools/.f
 	cd Tools ; curl -OL -G -d dl=1 https://www.dropbox.com/s/cdesqq4ckh96x2i/hqs-bin.tar.gz
 
 # NuSMV
-Tools/NuSMV: Tools/NuSMV-2.6.0/NuSMV/build/bin/NuSMV
-	cp Tools/NuSMV-2.6.0/NuSMV/build/bin/NuSMV Tools/NuSMV
+Tools/NuSMV: Tools/NuSMV-$(nuSMV_version)/NuSMV/build/bin/NuSMV
+	cp Tools/NuSMV-$(nuSMV_version)/NuSMV/build/bin/NuSMV Tools/NuSMV
 
-Tools/NuSMV-2.6.0/NuSMV/build/bin/NuSMV: Tools/NuSMV-2.6.0
-	cd Tools/NuSMV-2.6.0/NuSMV ; mkdir build
-	cd Tools/NuSMV-2.6.0/NuSMV/build ; cmake .. && make
+Tools/NuSMV-$(nuSMV_version)/NuSMV/build/bin/NuSMV: Tools/NuSMV-$(nuSMV_version)
+	cd Tools/NuSMV-$(nuSMV_version)/NuSMV ; mkdir build
+	sed -i  's/#if (defined __hpux) || (defined __osf__) || (defined _IBMR2) || (defined __SVR4) || (defined __CYGWIN32__) || (defined __MINGW32__)/#if (defined __linux__) || (defined __hpux) || (defined __osf__) || (defined _IBMR2) || (defined __SVR4) || (defined __CYGWIN32__) || (defined __MINGW32__)/g' Tools/NuSMV-$(nuSMV_version)/cudd-2.4.1.1/util/pipefork.c
+	cd Tools/NuSMV-$(nuSMV_version)/NuSMV/build ; cmake .. -DPYTHON_EXECUTABLE:FILEPATH=/usr/bin/python2
+	make
 
-Tools/ltl2smv: Tools/NuSMV-2.6.0/NuSMV/build/bin/ltl2smv
-	cp Tools/NuSMV-2.6.0/NuSMV/build/bin/ltl2smv Tools/ltl2smv
+Tools/ltl2smv: Tools/NuSMV-$(nuSMV_version)/NuSMV/build/bin/ltl2smv
+	cp Tools/NuSMV-$(nuSMV_version)/NuSMV/build/bin/ltl2smv Tools/ltl2smv
 
-Tools/NuSMV-2.6.0/NuSMV/build/bin/ltl2smv: Tools/NuSMV-2.6.0
-	cd Tools/NuSMV-2.6.0/NuSMV ; mkdir build
-	cd Tools/NuSMV-2.6.0/NuSMV/build ; cmake .. && make
+Tools/NuSMV-$(nuSMV_version)/NuSMV/build/bin/ltl2smv: Tools/NuSMV-$(nuSMV_version)
+	cd Tools/NuSMV-$(nuSMV_version)/NuSMV ; mkdir build
+	cd Tools/NuSMV-$(nuSMV_version)/NuSMV/build ; cmake .. -DPYTHON_EXECUTABLE:FILEPATH=/usr/bin/python2 && make
 
-Tools/NuSMV-2.6.0: Tools/NuSMV-2.6.0.tar.gz
-	cd Tools ; tar xzf NuSMV-2.6.0.tar.gz
+Tools/NuSMV-$(nuSMV_version): Tools/NuSMV-$(nuSMV_version).tar.gz
+	cd Tools ; tar xzf NuSMV-$(nuSMV_version).tar.gz
 
-Tools/NuSMV-2.6.0.tar.gz: Tools/.f
-	cd Tools ; curl -OL http://nusmv.fbk.eu/distrib/NuSMV-2.6.0.tar.gz
+Tools/NuSMV-$(nuSMV_version).tar.gz: Tools/.f
+	cd Tools ; curl -OL http://nusmv.fbk.eu/distrib/NuSMV-$(nuSMV_version).tar.gz
 
 # picosat
-Tools/picosat-solver: Tools/picosat-965
-	cd Tools/picosat-965 ; ./configure.sh
-	make -C Tools/picosat-965 picosat
-	cp Tools/picosat-965/picosat Tools/picosat-solver
+Tools/picosat-solver: Tools/picosat-$(pico_version)
+	cd Tools/picosat-$(pico_version) ; ./configure.sh
+	make -C Tools/picosat-$(pico_version) picosat
+	cp Tools/picosat-$(pico_version)/picosat Tools/picosat-solver
 
-Tools/picosat-965: Tools/picosat-965.tar.gz
-	cd Tools ; tar xzf picosat-965.tar.gz
+Tools/picosat-$(pico_version): Tools/picosat-$(pico_version).tar.gz
+	cd Tools ; tar xzf picosat-$(pico_version).tar.gz
 
-Tools/picosat: Tools/picosat-965
-	cd Tools ; ln -sf picosat-965 picosat
+Tools/picosat: Tools/picosat-$(pico_version)
+	cd Tools ; ln -sf picosat-$(pico_version) picosat
 
 Tools/picosat/picosat.o: Tools/picosat
 	cd Tools/picosat ; ./configure.sh
 	make -C Tools/picosat picosat.o
 
-Tools/picosat-965.tar.gz: Tools/.f
-	cd Tools ; curl -OL http://fmv.jku.at/picosat/picosat-965.tar.gz
+Tools/picosat-$(pico_version).tar.gz: Tools/.f
+	cd Tools ; curl -OL http://fmv.jku.at/picosat/picosat-$(pico_version).tar.gz
 
 # QuAbS
 Tools/quabs: Tools/quabs-git/release/quabs
@@ -337,18 +356,18 @@ Tools/quabs-git: Tools/.f
 	cd Tools ; git clone --recurse-submodules https://github.com/reactive-systems/quabs.git quabs-git
 
 # rareqs
-Tools/rareqs: Tools/rareqs-1.1
+Tools/rareqs: Tools/rareqs-$(rareqs_version)
 	# apply patches
-	patch -p1 --directory=Tools/rareqs-1.1 -i ../../rareqs.patch
+	patch -p1 --directory=Tools/rareqs-$(rareqs_version) -i ../../rareqs.patch
 	# build
-	make -C Tools/rareqs-1.1
-	cp Tools/rareqs-1.1/rareqs Tools/rareqs
+	make -C Tools/rareqs-$(rareqs_version)
+	cp Tools/rareqs-$(rareqs_version)/rareqs Tools/rareqs
 
-Tools/rareqs-1.1: Tools/rareqs-1.1.src.tgz
-	cd Tools ; tar xzf rareqs-1.1.src.tgz
+Tools/rareqs-$(rareqs_version): Tools/rareqs-$(rareqs_version).src.tgz
+	cd Tools ; tar xzf rareqs-$(rareqs_version).src.tgz
 
-Tools/rareqs-1.1.src.tgz: Tools/.f
-	cd Tools ; curl -OL http://sat.inesc-id.pt/~mikolas/sw/areqs/rareqs-1.1.src.tgz
+Tools/rareqs-$(rareqs_version).src.tgz: Tools/.f
+	cd Tools ; curl -OL http://sat.inesc-id.pt/~mikolas/sw/areqs/rareqs-$(rareqs_version).src.tgz
 
 # syfco
 Tools/syfco: Tools/syfco-git/syfco
@@ -362,17 +381,16 @@ Tools/syfco-git: Tools/.f
 	cd Tools ; git clone https://github.com/reactive-systems/syfco.git syfco-git
 
 # z3
-Tools/z3: Tools/z3-4.8.7/build/z3
-	cp Tools/z3-4.8.7/build/z3 Tools/z3
+Tools/z3: Tools/z3-$(z3_version)/build/z3
+	cp Tools/z3-$(z3_version)/build/z3 Tools/z3
 
-Tools/z3-4.8.7/build/z3: Tools/z3-4.8.7
-	cd Tools/z3-4.8.7 ; ./configure
-	make -C Tools/z3-4.8.7/build
+Tools/z3-$(z3_version)/build/z3: Tools/z3-$(z3_version)
+	cd Tools/z3-$(z3_version) ; ./configure
+	make -C Tools/z3-$(z3_version)/build
 
-Tools/z3-4.8.7: Tools/z3-4.8.7.tar.gz
-	cd Tools ; tar xzf z3-4.8.7.tar.gz
-	cd Tools ; mv z3-z3-4.8.7 z3-4.8.7
+Tools/z3-$(z3_version): Tools/z3-$(z3_version).tar.gz
+	cd Tools ; tar xzf z3-$(z3_version).tar.gz
+	cd Tools ; mv z3-z3-$(z3_version) z3-$(z3_version)
 
-Tools/z3-4.8.7.tar.gz: Tools/.f
-	cd Tools ; curl -OL https://github.com/Z3Prover/z3/archive/z3-4.8.7.tar.gz
-
+Tools/z3-$(z3_version).tar.gz: Tools/.f
+	cd Tools ; curl -OL https://github.com/Z3Prover/z3/archive/z3-$(z3_version).tar.gz
