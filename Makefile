@@ -1,19 +1,19 @@
 #tool versions
 aiger_version=1.9.9
 bloqqer_version=037-8660cb9-151127
-caqe_version=4.0.1
-cms_version=5.7.0
-cvc_major_ver=4
-cvc_minor_ver=1.5
-depqbf_version=5.01
-eprover_version=V_1.9.1
-spot_version=2.8.5
-ltl3ba_version=1.1.3
+caqe_version=4.0.2
+cms_version=5.8.0
+cvc_major_ver=5
+cvc_minor_ver=1.8
+depqbf_version=6.03
+eprover_version=V_2.5
+spot_version=2.9.7
+ltl3ba_version=1.1.3 
 idq_version=1.0
 nuSMV_version=2.6.0
 pico_version=965
 rareqs_version=1.1
-z3_version=4.8.7
+z3_version=4.8.10
 
 
 .PHONY: default debug release test tools required-tools optional-tools all clean distclean
