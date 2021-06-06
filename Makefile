@@ -8,9 +8,9 @@ cvc_minor_ver=1.8
 depqbf_version=6.03
 eprover_version=V_2.5
 spot_version=2.9.7
-ltl3ba_version=1.1.3 
+ltl3ba_version=1.1.3
 idq_version=1.0
-nuSMV_version=2.6.0
+nuSMV_version=v1.2#prebuild file version
 pico_version=965
 rareqs_version=1.1
 z3_version=4.8.10
@@ -86,7 +86,9 @@ optional-tools: \
 	Tools/eprover \
 	Tools/picosat-solver \
 	Tools/vampire \
-	Tools/hqs
+	Tools/hqs \
+	Tools/NuSMV \
+	Tools/ltl2smv
 
 Tools/.f:
 	mkdir -p Tools
@@ -303,27 +305,16 @@ Tools/hqs-bin.tar.gz: Tools/.f
 	cd Tools ; curl -OL -G -d dl=1 https://www.dropbox.com/s/cdesqq4ckh96x2i/hqs-bin.tar.gz
 
 # NuSMV
-Tools/NuSMV: Tools/NuSMV-$(nuSMV_version)/NuSMV/build/bin/NuSMV
-	cp Tools/NuSMV-$(nuSMV_version)/NuSMV/build/bin/NuSMV Tools/NuSMV
+Tools/NuSMV: Tools/NuSMV-$(nuSMV_version)/dl
+	mv Tools/NuSMVa_linux64 Tools/NuSMV
+	chmod +x Tools/NuSMV
 
-Tools/NuSMV-$(nuSMV_version)/NuSMV/build/bin/NuSMV: Tools/NuSMV-$(nuSMV_version)
-	cd Tools/NuSMV-$(nuSMV_version)/NuSMV ; mkdir build
-	sed -i  's/#if (defined __hpux) || (defined __osf__) || (defined _IBMR2) || (defined __SVR4) || (defined __CYGWIN32__) || (defined __MINGW32__)/#if (defined __linux__) || (defined __hpux) || (defined __osf__) || (defined _IBMR2) || (defined __SVR4) || (defined __CYGWIN32__) || (defined __MINGW32__)/g' Tools/NuSMV-$(nuSMV_version)/cudd-2.4.1.1/util/pipefork.c
-	cd Tools/NuSMV-$(nuSMV_version)/NuSMV/build ; cmake .. -DPYTHON_EXECUTABLE:FILEPATH=/usr/bin/python2
-	make
+Tools/ltl2smv:
+	cd Tools ; curl -OL https://github.com/hklarner/NuSMV-a/releases/download/v1.2/ltl2smv
+	chmod +x Tools/ltl2smv
 
-Tools/ltl2smv: Tools/NuSMV-$(nuSMV_version)/NuSMV/build/bin/ltl2smv
-	cp Tools/NuSMV-$(nuSMV_version)/NuSMV/build/bin/ltl2smv Tools/ltl2smv
-
-Tools/NuSMV-$(nuSMV_version)/NuSMV/build/bin/ltl2smv: Tools/NuSMV-$(nuSMV_version)
-	cd Tools/NuSMV-$(nuSMV_version)/NuSMV ; mkdir build
-	cd Tools/NuSMV-$(nuSMV_version)/NuSMV/build ; cmake .. -DPYTHON_EXECUTABLE:FILEPATH=/usr/bin/python2 && make
-
-Tools/NuSMV-$(nuSMV_version): Tools/NuSMV-$(nuSMV_version).tar.gz
-	cd Tools ; tar xzf NuSMV-$(nuSMV_version).tar.gz
-
-Tools/NuSMV-$(nuSMV_version).tar.gz: Tools/.f
-	cd Tools ; curl -OL http://nusmv.fbk.eu/distrib/NuSMV-$(nuSMV_version).tar.gz
+Tools/NuSMV-$(nuSMV_version)/dl: Tools/.f
+	cd Tools ; curl -OL https://github.com/hklarner/NuSMV-a/releases/download/v1.2/NuSMVa_linux64
 
 # picosat
 Tools/picosat-solver: Tools/picosat-$(pico_version)
