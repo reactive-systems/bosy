@@ -69,7 +69,7 @@ do {
 
     if !searchEnvironment {
         // build automaton for linear
-        guard let linearAutomaton = try? CoBüchiAutomaton.from(ltl: !linear, using: .spot) else {
+        guard let linearAutomaton = try? CoBüchiAutomaton.from(ltl: !linear, using: .spot("")) else {
             Logger.default().error("could not construct automaton")
             fatalError()
         }
@@ -77,7 +77,7 @@ do {
         Logger.default().info("Linear automaton contains \(linearAutomaton.states.count) states")
 
         // build the specification automaton for the system player
-        guard let automaton = try? CoBüchiAutomaton.from(ltl: !hyperltl.ltlBody, using: .spot) else {
+        guard let automaton = try? CoBüchiAutomaton.from(ltl: !hyperltl.ltlBody, using: .spot("")) else {
             Logger.default().error("could not construct automaton")
             fatalError()
         }
@@ -183,7 +183,7 @@ do {
             environmentSpec &= linear.addPathPropositions(path: pathVar)
         }
 
-        guard let specificationAutomaton = try? CoBüchiAutomaton.from(ltl: environmentSpec, using: .spot) else {
+        guard let specificationAutomaton = try? CoBüchiAutomaton.from(ltl: environmentSpec, using: .spot("")) else {
             Logger.default().error("could not construct automaton")
             fatalError()
         }

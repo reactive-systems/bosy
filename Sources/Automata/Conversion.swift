@@ -6,20 +6,44 @@ import Logic
 import LTL
 import Utils
 
-public enum LTL2AutomatonConverter: String {
+public enum ParseError: Error {
+    case toolNotFound(_ name: String)
+}
+
+public enum LTL2AutomatonConverter {
     case ltl3ba
-    case spot
+    case spot(String)
+
+    public var rawValue: String {
+        switch self {
+            case .ltl3ba:
+                return "ltl3ba"
+            case .spot(_):
+                return "spot"
+        }
+    }
 
     func convert(ltl: LTL) throws -> CoBüchiAutomaton {
         switch self {
         case .ltl3ba:
             return try convertWithLtl3ba(ltl: ltl)
-        case .spot:
-            return try convertWithSpot(ltl: ltl)
+        case let .spot(cliOpts):
+            return try convertWithSpot(ltl: ltl, hoaf: false, cliOpts: cliOpts)
         }
     }
 
-    public static let allValues: [LTL2AutomatonConverter] = [.ltl3ba, .spot]
+    public static let allValues: [LTL2AutomatonConverter] = [.ltl3ba, .spot("")]
+}
+
+public func initAutomatonConverter(_ name: String, args: String) throws -> LTL2AutomatonConverter{
+    switch name {
+        case "spot":
+            return LTL2AutomatonConverter.spot(args)
+        case "ltl3ba":
+            return LTL2AutomatonConverter.ltl3ba
+        default:
+            throw ParseError.toolNotFound(name) //throw error here, fix later
+    }
 }
 
 func convertWithLtl3ba(ltl: LTL) throws -> CoBüchiAutomaton {
@@ -30,7 +54,7 @@ func convertWithLtl3ba(ltl: LTL) throws -> CoBüchiAutomaton {
     return try parseSpinNeverClaim(neverClaim: neverClaim)
 }
 
-func convertWithSpot(ltl: LTL, hoaf: Bool = false) throws -> CoBüchiAutomaton {
+func convertWithSpot(ltl: LTL, hoaf: Bool = false, cliOpts: String = "") throws -> CoBüchiAutomaton {
     guard let ltl3baFormatted = ltl.spot else {
         throw "cannot transform LTL to ltl3ba format"
     }
@@ -39,6 +63,9 @@ func convertWithSpot(ltl: LTL, hoaf: Bool = false) throws -> CoBüchiAutomaton {
         arguments += ["-H", "-B"]
     } else {
         arguments.append("--spin")
+    }
+    if  !cliOpts.isEmpty {
+        arguments += cliOpts.components(separatedBy: " ")
     }
     let output = try TSCBasic.Process.checkNonZeroExit(arguments: arguments)
     if hoaf {

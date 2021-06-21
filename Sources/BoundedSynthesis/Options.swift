@@ -42,6 +42,21 @@ public enum Target: String {
     public static let allValues: [Target] = [.aiger, .dot, .dotTopology, .smv, .verilog, .all]
 }
 
+public enum SimplifcationLevel: String {
+    case small //new default, faster
+    case medium
+    case high
+
+    public static let allValues: [SimplifcationLevel] = [.small, .medium, .high]
+}
+
+public enum SimplifcationGoal: String {
+    case any //new default, faster
+    case small
+
+    public static let allValues: [SimplifcationGoal] = [.any, .small] 
+}
+
 public struct BoSyOptions {
     public var name: String = "BoSy"
 
@@ -51,7 +66,7 @@ public struct BoSyOptions {
     public var searchStrategy: SearchStrategy = .exponential
     public var player: Players = .both
     public var backend: Backends = .inputSymbolic
-    public var converter: LTL2AutomatonConverter = .spot
+    public var converter: LTL2AutomatonConverter = .spot("--any --small")
     public var semantics: TransitionSystemType?
     public var statistics: BoSyStatistics?
     public var target: Target = .aiger
@@ -62,12 +77,17 @@ public struct BoSyOptions {
     public var syntcomp2017rules: Bool = false
     public var minBound: Int = 1
     public var maxBound: Int?
+    public var spotSimplGoal: SimplifcationGoal = .any
+    public var spotSimplLevel: SimplifcationLevel = .small
+    public var spotOptions: String?
 
     public init() {}
 
     public mutating func parseCommandLine() throws {
         var arguments: ArraySlice<String> = CommandLine.arguments[CommandLine.arguments.indices]
         name = arguments.popFirst()!
+
+        var autoTool = "";
 
         while arguments.count > 0 {
             guard let argument = arguments.popFirst() else {
@@ -116,10 +136,7 @@ public struct BoSyOptions {
                 guard let value = arguments.popFirst() else {
                     throw CommandLineOptionsError.noValue(argument: argument)
                 }
-                guard let automatonConverter = LTL2AutomatonConverter(rawValue: value) else {
-                    throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: LTL2AutomatonConverter.allValues.map { $0.rawValue })
-                }
-                converter = automatonConverter
+                autoTool = value //deffering init until possibly needed spot params are read
             case "--semantics":
                 guard let value = arguments.popFirst() else {
                     throw CommandLineOptionsError.noValue(argument: argument)
@@ -146,6 +163,27 @@ public struct BoSyOptions {
                     throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: SolverInstance.allValues.map { $0.rawValue })
                 }
                 solver = _solver
+            case "--spot-level":
+                guard let value = arguments.popFirst() else {
+                    throw CommandLineOptionsError.noValue(argument: argument)
+                }
+                guard let _simpLevel = SimplifcationLevel(rawValue: value) else {
+                    throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: SimplifcationLevel.allValues.map { $0.rawValue })
+                }
+                spotSimplLevel = _simpLevel
+            case "--spot-goal":
+                guard let value = arguments.popFirst() else {
+                    throw CommandLineOptionsError.noValue(argument: argument)
+                }
+                guard let _simpGoal = SimplifcationGoal(rawValue: value) else {
+                    throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: SimplifcationGoal.allValues.map { $0.rawValue })
+                }
+                spotSimplGoal = _simpGoal
+            case "--spot-opt":
+                guard let value = arguments.popFirst() else {
+                    throw CommandLineOptionsError.noValue(argument: argument)
+                }
+                spotOptions = value;
             case "--qbf-certifier":
                 guard let value = arguments.popFirst() else {
                     throw CommandLineOptionsError.noValue(argument: argument)
@@ -212,6 +250,15 @@ public struct BoSyOptions {
             }
         }
 
+        do {
+            let args = self.spotOptions ?? self.spotSimplGoal.rawValue + " " + self.spotSimplLevel.rawValue
+            try converter = initAutomatonConverter(autoTool, args: args)
+        }
+        catch ParseError.toolNotFound(let name) {
+            throw CommandLineOptionsError.wrongChoice(argument: "--automaton-tool", choice: name, choices: LTL2AutomatonConverter.allValues.map { $0.rawValue })
+        }
+
+
         if let solver = solver {
             if !backend.supports(solver: solver) {
                 throw CommandLineOptionsError.invalidCombination(message: "backend \"\(backend)\" does not support solver \"\(solver)\"")
@@ -262,6 +309,9 @@ public struct BoSyOptions {
               "  --backend \(Backends.allValues.map { $0.rawValue }.joined(separator: "|"))\n",
               "  --semantics \(TransitionSystemType.allValues.map { $0.rawValue }.joined(separator: "|"))\n",
               "  --automaton-tool \(LTL2AutomatonConverter.allValues.map { $0.rawValue }.joined(separator: "|"))\n",
+              "  --spot-level \(SimplifcationLevel.allValues.map { $0.rawValue }.joined(separator: "|"))\n",
+              "  --spot-goal \(SimplifcationGoal.allValues.map { $0.rawValue }.joined(separator: "|"))\n",
+              "  --spot-options a string containing the cli options that should be passed to spot \n",
               "  --target \(Target.allValues.map { $0.rawValue }.joined(separator: "|"))\n",
               "  --solver \(SolverInstance.allValues.map { $0.rawValue }.joined(separator: "|"))\n",
               "  --qbf-certifier \(SolverInstance.allValues.filter { $0.instance as? CertifyingQbfSolver != nil }.map { $0.rawValue }.joined(separator: "|"))\n",
