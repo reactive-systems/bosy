@@ -54,7 +54,7 @@ public enum SimplifcationGoal: String {
     case any //new default, faster
     case small
 
-    public static let allValues: [SimplifcationGoal] = [.any, .small] 
+    public static let allValues: [SimplifcationGoal] = [.any, .small]
 }
 
 public struct BoSyOptions {
@@ -250,9 +250,12 @@ public struct BoSyOptions {
             }
         }
 
-        do {
+        do { // add warnings if spot options set but spot not seleced
             let args = self.spotOptions ?? self.spotSimplGoal.rawValue + " " + self.spotSimplLevel.rawValue
             try converter = initAutomatonConverter(autoTool, args: args)
+            if autoTool != "spot" && (args != "" || (spotSimplGoal == .any && spotSimplLevel == .small)){
+                print("Warning! Command line options for spot set but spot is not beeing used. Ignoring. \n Set options were \(args). \n")
+            }
         }
         catch ParseError.toolNotFound(let name) {
             throw CommandLineOptionsError.wrongChoice(argument: "--automaton-tool", choice: name, choices: LTL2AutomatonConverter.allValues.map { $0.rawValue })
