@@ -395,7 +395,7 @@ struct HQSPre: QbfPreprocessor {
     }
 }
 
-struct CAQE: QbfSolver, CertifyingQbfSolver {
+struct CAQE: QbfSolver /*CertifyingQbfSolver*/ { //current caqe version doesn't certify
     func solve(formula: Logic, preprocessor: QbfPreprocessor?) -> SatSolverResult? {
         // encode formula
         let qdimacsVisitor = QDIMACSVisitor(formula: formula)
