@@ -46,12 +46,12 @@ class HyperLTLSynthesisTest: XCTestCase {
         let linear = specification.ltl
         let hyperltl = specification.hyperPrenex
 
-        guard let linearAutomaton = try? CoBüchiAutomaton.from(ltl: !linear, using: .spot) else {
+        guard let linearAutomaton = try? CoBüchiAutomaton.from(ltl: !linear, using: .spot("")) else {
             XCTFail("could not create linear automaton")
             return
         }
 
-        guard let automaton = try? CoBüchiAutomaton.from(ltl: !hyperltl.ltlBody, using: .spot) else {
+        guard let automaton = try? CoBüchiAutomaton.from(ltl: !hyperltl.ltlBody, using: .spot("")) else {
             XCTFail()
             return
         }

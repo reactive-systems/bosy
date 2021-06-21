@@ -152,9 +152,9 @@ public class CoBüchiAutomaton: Automaton, SafetyAcceptance, CoBüchiAcceptance 
         return SafetyAutomaton(initialStates: initialStates, states: processed, transitions: transitions, safetyConditions: safetyConditions)
     }
 
-    // MARK: - LTL conversion
-
-    public static func from(ltl: LTL, using converter: LTL2AutomatonConverter = .spot) throws -> CoBüchiAutomaton {
+    // MARK: - LTL conversion           
+    //Note: hardcoding faster settings for spot here as it seems it is mostly used with the default value internally 
+    public static func from(ltl: LTL, using converter: LTL2AutomatonConverter = .spot("--any --small")) throws -> CoBüchiAutomaton {
         try converter.convert(ltl: ltl)
     }
 }
