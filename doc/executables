@@ -1,0 +1,31 @@
+# Bosy Ececutables
+
+## `bosy`
+Most of bosy's options preset to options that give good and fast results.
+These presets are as follows:
+ - qbf Preprocessor: bloqqer
+ - solver: rareqs
+ - qbf Certifier: chosen in command line or cadet
+parses .bosy and .tlsf files
+### Cli and args
+```bash
+bosy [options] specification```
+`specification`: the bosy spec to be used
+
+Available CommandLine options are:
+ - `--read-from-stdin`: read spec from standard in instead if file
+ - `--tlsf`: input file is in TLSF format
+ - `--synthesize`: construct system if system is realizable
+ - `--verbose`: enable verbose logging
+ - `--optimize`: optimize parameters
+ - `--syntcomp`: enable mode that is tailored to the rules of the reactive synthesis competition (and useless otherwise)
+ - `--qbfCertifier`: select Certifier for synthesis, default: cadet
+
+
+
+## `bosy-backend`
+Offers the full set of options that can be used by the program available to the user
+Input form either command line or a file is read and processed (checked, synthesize).
+
+
+## `bosy-hyper`
