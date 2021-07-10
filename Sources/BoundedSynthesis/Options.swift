@@ -87,7 +87,8 @@ public struct BoSyOptions {
         var arguments: ArraySlice<String> = CommandLine.arguments[CommandLine.arguments.indices]
         name = arguments.popFirst()!
 
-        var autoTool = "";
+        var autoTool = ""
+        var spotOptionsSet = false
 
         while arguments.count > 0 {
             guard let argument = arguments.popFirst() else {
@@ -170,6 +171,7 @@ public struct BoSyOptions {
                 guard let _simpLevel = SimplifcationLevel(rawValue: value) else {
                     throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: SimplifcationLevel.allValues.map { $0.rawValue })
                 }
+                spotOptionsSet = true
                 spotSimplLevel = _simpLevel
             case "--spot-goal":
                 guard let value = arguments.popFirst() else {
@@ -178,11 +180,13 @@ public struct BoSyOptions {
                 guard let _simpGoal = SimplifcationGoal(rawValue: value) else {
                     throw CommandLineOptionsError.wrongChoice(argument: argument, choice: value, choices: SimplifcationGoal.allValues.map { $0.rawValue })
                 }
+                spotOptionsSet = true
                 spotSimplGoal = _simpGoal
             case "--spot-opt":
                 guard let value = arguments.popFirst() else {
                     throw CommandLineOptionsError.noValue(argument: argument)
                 }
+                spotOptionsSet = true
                 spotOptions = value;
             case "--qbf-certifier":
                 guard let value = arguments.popFirst() else {
@@ -253,7 +257,7 @@ public struct BoSyOptions {
         do { // add warnings if spot options set but spot not seleced
             let args = self.spotOptions ?? self.spotSimplGoal.rawValue + " " + self.spotSimplLevel.rawValue
             try converter = initAutomatonConverter(autoTool, args: args)
-            if autoTool != "spot" && (spotSimplGoal != .any && spotSimplLevel != .small){
+            if autoTool != "spot" && spotOptionsSet {
                  Logger.default().warning("Command line options for spot set but spot is not beeing used. Ignoring. \n Set options were \(args). \n")
             }
         }
