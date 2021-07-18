@@ -1,4 +1,4 @@
-# Bosy Ececutables
+# Bosy Executables
 
 ## `bosy`
 Most of bosy's options preset to options that give good and fast results.
@@ -7,7 +7,7 @@ These presets are as follows:
  - solver: rareqs
  - qbf Certifier: chosen in command line or cadet
 parses .bosy and .tlsf files
-This is the version that is suppoesd to work correctly out of the box if given a valid input file.
+This is the version that is supposed to work correctly out of the box if given a valid input file.
 
 ### Cli and args
 ```bash
@@ -18,14 +18,14 @@ BoSy [options] specification
 Available CommandLine options are:
  - `--read-from-stdin`: read spec from standard in instead if file
  - `--tlsf`: input file is in TLSF format
- - `--synthesize`: synthesize implementation from the input if it is realiziable
+ - `--synthesize`: synthesize implementation from the input if it is realizable
  - `--verbose`: enable verbose logging
  - `--optimize`: optimize parameters
  - `--syntcomp`: enable mode that is tailored to the rules of the reactive synthesis competition (and useless otherwise)
- - `--qbfCertifier certfier`: select Certifier for synthesis, default: cadet
+ - `--qbfCertifier certifier`: select Certifier for synthesis, default: cadet
 ### Return values
 If the program ran correctly it will return 0.
-For wrong arguemts and other errors it will return 1.
+For wrong arguments and other errors it will return 1.
 
 ## `bosy-backend`
 Offers the full set of options that can be used by the program available to the user
@@ -38,44 +38,44 @@ BoSyBackend [options] specification
 ```
 `specification`: the bosy spec to be used
 
-Available Commandline options are:
+Available command-line options are:
 - `-h, --help`: prints this help message
 - `-v, --verbose`: log output in more detail
-- `--synthesize`: synthesize implementation from the input if it is realiziable
-- `--starategy strategy`: the search strategy to use, valid options are: `linear` and `expoential`
-- `--player player`: set the play to use for chekcing realziablility ans snyth, valid options are: `system`, `environment`, and `both`
-- `--backend backend`: which solver backend to use. availalbe backends: `explicit`(SAT), `input-symbolic`(QBF), `state-symbolic`(DQBF), `symbolic`(DQBF), `smt`(SMT)
+- `--synthesize`: synthesize implementation from the input if it is realizable
+- `--strategy strategy`: the search strategy to use, valid options are: `linear` and `exponential`
+- `--player player`: set the play to use for checking realizability and synthesis, valid options are: `system`, `environment`, and `both`
+- `--backend backend`: which solver backend to use. available backends: `explicit`(SAT), `input-symbolic`(QBF), `state-symbolic`(DQBF), `symbolic`(DQBF), `smt`(SMT)
 - `--automaton-tool tool`: tool used to create an automation out of the input, valid options: `spot` and `ltl3ba`
 - `--semantics mealy|moore`: Use mealy or moore automata semantics.
-- `--target target`: set the targeted output type for the sytesized automata. Valid options: `aiger`,`dot`, `dot-topology`, `smv`, `verilog`, or `all`
-- `--solver solver`: specify which solver instance to use. Availalbe solvers: `picosat`, `cryptominisat`, `rareqs`, `depqbf`, `caqe`, `cadet`, `quabs`, `idq`, `hqs`, `dcaqe`, `eprover`, `vampire`, `z3`, and`cvc4`
-- `--spot-goal goal`: set spot simplification goal, Availalbe values: `small` or `any`
-- `--spot-level goal`: set spot simplifiaction goal, Availalbe values: `small`, `medium`, `high`
-- `--spot-opt options`: cive your own set of options to spot as a string
-- `--qbf-certifier certfier`: select Certifier for synthesis, availalbe values: `quabs` or `cadet`
-- `--qbf-preprocessor processor`: select Preprocessor instance, avalalbe are: `bloqqer` or `hqspre`
-- `--monolitic`: do not generate mutiple autoamta if no assumtions are present, boolean option
+- `--target target`: set the targeted output type for the synthesized automata. Valid options: `aiger`,`dot`, `dot-topology`, `smv`, `verilog`, or `all`
+- `--solver solver`: specify which solver instance to use. Available solvers: `picosat`, `cryptominisat`, `rareqs`, `depqbf`, `caqe`, `cadet`, `quabs`, `idq`, `hqs`, `dcaqe`, `eprover`, `vampire`, `z3`, and `cvc4`
+- `--spot-goal goal`: set spot simplification goal, Available values: `small` or `any`
+- `--spot-level goal`: set spot simplification goal, Available values: `small`, `medium`, `high`
+- `--spot-opt options`: give your own set of options to spot as a string
+- `--qbf-certifier certifier`: select Certifier for synthesis, available values: `quabs` or `cadet`
+- `--qbf-preprocessor processor`: select Preprocessor instance, available are: `bloqqer` or `hqspre`
+- `--monolithic`: do not generate multiple automata if no assumptions are present, boolean option
 - `--min-bound bound`: set a lower bound on the automata size. Needs to be an integer
 - `--max-bound bound`: set a upper bound on the automata size. Needs to be an integer
 - `--bound bound`: set min and max bound to the same value. Needs to be an integer
 
 ### Return values
 If the program ran correctly it will return 0.
-For wrong arguemts and other errors it will return 1.
+For wrong arguments and other errors it will return 1.
 
 ## `bosy-hyper`
-Bosy with support for temporal hyperproperties.
+Bosy with support for temporal hyper-properties.
 
 ### cli and args
 ```bash
 BoSyHyper [options] specification
 ```
-`specification`: the bosy hyper scpe to be used
+`specification`: the bosy hyper scope to be used
 
 
-Available Comandline options are:
+Available command-line options are:
 - `--environment`: Search for environment strategies instead of system, boolean switch
 - `--min-bound n`: Specify the initial bound (default 1), integer value
-- `--synthesize`: synthesize implementation from the input if it is realiziable
-- `--paths n`: number of paths the environment can use for counterexample strategy (default 2), iteger value
+- `--synthesize`: synthesize implementation from the input if it is realizable
+- `--paths n`: number of paths the environment can use for counterexample strategy (default 2), integer value
 - `--dqbf`: Use DQBF encoding
