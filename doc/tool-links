@@ -2,20 +2,19 @@ ABC: https://github.com/berkeley-abc/abc
 Aiger: old/info link:http://fmv.jku.at/aiger ; New Download(Still WIP): https://github.com/arminbiere/aiger
 Bloqqer: old/info link:http://fmv.jku.at/bloqqer ; development seems to have stopped
 Cadet: https://github.com/MarkusRabe/ciiadet
-combine-aiger: is our own tool, pulled irectly from git
+combine-aiger: is our own tool, pulled directly from git
 cryptominisat: https://github.com/msoos/cryptominisat/ ; DL-link: https://github.com/msoos/cryptominisat/releases/tag/ #note: need to test version 5.8.0
-cvc(4/5):https://cvc4.github.io/downloads  ; donload(only cvc5):https://github.com/cvc5/cvc5/releases #need to check if cvc5 is compatible
-depqbf: https://github.com/lonsing/depqbf ; download: from gutub release page #upgrade to 6 maybe?
-eprover: https://wwwlehre.dhbw-stuttgart.de/~sschulz/E/E.html download: https://wwwlehre.dhbw-stuttgart.de/~sschulz/E/Download.html #has new major version, changelog sugest compatibilty, need to test
-vampire: found no link to website... maybe the tool was superseeded
-spot: https://spot.lrde.epita.fr/ ; dl: https://spot.lrde.epita.fr/install.html or https://gitlab.lrde.epita.fr/spot/spot/-/tags # minor version upgrade, just need to update in make an run tests
+cvc(4/5):https://cvc4.github.io/downloads  ; download(only cvc5):https://github.com/cvc5/cvc5/releases #need to check if cvc5 is compatible
+depqbf: https://github.com/lonsing/depqbf ; download: from github release page #upgrade to 6 maybe?
+eprover: https://wwwlehre.dhbw-stuttgart.de/~sschulz/E/E.html download: https://wwwlehre.dhbw-stuttgart.de/~sschulz/E/Download.html #has new major version.
+vampire: https://vprover.github.io/ #can be updated
+spot: https://spot.lrde.epita.fr/ ; dl: https://spot.lrde.epita.fr/install.html or https://gitlab.lrde.epita.fr/spot/spot/-/tags # minor version upgrade
 ltl3ba: https://sourceforge.net/projects/ltl3ba/files/ltl3ba/ # seems to be at latest
 idq: http://fmv.jku.at/idq/ # seems to be current version
-hqs: https://www.dropbox.com/s/cdesqq4ckh96x2i/hqs-bin.tar.gz # cant find any dattitional info
+hqs: https://www.dropbox.com/s/cdesqq4ckh96x2i/hqs-bin.tar.gz # cant find any additional info
 NuSMV: https://nusmv.fbk.eu/ ; dl:http://nusmv.fbk.eu/distrib/NuSMV-$(nuSMV_version).tar.gz
 picosat: http://fmv.jku.at/picosat/ # already at newest
 quabs: https://github.com/reactive-systems/quabs.git; upstream: https://github.com/ltentrup/quabs #we're maintaining our own copy and pulling from master
 rareqs: http://sat.inesc-id.pt/~mikolas/sw/areqs/ #though ist seems we're at newest
 syfco: https://github.com/reactive-systems/syfco #our conversion own tool
 z3: https://github.com/Z3Prover/z3/ dl:https://github.com/Z3Prover/z3/releases
-
