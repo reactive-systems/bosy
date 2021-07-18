@@ -254,7 +254,7 @@ public struct BoSyOptions {
             }
         }
 
-        do { // add warnings if spot options set but spot not seleced
+        do {
             let args = self.spotOptions ?? self.spotSimplGoal.rawValue + " " + self.spotSimplLevel.rawValue
             try converter = initAutomatonConverter(autoTool, args: args)
             if autoTool != "spot" && spotOptionsSet {
