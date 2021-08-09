@@ -4,4 +4,6 @@
 /*.xcodeproj
 /Tools
 Package.resolved
+tool_build.log
+tool_build_errors.log
 
