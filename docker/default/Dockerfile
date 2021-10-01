@@ -16,7 +16,7 @@ FROM docker.io/swift:focal
 RUN dpkg --add-architecture i386
 RUN apt-get update
 RUN apt-get install -y libreadline-dev:i386 libsqlite3-dev
-RUN git clone https://github.com/reactive-systems/bosy.git /root/bosy
+RUN git clone https://github.com/reactive-systems/bosy.git /root/bosy --branch=fix-swift-build
 RUN swift build --configuration release -Xcc -O3 -Xcc -DNDEBUG -Xswiftc -Ounchecked --package-path=/root/bosy
 #copy everything
 #COPY --from=toolbuilder /root/bosy/Tools/* /root/bosy/Tools/
