@@ -1,22 +1,20 @@
 FROM docker.io/ubuntu:focal AS toolbuilder
 
-RUN apt-get update
 RUN apt-get update && DEBIAN_FRONTEND="noninteractive"  apt-get install -y  git bison build-essential clang cmake curl flex gcc git libantlr3c-dev libbdd-dev libboost-program-options-dev libicu-dev libreadline-dev mercurial psmisc unzip vim-common wget zlib1g-dev libsqlite3-dev python3-distutils rustc cargo python-is-python3 pip openjdk-8-jdk
 RUN pip install toml
 RUN curl -sSL https://get.haskellstack.org/ | sh
 RUN git clone https://github.com/reactive-systems/bosy.git /root/bosy
-RUN cd /root/bosy
 RUN make tools -C /root/bosy
 RUN make clean-source-tools -C /root/bosy
 
 
-FROM docker.io/swift:focal
+FROM docker.io/swift:5.4-focal
 
 
 RUN dpkg --add-architecture i386
 RUN apt-get update
 RUN apt-get install -y libreadline-dev:i386 libsqlite3-dev
-RUN git clone https://github.com/reactive-systems/bosy.git /root/bosy --branch=fix-swift-build
+RUN git clone https://github.com/reactive-systems/bosy.git /root/bosy
 RUN swift build --configuration release -Xcc -O3 -Xcc -DNDEBUG -Xswiftc -Ounchecked --package-path=/root/bosy
 #copy everything
 #COPY --from=toolbuilder /root/bosy/Tools/* /root/bosy/Tools/
@@ -49,6 +47,3 @@ COPY --from=toolbuilder /root/bosy/Tools/z3 /root/bosy/Tools/
 #COPY --from=toolbuilder /root/bosy/Tools/NuSMV /root/bosy/Tools/
 WORKDIR /root/bosy
 ENTRYPOINT ["/root/bosy/.build/release/BoSy"]
-
-
-
