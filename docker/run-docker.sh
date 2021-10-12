@@ -11,22 +11,12 @@ if [ ${#@} -lt 2 ]; then
 				or 'default' as an argument. Omitting it assumes 'default'.
 			- run: 	runs BoSy on input inside the container. Takes either 'full'
 				or 'default' as a first argument, which must be specified.
-				The
-				second argument is the path to the input. If this is a file,
+				The second argument is the path to the input. If this is a file,
 				the parent folder will be mounted, and the specified file will
 				be run with BoSy. If it is a folder, it will simply be mounted
 				and the user has to specify the file he/she wants to run. The
 				base path for this inside the container is /root/files.
 				Any arguments after that will be passed to BoSy directly.
-        Options:
-            --help: shows this help text and exits
-            --use-existing: use old version of the script, rebuilding the swift code on every run.
-            --fresh: just rebuild the swift code before running (fast).
-            --fresh-minimal: rebuild swift-code + default tools (needed for auto-configured bosy run, time intensive)
-            --fresh-full:  rebuild swift + build all tools from scratch (VERY time intensive).
-                Note: Most thorough fresh* option set will take precedence
-
-        For bosy specific options see $(basename "$0") --tool-help
     "
 	exit 0
 fi
