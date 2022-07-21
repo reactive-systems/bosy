@@ -12,7 +12,7 @@ let package = Package(
         .executable(name: "BoSyHyper", targets: ["BoSyHyper"])
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-tools-support-core.git", from: "0.2.3"),
+        .package(url: "https://github.com/apple/swift-tools-support-core.git", .exact("0.2.2")),
         .package(url: "https://github.com/ltentrup/CAiger.git", from: "0.1.3"),
         .package(url: "https://github.com/ltentrup/SafetySynth.git", from: "0.3.1"),
         .package(url: "https://github.com/ltentrup/CUDD.git", from: "0.2.4"),
