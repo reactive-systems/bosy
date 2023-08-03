@@ -245,12 +245,10 @@ Tools/E.tgz: Tools/.f
 	cd Tools ; curl -OL http://wwwlehre.dhbw-stuttgart.de/~sschulz/WORK/E_DOWNLOAD/$(eprover_version)/E.tgz
 
 # vampire
-Tools/vampire: Tools/Vampires
-	cp Tools/Vampires/vampire_x86_64 Tools/vampire
-Tools/Vampires: Tools/vampire.zip
-	cd Tools ; unzip -D vampire.zip
+Tools/vampire: Tools/vampire.zip
+	cd Tools ; unzip -d vampire vampire.zip
 Tools/vampire.zip: Tools/.f
-	cd Tools ; curl -OL http://forsyte.at/wp-content/uploads/vampire.zip
+	cd Tools ; curl -L -o vampire.zip https://github.com/vprover/vampire/releases/download/v4.7/vampire4.7.zip
 
 # spot/ltl2tgba
 Tools/ltl2tgba: Tools/spot-$(spot_version)

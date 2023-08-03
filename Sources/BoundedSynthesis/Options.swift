@@ -43,16 +43,16 @@ public enum Target: String {
 }
 
 public enum SimplifcationLevel: String {
-    case small //new default, faster
-    case medium
-    case high
+    case small = "--small" //new default, faster
+    case medium = "--medium"
+    case high = "--high"
 
     public static let allValues: [SimplifcationLevel] = [.small, .medium, .high]
 }
 
 public enum SimplifcationGoal: String {
-    case any //new default, faster
-    case small
+    case any = "--any" //new default, faster
+    case small = "--small"
 
     public static let allValues: [SimplifcationGoal] = [.any, .small]
 }
